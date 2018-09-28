@@ -1,0 +1,159 @@
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.10'
+}
+
+allprojects {
+    task addPlugins << {
+        delete './build/plugins'
+        mkdir './build/plugins'
+        if (project.hasProperty('pluginDir')) {
+            if (pluginDir?.trim()) {
+                copy {
+                    from "$pluginDir"
+                    into 'build/plugins'
+                    include '*.jar'
+                    include '**/*.jar'
+                }
+            }
+        }
+    }
+
+    tasks.withType(JavaCompile) {
+        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+    }
+
+    repositories {
+        mavenCentral();
+    }
+
+    tasks.withType(Test) {
+        useTestNG() {
+        }
+        afterSuite { desc, result ->
+            if (desc.parent == null) {
+                logger.lifecycle("${result.successfulTestCount}/${result.testCount} tests passed")
+            }
+        }
+    }
+
+    // Version definitions of all of the libraries we're using.  They're defined
+    // here to ensure that all projects are using the same versions of common
+    // dependencies:
+    ext.libs = [
+      bouncycastle:  ['org.bouncycastle:bcpkix-jdk15on:1.55', // Bouncy Castle license
+                      'org.bouncycastle:bcprov-ext-jdk15on:1.55'],
+      jackson:       ['com.fasterxml.jackson.core:jackson-core:2.9.4', // Apache 2.0
+                      'com.fasterxml.jackson.core:jackson-annotations:2.9.4',
+                      'com.fasterxml.jackson.core:jackson-databind:2.9.4'],
+      jcommander:    'com.beust:jcommander:1.72', // cli and required by testng, Apache 2.0
+      testng:        'org.testng:testng:6.13.1', // Apache 2.0
+    ]
+}
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.netflix.nebula:gradle-ospackage-plugin:4.9.3'
+    }
+}
+
+apply plugin: 'eclipse'
+apply plugin: 'java'
+apply plugin: 'application'
+apply plugin: 'nebula.ospackage'
+
+ext.refsDir = new File(projectDir, 'refs')
+
+sourceCompatibility = 1.8
+
+dependencies {
+    compile libs.bouncycastle
+    compile libs.jackson
+    compile libs.jcommander
+
+    testCompile libs.testng
+}
+
+// Application packaging into a zip file
+def createScript(project, mainClass, name) {
+  project.tasks.create(name: name, type: CreateStartScripts) {
+    outputDir       = new File(project.buildDir, 'scripts')
+    mainClassName   = mainClass
+    applicationName = name
+    classpath       = project.tasks[JavaPlugin.JAR_TASK_NAME].outputs.files + project.configurations.runtime
+  }
+  project.tasks[name].dependsOn(project.jar)
+
+  project.applicationDistribution.with {
+    into("bin") {
+      from(project.tasks[name])
+      fileMode = 0755
+      duplicatesStrategy = 'exclude' // IMPORTANT: eliminates duplicate files within the ZIP
+    }
+  }
+}
+
+// Suppress standard application plugin behavior in favor of easier to read program declarations below
+startScripts.enabled = false
+run.enabled = false
+
+createScript(project, 'cli.DeviceObserverCli', 'observer')
+createScript(project, 'cli.SigningCli', 'signer')
+createScript(project, 'cli.ValidatorCli', 'validator')
+
+// Include files into the ZIP
+applicationDistribution.from("scripts/") {
+    into "scripts"
+}
+applicationDistribution.from("docs/") {
+    into "docs"
+}
+
+ospackage {
+    packageName='paccor'
+    os=LINUX
+    arch=NOARCH
+    version='1.0.0'
+    release='2'
+
+    into '/opt/paccor'
+    user 'root'
+    fileMode=0755
+
+    requires('jq')
+
+    from(jar.outputs.files) {
+        into 'lib'
+    }
+
+    from('lib') {
+        into 'lib'
+    }
+
+    from(configurations.runtime) {
+        into 'lib'
+    }
+
+    from('build/scripts') {
+        exclude {
+            FileTreeElement details ->
+            details.file.name.endsWith('.bat')
+        }
+        into 'bin'
+    }
+  
+    from('scripts') {
+        into 'scripts'
+    }
+
+    from('docs') {
+        exclude {
+            FileTreeElement details ->
+            details.file.name.endsWith('.odt')
+        }
+        into 'docs'
+    }
+}
+
