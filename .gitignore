@@ -1,0 +1,61 @@
+# compiled python
+*.pyc
+
+# NetBeans specific #
+private/
+build/
+dist/
+.nb-gradle-properties
+
+# Eclipse specific #
+.classpath
+.project
+.settings/
+.checkstyle
+
+# IDEA specific #
+*.iml
+.idea
+
+# Gradle specific #
+.gradle
+
+# Class Files #
+*.class
+classes/
+
+# Package Files #
+*.war
+*.ear
+*.rpm
+*.deb
+
+# DEB Sources #
+DEB_SOURCES/
+
+# RPM Files #
+BUILD/
+BUILDROOT/
+SOURCES/
+SPECS/
+RPM/
+SRPM/
+PLUGIN_SOURCE/
+
+# Misc Files #
+*~
+bin/
+build/
+
+# MAC OSX Finder Files #
+.DS_Store
+
+# Log Files #
+*.log
+
+/.nb-gradle/
+
+
+# rejected diff applications
+*.rej
+
