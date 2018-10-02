@@ -1,0 +1,27 @@
+{
+    
+    "PLATFORM": {
+        "PLATFORMMANUFACTURERSTR": "innotek GmbH","PLATFORMMODEL": "VirtualBox","PLATFORMVERSION": "1.2","PLATFORMSERIAL": "0"
+    },
+    "COMPONENTS": [
+        {
+            "MANUFACTURER": "Oracle Corporation","MODEL": "Other","SERIAL": "Not Specified","REVISION": "Not Specified"
+        },
+        {
+            "MANUFACTURER": "Oracle Corporation","MODEL": "VirtualBox","SERIAL": "0","REVISION": "1.2"
+        },
+        {
+            "MANUFACTURER": "innotek GmbH","MODEL": "BIOS","SERIAL": "VirtualBox"
+        },
+        {
+            "MANUFACTURER": "Intel Corporation","MODEL": "82540EM Gigabit Ethernet Controller","SERIAL": "08:00:27:6d:2c:6b","REVISION": "02"
+        },
+        {
+            "MANUFACTURER": "Advanced Micro Devices, Inc. [AMD]","MODEL": "79c970 [PCnet32 LANCE]","REVISION": "40"
+        },
+        {
+            "MANUFACTURER": "VBOX","MODEL": "HARDDISK"
+        }
+    ]
+}
+

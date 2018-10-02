@@ -1,0 +1,31 @@
+{
+    
+    "PLATFORM": {
+        "PLATFORMMANUFACTURERSTR": "Dell Inc.","PLATFORMMODEL": "OptiPlex 7040","PLATFORMVERSION": "Not Specified","PLATFORMSERIAL": "306VRD2","PLATFORMMANUFACTURERID": "1.3.6.1.4.1.674"
+    },
+    "COMPONENTS": [
+        {
+            "MANUFACTURER": "Dell Inc.","MODEL": "Desktop","SERIAL": "306VRD2","REVISION": "Not Specified"
+        },
+        {
+            "MANUFACTURER": "Dell Inc.","MODEL": "0Y7WYT","SERIAL": "/306VRD2/CN7016368902MW/","REVISION": "A00"
+        },
+        {
+            "MANUFACTURER": "Intel(R) Corporation","MODEL": "Core i7","SERIAL": "Not Specified","REVISION": "Intel(R) Core(TM) i7-6700 CPU @ 3.40GHz"
+        }
+    ],
+    "PROPERTIESURI": {
+        "UNIFORMRESOURCEIDENTIFIER": "./allcomponents.sh","HASHALGORITHM": "2.16.840.1.101.3.4.2.1","HASHVALUE": "R4NdDdUQNH2xFyfUFXpEdOPkurymuYyLldr0h+fX+wo="
+    },
+    "PROPERTIES": [
+        {
+            "NAME": "uname -r",
+            "VALUE": "3.10.0-693.17.1.el7.x86_64"
+        },
+        {
+            "NAME": "cat /etc/centos-release",
+            "VALUE": "CentOS Linux release 7.4.1708 (Core) "
+        }
+    ]
+}
+
