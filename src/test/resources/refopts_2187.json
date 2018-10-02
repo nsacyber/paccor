@@ -1,0 +1,33 @@
+{
+    
+    "TCGPLATFORMSPECIFICATION": {
+        "VERSION": {
+            "MAJORVERSION": "1",
+            "MINORVERSION": "3",
+            "REVISION": "22"
+        },
+        "PLATFORMCLASS": "AAAAAQ=="
+    },
+    "TCGCREDENTIALSPECIFICATION": {
+        "MAJORVERSION": "1",
+        "MINORVERSION": "0",
+        "REVISION": "16"
+    },
+    "TBBSECURITYASSERTIONS": {
+        "VERSION": "1",
+        "ISO9000CERTIFIED": "FALSE",
+        "CCINFO": {
+            "VERSION": "2.2",
+            "ASSURANCELEVEL": "6",
+            "EVALUATIONSTATUS": "evaluationInProgress",
+            "PLUS": "FALSE",
+            "STRENGTHOFFUNCTION": "high"
+        },
+        "FIPSLEVEL": {
+            "VERSION": "140-2",
+            "LEVEL": "3",
+            "PLUS": "FALSE"
+        },
+        "RTMTYPE": "static"
+    }
+}

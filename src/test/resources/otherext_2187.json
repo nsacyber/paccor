@@ -1,0 +1,16 @@
+{
+    "CERTIFICATEPOLICIES": [
+        {
+            "POLICYIDENTIFIER": "1.2.3",
+            "POLICYQUALIFIERS": [
+                {
+                    "POLICYQUALIFIERID": "CPS",
+                    "QUALIFIER": "http://localhost"
+                },{
+                    "POLICYQUALIFIERID": "USERNOTICE",
+                    "QUALIFIER": "TCG Trusted Platform Endorsement"
+                }
+            ]
+        }
+    ]
+}

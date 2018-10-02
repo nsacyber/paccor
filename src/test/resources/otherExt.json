@@ -1,0 +1,30 @@
+{
+    "CERTIFICATEPOLICIES": [
+        {
+            "POLICYIDENTIFIER": "1.2.3",
+            "POLICYQUALIFIERS": [
+                {
+                    "POLICYQUALIFIERID": "CPS",
+                    "QUALIFIER": "http://localhost"
+                },{
+                    "POLICYQUALIFIERID": "USERNOTICE",
+                    "QUALIFIER": "TCG Trusted Platform Endorsement"
+                }
+            ]
+        }
+    ],
+    "AUTHORITYINFOACCESS": [
+        {
+            "ACCESSMETHOD": "OCSP",
+            "ACCESSLOCATION": "CN=MyApp ACES CA 2, OU=MyApp Public Sector, O=MyApp, C=US"
+        }
+    ],
+    "CRLDISTRIBUTION": {
+        "DISTRIBUTIONNAME": {
+            "TYPE": "0",
+            "NAME": "CN=MyApp ACES CA 2, OU=MyApp Public Sector, O=MyApp, C=US"
+        },
+        "REASON": "8",
+        "ISSUER": "CN=MyApp ACES CA 2, OU=MyApp Public Sector, O=MyApp, C=US"
+    }
+}

@@ -1,0 +1,44 @@
+{
+    
+    "TCGPLATFORMSPECIFICATION": {
+        "VERSION": {
+            "MAJORVERSION": "1",
+            "MINORVERSION": "3",
+            "REVISION": "22"
+        },
+        "PLATFORMCLASS": "AAAAAQ=="
+    },
+    "TCGCREDENTIALSPECIFICATION": {
+        "MAJORVERSION": "1",
+        "MINORVERSION": "0",
+        "REVISION": "16"
+    },
+    "TBBSECURITYASSERTIONS": {
+        "VERSION": "1",
+        "ISO9000CERTIFIED": "FALSE",
+        "CCINFO": {
+            "VERSION": "2.2",
+            "ASSURANCELEVEL": "6",
+            "EVALUATIONSTATUS": "evaluationInProgress",
+            "PLUS": "FALSE",
+            "STRENGTHOFFUNCTION": "high",
+            "PROFILEOID": "1.2.1.3.4",
+    "PROFILEURI": {
+        "UNIFORMRESOURCEIDENTIFIER": "./enterprise-numbers","HASHALGORITHM": "2.16.840.1.101.3.4.2.1","HASHVALUE": "FsMOcUPnfEjmF+vn+6sCr0UDqLmETPolZGx79QtH2CY="
+    },
+            "TARGETOID": "2.2.3.5.5",
+    "TARGETURI": {
+        "UNIFORMRESOURCEIDENTIFIER": "./referenceoptions.sh","HASHALGORITHM": "2.16.840.1.101.3.4.2.1","HASHVALUE": "7vhL/m2zPeHJq7WwHJQJQr8KvRI+AL3pQtwtIQqiMAc="
+    }
+        },
+        "FIPSLEVEL": {
+            "VERSION": "140-2",
+            "LEVEL": "3",
+            "PLUS": "FALSE"
+        },
+        "RTMTYPE": "static","ISO9000URI": "./referenceoptions.sh"
+    },
+    "PLATFORMCONFIGURI": {
+        "UNIFORMRESOURCEIDENTIFIER": "./allcomponents.sh","HASHALGORITHM": "2.16.840.1.101.3.4.2.1","HASHVALUE": "R4NdDdUQNH2xFyfUFXpEdOPkurymuYyLldr0h+fX+wo="
+    }
+}
