@@ -284,7 +284,7 @@ componentBaseboard=$(jsonComponent "$baseboardManufacturer" "$baseboardModel" "$
 
 ### Gather BIOS details
 biosUefiManufacturer=$(dmidecode -s bios-vendor)
-biosUefiModel=$(jsonModel "$(dmesg | grep efi | grep SMBIOS > /dev/null && printf \"UEFI\" || printf \"BIOS\")")
+biosUefiModel=$(jsonModel "$(dmesg | grep efi | grep SMBIOS > /dev/null && printf "UEFI" || printf "BIOS")")
 biosUefiRevision=$(dmidecode -s bios-version)
 if [[ -z "${biosUefiManufacturer// }" ]]; then
     biosUefiManufacturer="$NOT_SPECIFIED"
@@ -623,7 +623,7 @@ componentsCPU=$(parseCpuData)
 componentsRAM=$(parseRamData)
 componentsNIC=$(parseNicData)
 componentsHDD=$(parseHddData)
-componentArray=$(jsonComponentArray "$componentChassis" "$componentBaseboard" "$componentsCPU" "$componentsRAM" "$componentsNIC" "$componentsHDD")
+componentArray=$(jsonComponentArray "$componentChassis" "$componentBaseboard" "$componentBiosUefi" "$componentsCPU" "$componentsRAM" "$componentsNIC" "$componentsHDD")
 
 ### Collate the property details
 propertyArray=$(jsonPropertyArray "$property1" "$property2")
