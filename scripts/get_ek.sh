@@ -89,4 +89,13 @@ if [ -z "$EK_CERT_HEX" ]; then
   exit 1
 fi
 
-echo -n "$EK_CERT_HEX" | xxd -r -p  # User can convert to PEM/whatever else
+# Erase byte padding the certificate
+EC_BLOB=$(echo -n "$EK_CERT_HEX" | sed 's/.\{2\}/& /g' | tr '[\r\n]+' ' ') # Separate each byte
+EC_BYTE_START=$(echo -n "$EC_BLOB" | grep -b -o "30 82" | sed -n '1p' | sed -r 's/^([0-9]+):.*$/\1/') # Look for the outer ASN1 Sequence
+EC_LENGTH=$(echo -n "$EC_BLOB" | awk -F"30 82" '{print $2}' | tr -d '[[:space:]]') # Get the certificate length
+EC_LENGTH="16#""$EC_LENGTH" # Convert to decimal
+EC_LENGTH=$(((( $EC_LENGTH ) + 4) * 2)) # Calculate the number of nibbles to retain as the EC_BLOB
+EC_BLOB=$(echo -n "$EC_BLOB" | tail -c +"$EC_BYTE_START" | tr -d '[[:space:]]' | head -c "$EC_LENGTH") # truncate the extra bytes
+
+echo -n "$EC_BLOB" | xxd -r -p  # User can convert to PEM/whatever else
+
