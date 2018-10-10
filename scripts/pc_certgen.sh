@@ -133,6 +133,10 @@ fi
 # Step 7 create and sign the new platform credential
 echo "Generating a signed Platform Credential"
 bash $signer_bin -x "$extsettings" -c "$componentlist" -e "$ekcert" -p "$policyreference" -k "$sigkey" -P "$pcsigncert" -N "$serialnumber" -b "$dateNotBefore" -a "$dateNotAfter" -f "$pccert" 
+if [ $? -ne 0 ]; then
+    echo "The signer could not produce a Platform Credential, exiting"
+    exit 1
+fi
 
 # Step 8 validate the signature
 echo "Validating the signature"
