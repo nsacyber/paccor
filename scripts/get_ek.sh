@@ -28,8 +28,13 @@ else
 fi
 
 if [ -z "$TPM_VER_1_2" ] && [ -z "$TPM_VER_2_0"  ]; then
-    echo "Could not detect version of TPM.  Please manually set in get_ek.sh"
-    exit 1
+    tpmServerActive=$(ps -aux | grep "tpm_server" | grep -v "grep")
+    if [ -n "$tpmServerActive" ]; then
+        TPM_VER_2_0=1
+    else
+        echo "Could not detect version of TPM.  Please manually set in get_ek.sh"
+        exit 1
+    fi
 fi
 
 indexCmd=
@@ -59,10 +64,10 @@ elif [ -n "$TPM_VER_2_0" ]; then
             echo "This version of tpm2-tools requires the resourcemgr service."
             exit 1
         elif [ -n "$TPM2_TOOLS_VER_2" ]; then
-            resourceMgrPort="-p 2323 " # default
+            resourceMgrPort="-p 2323" # default
         fi
         ekCertSize=$(tpm2_nvlist "$resourceMgrPort" | sed -n -e "/""$TPM2_EK_NV_INDEX""/,\$p" | sed -e '/}/,$d' | grep "size of" | sed 's/.*size.*://' | sed -e 's/^[[:space:]]*//' | sed -e 's/[[:space:]]$//')
-        readCmd="tpm2_nvread ""$resourceMgrPort""$TPM2_AUTH_SETTINGS"" ""$indexCmd"" -s %s -o %s | sed -r -e 's/The size of data:[0-9]+//g' | perl -ne 's/([0-9a-f]{2})/print chr hex \$1/gie' | xxd -p -c ""$maxReadSize"
+        readCmd="tpm2_nvread ""$resourceMgrPort"" ""$TPM2_AUTH_SETTINGS"" ""$indexCmd"" -s %s -o %s | sed -r -e 's/The size of data:[0-9]+//g' | perl -ne 's/([0-9a-f]{2})/print chr hex \$1/gie' | xxd -p -c ""$maxReadSize"
         nvBufferedRead="1"
     elif [ -n "$TPM2_TOOLS_VER_3" ]; then
         abrmdActive=$(ps -aux | grep "tpm2-abrmd" | grep -v "grep")
