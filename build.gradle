@@ -110,12 +110,19 @@ applicationDistribution.from("scripts/") {
 applicationDistribution.from("docs/") {
     into "docs"
 }
+applicationDistribution.from("./") {
+    include {
+        FileTreeElement details ->
+        details.file.name.endsWith('.md')
+    }
+    into "./"
+}
 
 ospackage {
     packageName='paccor'
     os=LINUX
     arch=NOARCH
-    version='1.0.5'
+    version='1.0.6'
     release='1'
 
     into '/opt/paccor'
@@ -154,6 +161,14 @@ ospackage {
             details.file.name.endsWith('.odt')
         }
         into 'docs'
+    }
+
+    from('./') {
+        include {
+            FileTreeElement details ->
+            details.file.name.endsWith('.md')
+        }
+        into './'
     }
 }
 
