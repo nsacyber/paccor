@@ -20,6 +20,13 @@ fi
 TPM_VER_1_2=$(dmesg | grep -i tpm | grep "1\.2")
 TPM_VER_2_0=$(dmesg | grep -i tpm | grep "2\.0")
 
+distCmd=
+if [ "$(. /etc/os-release; echo $NAME)" = "Ubuntu" ]; then
+  distCmd="apt" 
+else
+  distCmd="yum"
+fi
+
 if [ -z "$TPM_VER_1_2" ] && [ -z "$TPM_VER_2_0"  ]; then
     echo "Could not detect version of TPM.  Please manually set in get_ek.sh"
     exit 1
@@ -39,20 +46,23 @@ if [ -n "$TPM_VER_1_2" ]; then
     readCmd="tpm_nvread ""$TPM1_AUTH_SETTINGS"" ""$indexCmd"" -s %s -n %s | sed -r \"s/[0-9a-f]+ ([ 0-9a-f]{48}).*/\\\\1/\" | tr -d [[:space:]]"
     nvBufferedRead="1"
 elif [ -n "$TPM_VER_2_0" ]; then 
-    TPM2_TOOLS_VER_1=$(yum list installed tpm2-tools | grep --quiet -E "[ \t]+1\." && echo "1" || echo "") # Figure out best way to determine TPM2_TOOLS version.  query yum?
-    TPM2_TOOLS_VER_2=$(yum list installed tpm2-tools | grep --quiet -E "[ \t]+2\." && echo "1" || echo "") # Figure out best way to determine TPM2_TOOLS version.  query yum?
-    TPM2_TOOLS_VER_3=$(yum list installed tpm2-tools | grep --quiet -E "[ \t]+[3-9]+\." && echo "1" || echo "") # Can't base this on specific minor versions.  Major version will suffice
+    TPM2_TOOLS_VER_1=$("$distCmd" list installed tpm2-tools 2> /dev/null | grep --quiet -E "[ \t]+1\." && echo "1" || echo "") # Figure out best way to determine TPM2_TOOLS version.  query yum/apt?
+    TPM2_TOOLS_VER_2=$("$distCmd" list installed tpm2-tools 2> /dev/null | grep --quiet -E "[ \t]+2\." && echo "1" || echo "") 
+    TPM2_TOOLS_VER_3=$("$distCmd" list installed tpm2-tools 2> /dev/null | grep --quiet -E "[ \t]+[3-9]+\." && echo "1" || echo "") # Can't base this on specific minor versions.  Major version will suffice
     indexCmd="-x ""$TPM2_EK_NV_INDEX"
 
     # Use tpm2_nvlist to see the size of the entry at the TPM2_EK_NV_INDEX
     if [ -n "$TPM2_TOOLS_VER_1" ] || [ -n "$TPM2_TOOLS_VER_2" ]; then
         resourceMgrActive=$(ps -aux | grep "resourcemgr$" | grep -v "grep")
+        resourceMgrPort=
         if [ -z "$resourceMgrActive" ]; then
             echo "This version of tpm2-tools requires the resourcemgr service."
             exit 1
+        elif [ -n "$TPM2_TOOLS_VER_2" ]; then
+            resourceMgrPort="-p 2323 " # default
         fi
-        ekCertSize=$(tpm2_nvlist | sed -n -e "/""$TPM2_EK_NV_INDEX""/,\$p" | sed -e '/}/,$d' | grep "size of" | sed 's/.*size.*://' | sed -e 's/^[[:space:]]*//' | sed -e 's/[[:space:]]$//')
-        readCmd="tpm2_nvread ""$TPM2_AUTH_SETTINGS"" ""$indexCmd"" -s %s -o %s | sed -r -e 's/The size of data:[0-9]+//g' | perl -ne 's/([0-9a-f]{2})/print chr hex \$1/gie' | xxd -p -c ""$maxReadSize"
+        ekCertSize=$(tpm2_nvlist "$resourceMgrPort" | sed -n -e "/""$TPM2_EK_NV_INDEX""/,\$p" | sed -e '/}/,$d' | grep "size of" | sed 's/.*size.*://' | sed -e 's/^[[:space:]]*//' | sed -e 's/[[:space:]]$//')
+        readCmd="tpm2_nvread ""$resourceMgrPort""$TPM2_AUTH_SETTINGS"" ""$indexCmd"" -s %s -o %s | sed -r -e 's/The size of data:[0-9]+//g' | perl -ne 's/([0-9a-f]{2})/print chr hex \$1/gie' | xxd -p -c ""$maxReadSize"
         nvBufferedRead="1"
     elif [ -n "$TPM2_TOOLS_VER_3" ]; then
         abrmdActive=$(ps -aux | grep "tpm2-abrmd$" | grep -v "grep")
