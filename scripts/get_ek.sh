@@ -10,7 +10,7 @@ TPM2_AUTH_SETTINGS="-a 0x40000001" # Add auth parameters as set for your TPM. i.
 TPM2_EK_NV_INDEX="0x1c00002"
 
 
-## Shouldn't need to alter the code below this line.
+## Shouldn't need to alter the code below this line, unless your TPM 2.0 resource manager was launched with custom settings.
 if [ "$EUID" -ne 0 ]; then
     echo "Please run as root"
     exit 1
@@ -53,7 +53,7 @@ elif [ -n "$TPM_VER_2_0" ]; then
 
     # Use tpm2_nvlist to see the size of the entry at the TPM2_EK_NV_INDEX
     if [ -n "$TPM2_TOOLS_VER_1" ] || [ -n "$TPM2_TOOLS_VER_2" ]; then
-        resourceMgrActive=$(ps -aux | grep "resourcemgr$" | grep -v "grep")
+        resourceMgrActive=$(ps -aux | grep "resourcemgr" | grep -v "grep")
         resourceMgrPort=
         if [ -z "$resourceMgrActive" ]; then
             echo "This version of tpm2-tools requires the resourcemgr service."
@@ -65,7 +65,7 @@ elif [ -n "$TPM_VER_2_0" ]; then
         readCmd="tpm2_nvread ""$resourceMgrPort""$TPM2_AUTH_SETTINGS"" ""$indexCmd"" -s %s -o %s | sed -r -e 's/The size of data:[0-9]+//g' | perl -ne 's/([0-9a-f]{2})/print chr hex \$1/gie' | xxd -p -c ""$maxReadSize"
         nvBufferedRead="1"
     elif [ -n "$TPM2_TOOLS_VER_3" ]; then
-        abrmdActive=$(ps -aux | grep "tpm2-abrmd$" | grep -v "grep")
+        abrmdActive=$(ps -aux | grep "tpm2-abrmd" | grep -v "grep")
         modeCmd="-T device"
         if [ -n "$abrmdActive" ]; then
             modeCmd="-T abrmd"   
