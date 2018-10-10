@@ -63,8 +63,20 @@ public class DeviceObserverCli {
         Holder holder = null;
         InputStreamReader isr = new InputStreamReader(new ByteArrayInputStream(CliHelper.derToPem(ekCertFile, x509type.CERTIFICATE)));
         PEMParser p = new PEMParser(isr);
-        Object readObject = p.readObject();
-        p.close();
+        Object readObject = null;
+        try {
+            readObject = p.readObject();
+        } catch (IOException e) {
+            String msg = "The EK certificate could not be read.";
+            if (e.getMessage().contains("Extra data detected in stream")) {
+                msg += " Check for extra bytes in the given file.";
+            }
+            throw new IOException(msg, e);
+        } finally {
+            if (p != null) {
+                p.close();
+            }
+        }
         if (readObject instanceof X509CertificateHolder) {
             ekCert = (X509CertificateHolder)readObject;
             holder = new Holder(new IssuerSerial(ekCert.getIssuer(), ekCert.getSerialNumber()));
