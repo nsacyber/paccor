@@ -173,7 +173,7 @@ public class ComponentIdentifierFactory {
             .componentSerial(serial != null ? serial.asText() : null)
             .componentRevision(revision != null ? revision.asText() : null)
             .componentManufacturerId(manufacturerId != null ? manufacturerId.asText() : null)
-            .fieldReplaceable(fieldReplaceable != null && fieldReplaceable.isBoolean() ? fieldReplaceable.asBoolean() : false);
+            .fieldReplaceable(fieldReplaceable != null ? fieldReplaceable.asBoolean() : false);
             
             JsonNode addresses = refNode.get(ComponentIdentifierFactory.Json.ADDRESSES.name());
             if (addresses != null && addresses.isArray()) {
