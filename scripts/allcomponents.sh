@@ -616,7 +616,7 @@ parseHddData () {
 
 ### Gather property details
 property1=$(jsonProperty "uname -r" "$(uname -r)")  ## Example1
-property2=$(jsonProperty "cat /etc/centos-release" "$(cat /etc/centos-release)") ## Example2
+property2=$(jsonProperty "OS Release" "$(grep 'PRETTY_NAME=' /etc/os-release | sed 's/[^=]*=//' | sed -e 's/^[[:space:]\"]*//' | sed -e 's/[[:space:]\"]*$//')") ## Example2
 
 ### Collate the component details
 componentsCPU=$(parseCpuData)
