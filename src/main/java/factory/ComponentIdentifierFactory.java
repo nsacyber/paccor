@@ -93,7 +93,7 @@ public class ComponentIdentifierFactory {
      * @param serial String
      */
     public final ComponentIdentifierFactory componentSerial(final String serial) {
-        componentSerial = serial != null ? new DERUTF8String(serial) : new DERUTF8String("");
+        componentSerial = serial != null && !serial.trim().isEmpty() ? new DERUTF8String(serial) : null;
         return this;
     }
     
@@ -102,7 +102,7 @@ public class ComponentIdentifierFactory {
      * @param revision String
      */
     public final ComponentIdentifierFactory componentRevision(final String revision) {
-        componentRevision = revision != null ? new DERUTF8String(revision) : new DERUTF8String("");
+        componentRevision = revision != null && !revision.trim().isEmpty() ? new DERUTF8String(revision) : null;
         return this;
     }
     
@@ -111,7 +111,7 @@ public class ComponentIdentifierFactory {
      * @param manufacturerId String
      */
     public final ComponentIdentifierFactory componentManufacturerId(final String manufacturerId) {
-        componentManufacturerId = manufacturerId != null ? new ASN1ObjectIdentifier(manufacturerId) : null;
+        componentManufacturerId = manufacturerId != null && !manufacturerId.trim().isEmpty() ? new ASN1ObjectIdentifier(manufacturerId) : null;
         return this;
     }
     
@@ -121,6 +121,14 @@ public class ComponentIdentifierFactory {
      */
     public final ComponentIdentifierFactory fieldReplaceable(final boolean fieldReplaceable) {
         this.fieldReplaceable = ASN1Boolean.getInstance(fieldReplaceable);
+        return this;
+    }
+    
+    /**
+     * Since it is an optional field, the field replaceable flag could be unset.
+     */
+    public final ComponentIdentifierFactory unsetFieldReplaceable() {
+        this.fieldReplaceable = null;
         return this;
     }
     
@@ -172,8 +180,12 @@ public class ComponentIdentifierFactory {
             // all other fields are optional or have default values
             .componentSerial(serial != null ? serial.asText() : null)
             .componentRevision(revision != null ? revision.asText() : null)
-            .componentManufacturerId(manufacturerId != null ? manufacturerId.asText() : null)
-            .fieldReplaceable(fieldReplaceable != null ? fieldReplaceable.asBoolean() : false);
+            .componentManufacturerId(manufacturerId != null ? manufacturerId.asText() : null);
+            if (fieldReplaceable == null) {
+                component.unsetFieldReplaceable();
+            } else {
+                component.fieldReplaceable(fieldReplaceable != null ? fieldReplaceable.asBoolean() : false);
+            }
             
             JsonNode addresses = refNode.get(ComponentIdentifierFactory.Json.ADDRESSES.name());
             if (addresses != null && addresses.isArray()) {

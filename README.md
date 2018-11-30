@@ -1,4 +1,4 @@
-# Platform Credential Creator (paccor)
+# Platform Attribute Certificate Creator (paccor)
 This program can create platform credentials according to the Platform Certificate Profile v1.0. A platform certificate (PC) is a X.509v2 Attribute Certificate which encapsulates details about components on a host and the security standards met by the platform manufacturer.
 
 This program can assist in gathering all of the data that can go into a PC and produce a signed attribute certificate.
