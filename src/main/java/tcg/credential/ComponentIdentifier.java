@@ -133,16 +133,16 @@ public class ComponentIdentifier extends ASN1Object {
 			DERUTF8String componentSerial, DERUTF8String componentRevision,
 			ASN1ObjectIdentifier componentManufacturerId, ASN1Boolean fieldReplaceable,
 			ComponentAddress[] componentAddress) {
-		if (componentManufacturer.toString().length() > Definitions.STRMAX) {
+		if (componentManufacturer != null && componentManufacturer.toString().length() > Definitions.STRMAX) {
 			throw new IllegalArgumentException("Length of componentManufacturer exceeds STRMAX");
 		}
-		if (componentModel.toString().length() > Definitions.STRMAX) {
+		if (componentModel != null && componentModel.toString().length() > Definitions.STRMAX) {
 			throw new IllegalArgumentException("Length of componentModel exceeds STRMAX");
 		}
-		if (componentSerial.toString().length() > Definitions.STRMAX) {
+		if (componentSerial != null && componentSerial.toString().length() > Definitions.STRMAX) {
 			throw new IllegalArgumentException("Length of componentSerial exceeds STRMAX");
 		}
-		if (componentRevision.toString().length() > Definitions.STRMAX) {
+		if (componentRevision != null && componentRevision.toString().length() > Definitions.STRMAX) {
 			throw new IllegalArgumentException("Length of componentRevision exceeds STRMAX");
 		}
 		this.componentManufacturer = componentManufacturer;
@@ -152,10 +152,6 @@ public class ComponentIdentifier extends ASN1Object {
 		this.componentManufacturerId = componentManufacturerId;
 		this.fieldReplaceable = fieldReplaceable;
 		this.componentAddress = componentAddress;
-		
-		if (fieldReplaceable == null) {
-		    this.fieldReplaceable = ASN1Boolean.FALSE;
-		}
 	}
 
 	public ASN1Primitive toASN1Primitive() {
@@ -174,7 +170,7 @@ public class ComponentIdentifier extends ASN1Object {
 		if (fieldReplaceable != null) {
 		    vec.add(new DERTaggedObject(false, 3, fieldReplaceable));
 		}
-		if (componentAddress != null) {
+		if (componentAddress != null && componentAddress.length > 0) {
 			ASN1EncodableVector vec2 = new ASN1EncodableVector();
 			for (int i = 0; i < componentAddress.length; i++) {
 				vec2.add(componentAddress[i]);

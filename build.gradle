@@ -103,7 +103,7 @@ createScript(project, 'cli.DeviceObserverCli', 'observer')
 createScript(project, 'cli.SigningCli', 'signer')
 createScript(project, 'cli.ValidatorCli', 'validator')
 
-// Include files into the ZIP
+// Include files into a ZIP
 applicationDistribution.from("scripts/") {
     into "scripts"
 }
@@ -118,18 +118,21 @@ applicationDistribution.from("./") {
     into "./"
 }
 
+// Produce packages
 ospackage {
     packageName='paccor'
     os=LINUX
     arch=NOARCH
     version='1.0.6'
-    release='2'
+    release='3'
 
     into '/opt/paccor'
     user 'root'
     fileMode=0755
 
+    requires('dmidecode')
     requires('jq')
+    requires('lshw')
 
     from(jar.outputs.files) {
         into 'lib'
