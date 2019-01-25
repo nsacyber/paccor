@@ -10,8 +10,7 @@ param(
                 [Security.Principal.WindowsIdentity]::GetCurrent())
             ).IsInRole(
                 [Security.Principal.WindowsBuiltInRole]::Administrator)
-            ) 
-            {
+          ) {
                 Write-Progress -Activity "Gathering an EK Certificate" -CurrentOperation "Accessing the TPM" -PercentComplete 10
                 $data=(Get-TpmEndorsementKeyInfo).ManufacturerCertificates[0].GetRawCertData()
                 Write-Progress -Activity "EK Certificate Gathered" -CurrentOperation "Converting to Base64" -PercentComplete 75
