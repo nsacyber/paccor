@@ -14,6 +14,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import json.OtherExtensionsJsonHelper;
+import key.SignerCredential;
 import operator.PcBcContentSignerBuilder;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
@@ -55,34 +56,49 @@ public class SigningCli {
             System.exit(1);
         }
         
-        // Get the public key certificate
-        X509CertificateHolder publicKeyCert = (X509CertificateHolder)CliHelper.loadCert(argList.getPublicKeyCert(), x509type.CERTIFICATE);
+        // Retrieve CA signing credentials from the command line
+        SignerCredential caCred = null;
         
-        // Get the private key
+        // Get the CA public key certificate
+        if (argList.getPublicKeyCert() != null) { // If not set on cmd line, the private key file might contain the cert
+        	X509CertificateHolder publicKeyCert = (X509CertificateHolder)CliHelper.loadCert(argList.getPublicKeyCert(), x509type.CERTIFICATE);
+        	caCred = SignerCredential.createCredential(publicKeyCert.getSubjectPublicKeyInfo().getAlgorithm().getAlgorithm().getId());
+        	caCred.loadCertificate(publicKeyCert);
+        } 
+        
+        // Get the CA private key
         PrivateKeyInfo privateKey = null;
-        
-        try {
+        try { // Try to read as unprotected PKCS8
             privateKey = (PrivateKeyInfo)CliHelper.loadCert(argList.getPrivateKeyFile(), x509type.PRIVATE_KEY);
-        } catch (IllegalArgumentException | IOException e) {
-            String keyAlgName = new DefaultAlgorithmNameFinder().getAlgorithmName(publicKeyCert.getSubjectPublicKeyInfo().getAlgorithm().getAlgorithm());
-            keyAlgName = keyAlgName.toLowerCase();
             
-            x509type keyType = null;
-            switch (keyAlgName) {
-                case "rsa": keyType = x509type.RSA_PRIVATE_KEY;
-                            break;
-                case "dsa": keyType = x509type.DSA_PRIVATE_KEY;
-                            break;
-                case "ec":  keyType = x509type.EC_PRIVATE_KEY;
-                            break;
-                default:
-            }
-            
-            if (keyType == null) {
-                throw new IllegalArgumentException("Unsupported key pair algorithm (" + keyType + ").  See the Supported Signing Algorithms section of the User Guide.");
-            }
-            
-            privateKey = (PrivateKeyInfo)CliHelper.loadCert(argList.getPrivateKeyFile(), keyType);
+        } catch (IllegalArgumentException | IOException e) { // try to read as PKCS1
+        	try {
+	        	if (caCred != null && caCred.hasCertificate()) {
+	            	privateKey = (PrivateKeyInfo)CliHelper.loadCert(argList.getPrivateKeyFile(), caCred.getKeyType());
+	            }
+        	} catch (IllegalArgumentException | IOException e2) {
+        	}
+        }
+        
+        if (privateKey != null && caCred == null) {
+        	throw new IllegalArgumentException("CA Certificate not provided.");
+        } else if (privateKey != null && caCred != null) {
+        	caCred.loadPrivateKey(privateKey);
+        } else if (privateKey == null) { // Attempt to load private key file as PKCS12
+        	SignerCredential keyCreds = CliHelper.getKeyFromPkcs12(argList.getPrivateKeyFile());
+        	if (keyCreds == null) {
+        		throw new IllegalArgumentException("No private key provided.");
+        	} else if (caCred == null) {
+        		caCred = keyCreds;
+        	}
+        	
+        	if (!caCred.hasKey() && keyCreds.hasKey()) {
+        		caCred.loadPrivateKey(keyCreds.getPrivateKey());
+        	}
+        	
+        	if (!caCred.hasCertificate() && keyCreds.hasCertificate()) {
+        		caCred.loadCertificate(keyCreds.getCertificate());
+        	}
         }
         
         // Initialize the Platform Credential data
@@ -97,7 +113,7 @@ public class SigningCli {
             pcf = PlatformCredentialFactory.loadIntermediateInfofromJson(argList.getObserverJsonFile());
         } else if(hasComponentFile && hasEkFile && hasPolicyFile) {
             DeviceObserverCli acic = new DeviceObserverCli();
-            pcf = acic.handleCommandLine(argList.getComponentJsonFile(), argList.getEkCertFile(), argList.getPolicyRefJsonFile());
+            pcf = acic.collateCertDetails(argList.getComponentJsonFile(), argList.getEkCertFile(), argList.getPolicyRefJsonFile());
         } else {
             StringBuilder errorMsg = new StringBuilder();
             errorMsg.append("Missing required input file(s).  Please include:");
@@ -134,11 +150,11 @@ public class SigningCli {
         pcf.serialNumber(serialNumber);
         pcf.notAfter(notAfter);
         pcf.notBefore(notBefore);
-        pcf.issuer(new AttributeCertificateIssuer(publicKeyCert.getSubject()));
+        pcf.issuer(new AttributeCertificateIssuer(caCred.getCertificate().getSubject()));
         
         // Build other extensions
         BcX509ExtensionUtils extUtils = new BcX509ExtensionUtils();
-        AuthorityKeyIdentifier aki = extUtils.createAuthorityKeyIdentifier(publicKeyCert);
+        AuthorityKeyIdentifier aki = extUtils.createAuthorityKeyIdentifier(caCred.getCertificate());
         CertificatePoliciesFactory cpf = OtherExtensionsJsonHelper.policiesFromJsonFile(argList.getExtensionsJsonFile());
         AuthorityInfoAccessFactory aiaf = OtherExtensionsJsonHelper.accessesFromJsonFile(argList.getExtensionsJsonFile());
         AuthorityInformationAccess aia = aiaf.build();
@@ -156,10 +172,10 @@ public class SigningCli {
         // Build the cert & sign it using the private key
         X509AttributeCertificateHolder ach = null;
         try {
-            AlgorithmIdentifier sigAlgId = publicKeyCert.getSignatureAlgorithm();
+            AlgorithmIdentifier sigAlgId = caCred.getCertificate().getSignatureAlgorithm();
             AlgorithmIdentifier digAlgId = new DefaultDigestAlgorithmIdentifierFinder().find(sigAlgId);
             ContentSigner signer;
-            signer = new PcBcContentSignerBuilder(sigAlgId, digAlgId).build(PrivateKeyFactory.createKey(privateKey));
+            signer = new PcBcContentSignerBuilder(sigAlgId, digAlgId).build(PrivateKeyFactory.createKey(caCred.getPrivateKey()));
             ach = pcf.build(signer);
         } catch (OperatorCreationException e) {
             throw new IllegalArgumentException(e);

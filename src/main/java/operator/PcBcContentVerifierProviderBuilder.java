@@ -22,43 +22,14 @@ import org.bouncycastle.operator.DigestAlgorithmIdentifierFinder;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.bc.BcContentVerifierProviderBuilder;
 
+import key.SupportedAlgorithms;
+
 /**
  * Automatically chooses the appropriate signing verification algorithm from the set of supported algorithms
  * based on the parameters given- likely defined in a public key certificate
  */
 public class PcBcContentVerifierProviderBuilder extends BcContentVerifierProviderBuilder {
-    public static final List<ASN1ObjectIdentifier> ECDSA_BASED_SIGALGS =
-            Collections.unmodifiableList(new Vector<ASN1ObjectIdentifier>()
-            {
-                private static final long serialVersionUID = 1L;
-            {
-                add(X9ObjectIdentifiers.ecdsa_with_SHA1);
-                add(X9ObjectIdentifiers.ecdsa_with_SHA256);
-                add(X9ObjectIdentifiers.ecdsa_with_SHA384);
-                add(X9ObjectIdentifiers.ecdsa_with_SHA512);
-            }});
     
-    public static final List<ASN1ObjectIdentifier> DSA_BASED_SIGALGS =
-            Collections.unmodifiableList(new Vector<ASN1ObjectIdentifier>()
-            {
-                private static final long serialVersionUID = 1L;
-            {
-                add(X9ObjectIdentifiers.id_dsa_with_sha1);
-                add(NISTObjectIdentifiers.dsa_with_sha256);
-                add(NISTObjectIdentifiers.dsa_with_sha384);
-                add(NISTObjectIdentifiers.dsa_with_sha512);
-            }});
-    
-    public static final List<ASN1ObjectIdentifier> RSA_BASED_SIGALGS =
-            Collections.unmodifiableList(new Vector<ASN1ObjectIdentifier>()
-            {
-                private static final long serialVersionUID = 1L;
-            {
-                add(PKCSObjectIdentifiers.sha1WithRSAEncryption);
-                add(PKCSObjectIdentifiers.sha256WithRSAEncryption);
-                add(PKCSObjectIdentifiers.sha384WithRSAEncryption);
-                add(PKCSObjectIdentifiers.sha512WithRSAEncryption);
-            }});
     
     private DigestAlgorithmIdentifierFinder digestAlgorithmFinder;
     
@@ -71,11 +42,11 @@ public class PcBcContentVerifierProviderBuilder extends BcContentVerifierProvide
         AlgorithmIdentifier digAlg = digestAlgorithmFinder.find(sigAlgId);
         Digest dig = digestProvider.get(digAlg);
         
-        if (ECDSA_BASED_SIGALGS.contains(sigAlgId.getAlgorithm())) {
+        if (SupportedAlgorithms.ECDSA_BASED_SIGALGS.contains(sigAlgId.getAlgorithm())) {
             signer = new DSADigestSigner(new ECDSASigner(), dig);
-        } else if (DSA_BASED_SIGALGS.contains(sigAlgId.getAlgorithm())) {
+        } else if (SupportedAlgorithms.DSA_BASED_SIGALGS.contains(sigAlgId.getAlgorithm())) {
             signer = new DSADigestSigner(new DSASigner(), dig);
-        } else if (RSA_BASED_SIGALGS.contains(sigAlgId.getAlgorithm())) {
+        } else if (SupportedAlgorithms.RSA_BASED_SIGALGS.contains(sigAlgId.getAlgorithm())) {
             signer = new RSADigestSigner(dig);
         } else {
             throw new IllegalArgumentException("Unsupported algorithm");

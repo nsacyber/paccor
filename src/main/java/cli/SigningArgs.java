@@ -33,7 +33,7 @@ public class SigningArgs {
     @Parameter(required=true, names={"-k", "--privateKeyFile"}, order=7, description="the private key used for signing the certificate", validateWith={FileExistsParameterValidator.class, ReadFileParameterValidator.class})
     private String privateKeyFile;
     
-    @Parameter(required=true, names={"-P", "--publicKeyCert"}, order=8, description="the public key certificate corresponding to the private key", validateWith={FileExistsParameterValidator.class, ReadFileParameterValidator.class})
+    @Parameter(names={"-P", "--publicKeyCert"}, order=8, description="the public key certificate corresponding to the private key", validateWith={FileExistsParameterValidator.class, ReadFileParameterValidator.class})
     private String publicKeyCert;
     
     @Parameter(required=true, names={"-x", "--extensionsJsonFile"}, order=9, description="the JSON structure describing certificate policies, crl distribution, and authority key access extensions", validateWith={FileExistsParameterValidator.class, ReadFileParameterValidator.class})

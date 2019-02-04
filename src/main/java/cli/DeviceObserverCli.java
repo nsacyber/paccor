@@ -36,7 +36,7 @@ public class DeviceObserverCli {
         }
         
         PlatformCredentialFactory pcf = 
-            handleCommandLine(argList.getComponentJsonFile(), argList.getEkCertFile(), argList.getPolicyRefJsonFile());
+            collateCertDetails(argList.getComponentJsonFile(), argList.getEkCertFile(), argList.getPolicyRefJsonFile());
         
         String result = pcf.toJson();
         if (argList.getOutFile() != null && !argList.getOutFile().isEmpty()) {
@@ -58,31 +58,9 @@ public class DeviceObserverCli {
         return pcf;
     }
     
-    public PlatformCredentialFactory handleCommandLine(String componentFile, String ekCertFile, String policyFile) throws IOException {
-        X509CertificateHolder ekCert;
-        Holder holder = null;
-        InputStreamReader isr = new InputStreamReader(new ByteArrayInputStream(CliHelper.derToPem(ekCertFile, x509type.CERTIFICATE)));
-        PEMParser p = new PEMParser(isr);
-        Object readObject = null;
-        try {
-            readObject = p.readObject();
-        } catch (IOException e) {
-            String msg = "The EK certificate could not be read.";
-            if (e.getMessage().contains("Extra data detected in stream")) {
-                msg += " Check for extra bytes in the given file.";
-            }
-            throw new IOException(msg, e);
-        } finally {
-            if (p != null) {
-                p.close();
-            }
-        }
-        if (readObject instanceof X509CertificateHolder) {
-            ekCert = (X509CertificateHolder)readObject;
-            holder = new Holder(new IssuerSerial(ekCert.getIssuer(), ekCert.getSerialNumber()));
-        } else {
-            // file labeled the ekCert was not an X509 Certificate!!
-        }
+    public PlatformCredentialFactory collateCertDetails(String componentFile, String ekCertFile, String policyFile) throws IOException {
+        X509CertificateHolder ekCert = (X509CertificateHolder)CliHelper.loadCert(ekCertFile, x509type.CERTIFICATE);
+        Holder holder = new Holder(new IssuerSerial(ekCert.getIssuer(), ekCert.getSerialNumber()));
         
         PlatformConfigurationFactory pConfig = 
                 PlatformConfigurationFactory.create()
