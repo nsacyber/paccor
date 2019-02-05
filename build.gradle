@@ -46,6 +46,8 @@ allprojects {
                       'com.fasterxml.jackson.core:jackson-annotations:2.9.4',
                       'com.fasterxml.jackson.core:jackson-databind:2.9.4'],
       jcommander:    'com.beust:jcommander:1.72', // cli and required by testng, Apache 2.0
+      powermock:     ['org.powermock:powermock-module-testng:1.6.5', // Apache 2.0
+                      'org.powermock:powermock-api-mockito:1.6.5'],
       testng:        'org.testng:testng:6.13.1', // Apache 2.0
     ]
 }
@@ -74,6 +76,7 @@ dependencies {
     compile libs.jcommander
 
     testCompile libs.testng
+    testCompile libs.powermock
 }
 
 // Application packaging into a zip file

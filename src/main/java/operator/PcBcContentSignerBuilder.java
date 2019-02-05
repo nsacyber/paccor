@@ -10,6 +10,8 @@ import org.bouncycastle.crypto.signers.RSADigestSigner;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.bc.BcContentSignerBuilder;
 
+import key.SupportedAlgorithms;
+
 /**
  * Automatically chooses the appropriate signing algorithm from the set of supported algorithms
  * based on the parameters given- likely defined in a public key certificate
@@ -27,11 +29,11 @@ public class PcBcContentSignerBuilder extends BcContentSignerBuilder
         Signer signer = null;
         Digest dig = digestProvider.get(digAlgId);
         
-        if (PcBcContentVerifierProviderBuilder.ECDSA_BASED_SIGALGS.contains(sigAlgId.getAlgorithm())) {
+        if (SupportedAlgorithms.ECDSA_BASED_SIGALGS.contains(sigAlgId.getAlgorithm())) {
             signer = new DSADigestSigner(new ECDSASigner(), dig);
-        } else if (PcBcContentVerifierProviderBuilder.DSA_BASED_SIGALGS.contains(sigAlgId.getAlgorithm())) {
+        } else if (SupportedAlgorithms.DSA_BASED_SIGALGS.contains(sigAlgId.getAlgorithm())) {
             signer = new DSADigestSigner(new DSASigner(), dig);
-        } else if (PcBcContentVerifierProviderBuilder.RSA_BASED_SIGALGS.contains(sigAlgId.getAlgorithm())) {
+        } else if (SupportedAlgorithms.RSA_BASED_SIGALGS.contains(sigAlgId.getAlgorithm())) {
             signer = new RSADigestSigner(dig);
         } else {
             throw new IllegalArgumentException("Unsupported algorithm");

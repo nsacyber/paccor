@@ -1,11 +1,18 @@
 package cli;
 
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.testng.PowerMockTestCase;
+import org.powermock.reflect.Whitebox;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import java.io.File;
+import java.lang.reflect.Method;
+import java.security.KeyStore;
 
-public class SigningCliTest {
+@PrepareForTest({CliHelper.class, SigningCli.class})
+public class SigningCliTest extends PowerMockTestCase {
     private static final String TEMP_FOLDER = System.getProperty("java.io.tmpdir") + "/";
     private static final String IN_EK = "src/test/resources/ek.cer";
     private static final String IN_DEV_JSON = "src/test/resources/deviceInfo.json";
@@ -40,9 +47,13 @@ public class SigningCliTest {
     private static final String SERIAL_NUMBER_FLAWED_2187 = "1264412569842165127559455612352835923762345";
     public static final String OUT_FILE_FLAWED_2187 = TEMP_FOLDER + "flawed_attribute_cert_2187.pem";
     
+    public static final String IN_PUB_CERT_PKCS12 = "src/test/resources/TestCA2.cert.example.der";
+    private static final String IN_PRIV_PKCS12 = "src/test/resources/TestCA2.cert.example.pkcs12";
+    public static final String OUT_FILE_PKCS12 = TEMP_FOLDER + "blah3.pem";
+    
     @BeforeClass
     public void removeOldOutFiles() throws Exception {
-        String[] filenames = new String[]{OUT_FILE, OUT_PKCS1_FILE, OUT_FILE_LARGE_2187, OUT_FILE_MEDIUM_2187, OUT_FILE_FLAWED_2187};
+        String[] filenames = new String[]{OUT_FILE, OUT_PKCS1_FILE, OUT_FILE_LARGE_2187, OUT_FILE_MEDIUM_2187, OUT_FILE_FLAWED_2187, OUT_FILE_PKCS12};
         for (String filename : filenames) {
             File file = new File(filename);
             if (file.exists()) {
@@ -108,6 +119,21 @@ public class SigningCliTest {
         SigningCli cli = new SigningCli();
         cli.handleCommandLine(args);
         File file = new File(OUT_FILE_FLAWED_2187);
+        Assert.assertTrue(file.exists());
+    }
+    
+    @Test(groups="pkcs12")
+    public void testPKCS12() throws Exception {
+    	Method method = Whitebox.getMethod(CliHelper.class, "getPassword", String.class);
+    	PowerMockito.stub(method).toReturn(new KeyStore.PasswordProtection("password".toCharArray()));
+    	
+    	String[] args = {"-e", IN_EK, "-c", IN_DEV_JSON, "-p", IN_POL_JSON,
+		                 "-x", IN_OXT_JSON, "-k", IN_PRIV_PKCS12,
+		                 "-N", SERIAL_NUMBER, "-b", NOT_BEFORE, "-a", NOT_AFTER,
+		                 "-f", OUT_FILE_PKCS12, "--pem"};
+        //SigningCli cli = new SigningCli();
+    	PowerMockito.spy(new SigningCli()).handleCommandLine(args);
+        File file = new File(OUT_FILE_PKCS12);
         Assert.assertTrue(file.exists());
     }
 }
