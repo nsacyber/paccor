@@ -1,8 +1,14 @@
+param(
+    [parameter(Mandatory=$true)]
+    [ValidateNotNull()]
+    [string]$filename
+)
+
 ### User customizable values
-$APP_HOME="$pwd"
-$PROPERTIES_URI="good_ek.cer" # Specify the optional properties URI field
-$PROPERTIES_URI_LOCAL_COPY_FOR_HASH=".\good_ek.cer" # If empty, the optional hashAlgorithm and hashValue fields will not be included for the URI
-$ENTERPRISE_NUMBERS_FILE="$APP_HOME/enterprise-numbers"
+$APP_HOME=(Split-Path -parent $PSCommandPath)
+$PROPERTIES_URI="" # Specify the optional properties URI field
+$PROPERTIES_URI_LOCAL_COPY_FOR_HASH="" # If empty, the optional hashAlgorithm and hashValue fields will not be included for the URI
+$ENTERPRISE_NUMBERS_FILE="$APP_HOME/../enterprise-numbers"
 $PEN_ROOT="1.3.6.1.4.1." # OID root for the private enterprise numbers
 
 # Progress Groups
@@ -589,4 +595,5 @@ Write-Progress -Id 1 -Activity "Forming final output" -PercentComplete 90
 $FINAL_JSON_OBJECT=(jsonIntermediateFile "$platform" "$componentArray" "$propertyArray" "$propertiesUri")
 
 Write-Progress -Id 1 -Activity "Done" -PercentComplete 100
-echo "$FINAL_JSON_OBJECT"
+[IO.File]::WriteAllText($filename, "$FINAL_JSON_OBJECT")
+
