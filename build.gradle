@@ -126,8 +126,8 @@ ospackage {
     packageName='paccor'
     os=LINUX
     arch=NOARCH
-    version='1.0.6'
-    release='3'
+    version='1.0.7'
+    release='1'
 
     into '/opt/paccor'
     user 'root'
