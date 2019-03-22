@@ -5,13 +5,22 @@
     },
     "COMPONENTS": [
         {
-            "MANUFACTURER": "Dell Inc.","MODEL": "Desktop","SERIAL": "306VRD2","REVISION": "Not Specified"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00000001"
+            },"MANUFACTURER": "Dell Inc.","MODEL": "Desktop","SERIAL": "306VRD2","REVISION": "Not Specified"
         },
         {
-            "MANUFACTURER": "Dell Inc.","MODEL": "0Y7WYT","SERIAL": "/306VRD2/CN7016368902MW/","REVISION": "A00"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00000020"
+            },"MANUFACTURER": "Dell Inc.","MODEL": "0Y7WYT","SERIAL": "/306VRD2/CN7016368902MW/","REVISION": "A00"
         },
         {
-            "MANUFACTURER": "Intel(R) Corporation","MODEL": "Core i7","SERIAL": "Not Specified","REVISION": "Intel(R) Core(TM) i7-6700 CPU @ 3.40GHz"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00000300"
+            },"MANUFACTURER": "Intel(R) Corporation","MODEL": "Core i7","SERIAL": "Not Specified","REVISION": "Intel(R) Core(TM) i7-6700 CPU @ 3.40GHz"
         }
     ],
     "PROPERTIESURI": {

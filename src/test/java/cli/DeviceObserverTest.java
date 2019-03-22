@@ -1,7 +1,7 @@
 package cli;
 
 import org.testng.annotations.Test;
-import factory.PlatformCredentialFactory;
+import factory.PlatformCertificateFactory;
 
 public class DeviceObserverTest {
     private final String IN_EK = "src/test/resources/ek.cer";
@@ -12,6 +12,6 @@ public class DeviceObserverTest {
     public void testNoExceptions() throws Exception {
         String[] args = {"-e", IN_EK, "-c", IN_DEV_JSON, "-p", IN_POL_JSON};
         DeviceObserverCli cli = new DeviceObserverCli();
-        PlatformCredentialFactory pcf = cli.handleCommandLine(args);
+        PlatformCertificateFactory pcf = cli.handleCommandLine(args);
     }
 }

@@ -5,22 +5,40 @@
     },
     "COMPONENTS": [
         {
-            "MANUFACTURER": "Oracle Corporation","MODEL": "Other","SERIAL": "Not Specified","REVISION": "Not Specified"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00000001"
+            },"MANUFACTURER": "Oracle Corporation","MODEL": "Other","SERIAL": "Not Specified","REVISION": "Not Specified"
         },
         {
-            "MANUFACTURER": "Oracle Corporation","MODEL": "VirtualBox","SERIAL": "0","REVISION": "1.2"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00000020"
+            },"MANUFACTURER": "Oracle Corporation","MODEL": "VirtualBox","SERIAL": "0","REVISION": "1.2"
         },
         {
-            "MANUFACTURER": "innotek GmbH","MODEL": "BIOS","SERIAL": "VirtualBox"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00000300"
+            },"MANUFACTURER": "innotek GmbH","MODEL": "BIOS","SERIAL": "VirtualBox"
         },
         {
-            "MANUFACTURER": "Intel Corporation","MODEL": "82540EM Gigabit Ethernet Controller","SERIAL": "08:00:27:6d:2c:6b","REVISION": "02"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00004000"
+            },"MANUFACTURER": "Intel Corporation","MODEL": "82540EM Gigabit Ethernet Controller","SERIAL": "08:00:27:6d:2c:6b","REVISION": "02"
         },
         {
-            "MANUFACTURER": "Advanced Micro Devices, Inc. [AMD]","MODEL": "79c970 [PCnet32 LANCE]","REVISION": "40"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00050000"
+            },"MANUFACTURER": "Advanced Micro Devices, Inc. [AMD]","MODEL": "79c970 [PCnet32 LANCE]","REVISION": "40"
         },
         {
-            "MANUFACTURER": "VBOX","MODEL": "HARDDISK"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00600000"
+            },"MANUFACTURER": "VBOX","MODEL": "HARDDISK"
         }
     ]
 }
