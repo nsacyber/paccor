@@ -54,6 +54,7 @@ public class PlatformCredentialFactory {
                 put(Extension.authorityInfoAccess, Boolean.FALSE); // Authority Info Access
                 put(Extension.cRLDistributionPoints, Boolean.FALSE); // CRL Distribution
                 put(Extension.subjectAlternativeName, Boolean.FALSE); // Subject Alternative Names
+                put(Extension.targetInformation, Boolean.TRUE); // Targeting Information
             }});
     
     private Holder holder;
@@ -134,6 +135,15 @@ public class PlatformCredentialFactory {
     }
     
     /**
+     * Set the TCG Certificate Specification attribute.
+     */
+    public final PlatformCredentialFactory tcgCertificateSpecification(final TCGSpecificationVersion tcs) {
+        attributes.put(TCGObjectIdentifier.tcgAtTcgCertificateSpecification, tcs);
+        return this;
+    }
+    
+    /**
+     * @deprecated Use tcgCertificateSpecification
      * Set the TCG Credential Specification attribute.
      * @param tcs {@link TCGCredentialSpecification}
      */
@@ -205,16 +215,18 @@ public class PlatformCredentialFactory {
      *   Validity not after (required)
      *   Attributes:
      *    TCG Platform Specification (should)
-     *    TCG Credential Specification (should)
+     *    TCG Certificate Specification (should)
      *    TBB Security Assertions (should)
+     *    TCG Certificate Type (should)
      *    Platform Configuration (may)
      *    Platform Configuration URI (may)
      *   Extensions: 
-     *    Certificate Policies (must) 
-     *    Subject Alternative Names (must)
-     *    Authority Key Identifier (must)
-     *    Authority Info Access (should)
-     *    CRL Distribution (may)
+     *    Certificate Policies (must, non-critical) 
+     *    Subject Alternative Names (must, non-critical)
+     *    Authority Key Identifier (must, non-critical)
+     *    Authority Info Access (should, non-critical)
+     *    CRL Distribution (may, non-critical)
+     *    Targeting Information (may, critical)
      *   Issuer Unique ID (SHOULD NOT)
      *   Signature Algorithm (required)
      *   Signature (required)
@@ -307,7 +319,7 @@ public class PlatformCredentialFactory {
             
             if (root.has(PolicyRefJson.TCGCREDENTIALSPECIFICATION.name())) {
                 JsonNode credentialSpecNode = root.get(PolicyRefJson.TCGCREDENTIALSPECIFICATION.name());
-                pcf.tcgCredentialSpecification(PolicyReferenceJsonHelper.credentialSpec(credentialSpecNode));
+                pcf.tcgCertificateSpecification(PolicyReferenceJsonHelper.credentialSpec(credentialSpecNode));
             }
             
             if (root.has(PolicyRefJson.TBBSECURITYASSERTIONS.name())) {

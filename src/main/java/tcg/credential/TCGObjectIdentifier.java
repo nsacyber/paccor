@@ -29,7 +29,12 @@ public class TCGObjectIdentifier {
 	public static final ASN1ObjectIdentifier tcgAtTcgPlatformSpecification = new ASN1ObjectIdentifier("2.23.133.2.17").intern();
 	public static final ASN1ObjectIdentifier tcgAtTpmSecurityAssertions = new ASN1ObjectIdentifier("2.23.133.2.18").intern();
 	public static final ASN1ObjectIdentifier tcgAtTbbSecurityAssersions = new ASN1ObjectIdentifier("2.23.133.2.19").intern();
+	/**
+	 * @deprecated Use tcgAtTcgCertificateSpecification
+	 */
 	public static final ASN1ObjectIdentifier tcgAtTcgCredentialSpecification = new ASN1ObjectIdentifier("2.23.133.2.23").intern();
+	public static final ASN1ObjectIdentifier tcgAtTcgCertificateSpecification = new ASN1ObjectIdentifier("2.23.133.2.23").intern();
+	public static final ASN1ObjectIdentifier tcgAtTcgCredentialType = new ASN1ObjectIdentifier("2.23.133.2.25").intern();
 	public static final ASN1ObjectIdentifier tcgAtPlatformManufacturerStr = new ASN1ObjectIdentifier("2.23.133.5.1.1").intern();
 	public static final ASN1ObjectIdentifier tcgAtPlatformManufacturerId = new ASN1ObjectIdentifier("2.23.133.5.1.2").intern();
 	public static final ASN1ObjectIdentifier tcgAtPlatformConfigUri = new ASN1ObjectIdentifier("2.23.133.5.1.3").intern();
@@ -38,11 +43,13 @@ public class TCGObjectIdentifier {
 	public static final ASN1ObjectIdentifier tcgAtPlatformSerial = new ASN1ObjectIdentifier("2.23.133.5.1.6").intern();
 	public static final ASN1ObjectIdentifier tcgAtPlatformConfiguration = new ASN1ObjectIdentifier("2.23.133.5.1.7").intern();
 	public static final ASN1ObjectIdentifier tcgAtPlatformConfigurationV1 = new ASN1ObjectIdentifier("2.23.133.5.1.7.1").intern();
+	public static final ASN1ObjectIdentifier tcgAtPlatformConfigurationV2 = new ASN1ObjectIdentifier("2.23.133.5.1.7.2").intern();
 	public static final ASN1ObjectIdentifier tcgAlgorithmNull = new ASN1ObjectIdentifier("2.23.133.4.1").intern();
 	public static final ASN1ObjectIdentifier tcgKpEkCertificate = new ASN1ObjectIdentifier("2.23.133.8.1").intern();
 	public static final ASN1ObjectIdentifier tcgKpPlatformCertificate = new ASN1ObjectIdentifier("2.23.133.8.2").intern();
 	public static final ASN1ObjectIdentifier tcgKpAikCertificate = new ASN1ObjectIdentifier("2.23.133.8.3").intern();
 	public static final ASN1ObjectIdentifier tcgKpPlatformKeyCertificate = new ASN1ObjectIdentifier("2.23.133.8.4").intern();
+	public static final ASN1ObjectIdentifier tcgKpDeltaPlatformAttributeCertificate = new ASN1ObjectIdentifier("2.23.133.8.5").intern();
 	public static final ASN1ObjectIdentifier tcgCeRelevantCredentials = new ASN1ObjectIdentifier("2.23.133.6.2").intern();
 	public static final ASN1ObjectIdentifier tcgCeRelevantManifests = new ASN1ObjectIdentifier("2.23.133.6.3").intern();
 	public static final ASN1ObjectIdentifier tcgCeVirtualPlatformAttestationService = new ASN1ObjectIdentifier("2.23.133.6.4").intern();
@@ -53,4 +60,8 @@ public class TCGObjectIdentifier {
 	public static final ASN1ObjectIdentifier tcgAddressEthernetMac = new ASN1ObjectIdentifier("2.23.133.17.1").intern();
 	public static final ASN1ObjectIdentifier tcgAddressWlanMac = new ASN1ObjectIdentifier("2.23.133.17.2").intern();
 	public static final ASN1ObjectIdentifier tcgAddressBluetoothMac = new ASN1ObjectIdentifier("2.23.133.17.3").intern();
+	public static final ASN1ObjectIdentifier tcgRegistryComponentClass = new ASN1ObjectIdentifier("2.23.133.18.3").intern();
+	public static final ASN1ObjectIdentifier tcgRegistryComponentClassTcg = new ASN1ObjectIdentifier("2.23.133.18.3.1").intern();
+	public static final ASN1ObjectIdentifier tcgRegistryComponentClassIetf = new ASN1ObjectIdentifier("2.23.133.18.3.2").intern();
+	public static final ASN1ObjectIdentifier tcgRegistryComponentClassDmtf = new ASN1ObjectIdentifier("2.23.133.18.3.3").intern();
 }

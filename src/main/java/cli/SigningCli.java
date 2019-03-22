@@ -6,6 +6,8 @@ import com.beust.jcommander.ParameterException;
 import factory.AuthorityInfoAccessFactory;
 import factory.CertificatePoliciesFactory;
 import factory.PlatformCredentialFactory;
+import factory.TargetingInformationFactory;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,6 +27,7 @@ import org.bouncycastle.asn1.x509.AuthorityInformationAccess;
 import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
 import org.bouncycastle.asn1.x509.CRLDistPoint;
 import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.TargetInformation;
 import org.bouncycastle.asn1.x9.X9ObjectIdentifiers;
 import org.bouncycastle.cert.AttributeCertificateIssuer;
 import org.bouncycastle.cert.X509AttributeCertificateHolder;
@@ -159,6 +162,8 @@ public class SigningCli {
         AuthorityInfoAccessFactory aiaf = OtherExtensionsJsonHelper.accessesFromJsonFile(argList.getExtensionsJsonFile());
         AuthorityInformationAccess aia = aiaf.build();
         CRLDistPoint cdp = OtherExtensionsJsonHelper.crlFromJsonFile(argList.getExtensionsJsonFile());
+        TargetingInformationFactory tif = null; // TargetingInformationFactory.create(); // add ek cert bundle via CLI 
+        TargetInformation ti = tif != null ? tif.build() : null;
         
         pcf.addExtension(Extension.authorityKeyIdentifier, aki);
         pcf.addExtension(Extension.certificatePolicies, cpf.build());
@@ -167,6 +172,9 @@ public class SigningCli {
         }
         if (cdp != null) {
             pcf.addExtension(Extension.cRLDistributionPoints, cdp);
+        }
+        if (ti != null) {
+            pcf.addExtension(Extension.targetInformation, ti);
         }
         
         // Build the cert & sign it using the private key
