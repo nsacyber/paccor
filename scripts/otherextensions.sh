@@ -13,6 +13,8 @@ crlType="" # valid options are 0 or 1
 crlName="" # DN
 crlReasonFlags="" # valid options are integers 0 thru 16
 crlIssuer="" # CRL issuer DN
+#### Targeting Information is an optional extension.  Leave the targetFile variable blank to omit the extension.
+targetFile="" # provide comma separated file paths to EK certificates
 
 ### The logic below can be changed by advanced users.
 #### SHA-256 was assumed to be acceptable for each of the hashAlg choices for URI References
@@ -37,6 +39,8 @@ JSON_TYPE="TYPE"
 JSON_NAME="NAME"
 JSON_REASON="REASON"
 JSON_ISSUER="ISSUER"
+JSON_TARGETINGINFORMATION="TARGETINGINFORMATION"
+JSON_FILE="FILE"
 
 ### JSON Structure Format
 JSON_OTHER_EXTENSIONS_TEMPLATE='{%s
@@ -73,6 +77,13 @@ JSON_CRL_DISTRIBUTION_TEMPLATE='
         \"'"$JSON_ISSUER"'\": \"%s\"
     }
 '
+JSON_TARGETING_INFORMATION_TEMPLATE='
+    \"'"$JSON_TARGETINGINFORMATION"'\": [
+        %s
+    ]'
+JSON_TARGETING_INFORMATION_FILE_TEMPLATE='
+        {\"'"$JSON_FILE"'\": \"%s\"}
+'
 
 ### JSON Constructor Aides
 toCSV () {
@@ -102,6 +113,14 @@ jsonAuthInfoAccessElement() {
 jsonCRLDist() {
     printf "$JSON_CRL_DISTRIBUTION_TEMPLATE" "$crlType" "$crlName" "$crlReasonFlags" "$crlIssuer"
 }
+jsonTargetingInformation() {
+    echo "$targetFile" | sed -n 1'p' | tr ',' '\n' | while read file; do
+        echo $file
+    done
+
+    printf "JSON_TARGETING_INFORMATION_TEMPLATE" "$(toCSV "$@")"
+}
+
 jsonOtherExtensionsFile() {
     # work on making this script more intuitive
     usernotice1=$(jsonPolicyQualifierUserNotice "$certPolicyQualifierUserNotice1")
@@ -124,6 +143,8 @@ jsonOtherExtensionsFile() {
         crlName=$(jsonCRLDist)
         tmpData="$tmpData"",""$crlName"
     fi
+
+    targets=$(jsonTargetingInformation)
 
     printf "$JSON_OTHER_EXTENSIONS_TEMPLATE" "$tmpData"
 }

@@ -18,7 +18,7 @@ public class URIReferenceFactory {
     public enum Json {
         UNIFORMRESOURCEIDENTIFIER,
         HASHALGORITHM,
-        HASH;
+        HASHVALUE;
     }
     
     private DERIA5String uniformResourceIdentifier;
@@ -90,7 +90,7 @@ public class URIReferenceFactory {
             
             JsonNode uriNode = refNode.get(Json.UNIFORMRESOURCEIDENTIFIER.name());
             JsonNode hashAlgNode = refNode.get(Json.HASHALGORITHM.name());
-            JsonNode hashNode = refNode.get(Json.HASH.name());
+            JsonNode hashNode = refNode.get(Json.HASHVALUE.name());
             
             final String uri = uriNode.asText();
             final String hashAlg = hashAlgNode != null ? hashAlgNode.asText() : "";

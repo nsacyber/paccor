@@ -11,6 +11,17 @@ $PROPERTIES_URI_LOCAL_COPY_FOR_HASH="" # If empty, the optional hashAlgorithm an
 $ENTERPRISE_NUMBERS_FILE="$APP_HOME/../enterprise-numbers"
 $PEN_ROOT="1.3.6.1.4.1." # OID root for the private enterprise numbers
 
+
+### ComponentClass values
+$COMPCLASS_REGISTRY_TCG="2.23.133.18.3.1"
+$COMPCLASS_BASEBOARD="00000001" # waiting on TCG publication of componentclass registry
+$COMPCLASS_BIOS="00000020"
+$COMPCLASS_CHASSIS="00000300"
+$COMPCLASS_CPU="00004000"
+$COMPCLASS_HDD="00050000"
+$COMPCLASS_NIC="00600000"
+$COMPCLASS_RAM="07000000"
+
 # Progress Groups
 #     1: Overall progress
 #     2: Component type
@@ -33,6 +44,12 @@ $JSON_ADDRESSES="ADDRESSES"
 $JSON_ETHERNETMAC="ETHERNETMAC"
 $JSON_WLANMAC="WLANMAC"
 $JSON_BLUETOOTHMAC="BLUETOOTHMAC"
+$JSON_COMPONENTPLATFORMCERT="PLATFORMCERT"
+$JSON_ATTRIBUTECERTIDENTIFIER="ATTRIBUTECERTIDENTIFIER"
+$JSON_GENERICCERTIDENTIFIER="GENERICCERTIDENTIFIER"
+$JSON_ISSUER="ISSUER"
+$JSON_COMPONENTPLATFORMCERTURI="PLATFORMCERTURI"
+$JSON_STATUS="STATUS"
 #### JSON Platform Keywords (Subject Alternative Name)
 $JSON_PLATFORMMODEL="PLATFORMMODEL"
 $JSON_PLATFORMMANUFACTURERSTR="PLATFORMMANUFACTURERSTR"
@@ -61,6 +78,10 @@ $JSON_PROPERTIESURI_TEMPLATE="
     `"$JSON_PROPERTIESURI`": {{
         {0}
     }}"
+$JSON_COMPONENTSURI_TEMPLATE="
+    `"$JSON_COMPONENTSURI`": {{
+        {0}
+    }}"
 $JSON_PROPERTY_ARRAY_TEMPLATE="
     `"$JSON_PROPERTIES`": [{0}
     ]"
@@ -84,6 +105,30 @@ $JSON_WLANMAC_TEMPLATE=" {{
                 `"$JSON_WLANMAC`": `"{0}`" }} "
 $JSON_BLUETOOTHMAC_TEMPLATE=" {{
                 `"$JSON_BLUETOOTHMAC`": `"{0}`" }} "
+$JSON_COMPONENTCLASS_TEMPLATE=" `"$JSON_COMPONENTCLASS`": {{
+        `"$JSON_COMPONENTCLASSREGISTRY`": `"{0}`",
+        `"$JSON_COMPONENTCLASSVALUE`": `"{1}`"
+    }}"
+$JSON_ATTRIBUTECERTIDENTIFIER_TEMPLATE=" `"$JSON_ATTRIBUTECERTIDENTIFIER`": {{
+        `"$JSON_HASHALG`": `"{0}`",
+        `"$JSON_HASHVALUE`": `"{1}`"
+    }},"
+$JSON_GENERICCERTIDENTIFIER_TEMPLATE=" `"$JSON_GENERICCERTIDENTIFIER`": {{
+        `"$JSON_ISSUER`": `"{0}`",
+        `"$JSON_SERIAL`": `"{1}`"
+    }},"
+$JSON_COMPONENTPLATFORMCERT_TEMPLATE="
+    `"$JSON_COMPONENTPLATFORMCERT`": {{
+        {0}
+    }}"
+$JSON_COMPONENTPLATFORMCERTURI_TEMPLATE='
+    `"$JSON_COMPONENTPLATFORMCERTURI`": {{
+        {0}
+    }}'
+$JSON_STATUS_TEMPLATE="
+    `"$JSON_STATUS`": {{
+       
+    }}"
 
 ### JSON Constructor Aides
 function HexToByteArray { # Powershell doesn't have a built in BinToHex function
@@ -100,6 +145,9 @@ function HexToByteArray { # Powershell doesn't have a built in BinToHex function
             }
         })
     }
+}
+function jsonComponentClass () {
+    echo ("$JSON_COMPONENTCLASS_TEMPLATE" -f "$($args[0])")
 }
 function jsonManufacturer () {
     $manufacturer=("`"$JSON_MANUFACTURER`": `"{0}`"" -f "$($args[0])")
@@ -216,6 +264,20 @@ function jsonPropertyArray () {
 function jsonPlatformObject () {
     echo ("$JSON_PLATFORM_TEMPLATE" -f "$(toCSV($args))")
 }
+function jsonComponentsUri () {
+    if ($COMPONENTS_URI) {
+        $componentsUri=(jsonUri "$COMPONENTS_URI")
+        $componentsUriDetails=""
+        if ($COMPONENTS_URI_LOCAL_COPY_FOR_HASH) {
+            $hashAlg="2.16.840.1.101.3.4.2.1" # SHA256, see https://tools.ietf.org/html/rfc5754 for other common hash algorithm IDs
+            $hashValue=([System.Convert]::ToBase64String($(HexToByteArray $(Get-FileHash "$COMPONENTS_URI_LOCAL_COPY_FOR_HASH"  -Algorithm SHA256).Hash.Trim())))
+            $hashAlgStr=(jsonHashAlg "$hashAlg")
+            $hashValueStr=(jsonHashValue "$hashValue")
+            $componentsUriDetails="$hashAlgStr"",""$hashValueStr"
+        }
+	echo ("$JSON_COMPONENTSURI_TEMPLATE" -f "$(toCSV("$componentsUri","$componentsUriDetails"))")
+    }
+}
 function jsonPropertiesUri () {
     if ($PROPERTIES_URI) {
         $propertiesUri=(jsonUri "$PROPERTIES_URI")
@@ -272,6 +334,7 @@ Write-Progress -Id 2 -ParentId 1 -Activity "Gathering platform information" -Cur
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 20
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering chassis information" -CurrentOperation "Querying WMIC" -PercentComplete 0
+$chassisClass=(jsonComponentClass "COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CHASSIS")
 $chassisManufacturer=((wmic systemenclosure get manufacturer /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
 $chassisModel=((wmic systemenclosure get chassistypes /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
 $chassisSerial=((wmic systemenclosure get serialnumber /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
@@ -298,13 +361,14 @@ Write-Progress -Id 2 -ParentId 1 -Activity "Gathering chassis information" -Curr
 if ($chassisRevision) {
     $chassisRevision=(jsonRevision "$chassisRevision")
 }
-$componentChassis=(jsonComponent "$chassisManufacturer" "$chassisModel" "$chassisSerial", "$chassisRevision")
+$componentChassis=(jsonComponent "$chassisClass" "$chassisManufacturer" "$chassisModel" "$chassisSerial" "$chassisRevision")
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering chassis information" -CurrentOperation "Cleaning output" -PercentComplete 100
 
 ### Gather baseboard details
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 30
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Querying WMIC" -PercentComplete 0
+$baseboardClass=(jsonComponentClass "COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BASEBOARD")
 $baseboardManufacturer=((wmic baseboard get manufacturer /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
 $baseboardModel=((wmic baseboard get product /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
 $baseboardSerial=((wmic baseboard get serialnumber /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
@@ -341,7 +405,7 @@ Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -Cu
 if ("$baseboardRevision") {
     $baseboardRevision=(jsonRevision "$baseboardRevision")
 }
-$componentBaseboard=(jsonComponent "$baseboardManufacturer" "$baseboardModel" "$baseboardFieldReplaceable" "$baseboardSerial" "$baseboardRevision")
+$componentBaseboard=(jsonComponent "$baseboardClass" "$baseboardManufacturer" "$baseboardModel" "$baseboardFieldReplaceable" "$baseboardSerial" "$baseboardRevision")
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Cleaning output" -PercentComplete 100
 
@@ -349,6 +413,7 @@ Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -Cu
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 30
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering BIOS information" -CurrentOperation "Querying WMIC" -PercentComplete 0
+$biosClass=(jsonComponentClass "COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BIOS")
 $biosManufacturer=((wmic bios get manufacturer /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
 $biosModel=((wmic bios get name /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
 $biosSerial=((wmic bios get serialnumber /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
@@ -375,7 +440,7 @@ Write-Progress -Id 2 -ParentId 1 -Activity "Gathering BIOS information" -Current
 if ($biosRevision) {
     $biosRevision=(jsonRevision "$biosRevision")
 }
-$componentBios=(jsonComponent "$biosManufacturer" "$biosModel" "$biosSerial" "$biosRevision")
+$componentBios=(jsonComponent "$biosClass" "$biosManufacturer" "$biosModel" "$biosSerial" "$biosRevision")
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Cleaning output" -PercentComplete 100
 
@@ -394,6 +459,7 @@ function parseCpuData() {
     for($i=0;$i -lt $numRows;$i++) {
         Write-Progress -Id 2 -ParentId 1 -Activity "Gathering CPU information" -CurrentOperation ("Cleaning output for CPU " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
 
+		$cpuClass=(jsonComponentClass "COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CPU")
         $tmpManufacturer=$RS[$i].Manufacturer
         if (!$tmpManufacturer) {
             $tmpManufacturer=$NOT_SPECIFIED
@@ -419,7 +485,7 @@ function parseCpuData() {
         } else {
             $replaceable=(jsonFieldReplaceable "true")
         }
-        $tmpComponent=(jsonComponent $tmpManufacturer $tmpModel $replaceable $tmpSerial $tmpRevision)
+        $tmpComponent=(jsonComponent $cpuClass $tmpManufacturer $tmpModel $replaceable $tmpSerial $tmpRevision)
         $component+="$tmpComponent,"
     }
     Write-Progress -Id 2 -ParentId 1 -Activity "Gathering CPU information" -CurrentOperation "Done" -PercentComplete 100
@@ -441,6 +507,7 @@ function parseRamData() {
     for($i=0;$i -lt $numRows;$i++) {
         Write-Progress -Id 2 -ParentId 1 -Activity "Gathering RAM information" -CurrentOperation ("Cleaning output for Memory Chip " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
 
+		$ramClass=(jsonComponentClass "COMPCLASS_REGISTRY_TCG" "$COMPCLASS_RAM")
         $tmpManufacturer=$RS[$i].Manufacturer
         if (!$tmpManufacturer) {
             $tmpManufacturer=$NOT_SPECIFIED
@@ -460,7 +527,7 @@ function parseRamData() {
         if (![string]::IsNullOrEmpty($tmpRevision)) {
             $tmpRevision=(jsonRevision $tmpRevision)   
         }
-        $tmpComponent=(jsonComponent $tmpManufacturer $tmpModel $replaceable $tmpSerial $tmpRevision)
+        $tmpComponent=(jsonComponent $ramClass $tmpManufacturer $tmpModel $replaceable $tmpSerial $tmpRevision)
         $component+="$tmpComponent,"
     }
 
@@ -484,6 +551,7 @@ function parseNicData() {
     for($i=0;$i -lt $numRows;$i++) {
         Write-Progress -Id 2 -ParentId 1 -Activity "Gathering NIC information" -CurrentOperation ("Cleaning output for NIC " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
         
+		$nicClass=(jsonComponentClass "COMPCLASS_REGISTRY_TCG","$COMPCLASS_NIC")
         $tmpManufacturer=$RS[$i].DriverProvider
         if (!$tmpManufacturer) {
             $tmpManufacturer=$NOT_SPECIFIED
@@ -518,7 +586,7 @@ function parseNicData() {
             }
         }
 
-        $tmpComponent=(jsonComponent $tmpManufacturer $tmpModel $replaceable $tmpSerial $thisAddress)
+        $tmpComponent=(jsonComponent $nicClass $tmpManufacturer $tmpModel $replaceable $tmpSerial $thisAddress)
         $component+="$tmpComponent,"
     }
 
@@ -541,6 +609,7 @@ function parseHddData() {
     for($i=0;$i -lt $numRows;$i++) {
         Write-Progress -Id 2 -ParentId 1 -Activity "Gathering Hard Disk information" -CurrentOperation ("Cleaning output for HDD " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
 
+        $hddClass=(jsonComponentClass "COMPCLASS_REGISTRY_TCG" "$COMPCLASS_HDD")
         $tmpManufacturer=$RS[$i].Manufacturer
         if (!$tmpManufacturer) {
             $tmpManufacturer=$NOT_SPECIFIED
@@ -560,7 +629,7 @@ function parseHddData() {
         if (![string]::IsNullOrEmpty($tmpRevision)) {
             $tmpRevision=(jsonRevision $tmpRevision)   
         }
-        $tmpComponent=(jsonComponent $tmpManufacturer $tmpModel $replaceable $tmpSerial $tmpRevision)
+        $tmpComponent=(jsonComponent $hddClass $tmpManufacturer $tmpModel $replaceable $tmpSerial $tmpRevision)
         $component+="$tmpComponent,"
     }
 
@@ -585,6 +654,10 @@ $property2= ## Example2
 $propertyArray=(jsonPropertyArray "$property1")
 
 ### Collate the URI details, if parameters above are blank, the fields will be excluded from the final JSON structure
+$componentsUri=""
+if ($COMPONENTS_URI) {
+    $componentsUri=(jsonComponentsUri)
+}
 $propertiesUri=""
 if ($PROPERTIES_URI) {
     $propertiesUri=(jsonPropertiesUri)
@@ -592,7 +665,7 @@ if ($PROPERTIES_URI) {
 
 Write-Progress -Id 1 -Activity "Forming final output" -PercentComplete 90
 ### Construct the final JSON object
-$FINAL_JSON_OBJECT=(jsonIntermediateFile "$platform" "$componentArray" "$propertyArray" "$propertiesUri")
+$FINAL_JSON_OBJECT=(jsonIntermediateFile "$platform" "$componentArray" "$componentsUri" "$propertyArray" "$propertiesUri")
 
 Write-Progress -Id 1 -Activity "Done" -PercentComplete 100
 [IO.File]::WriteAllText($filename, "$FINAL_JSON_OBJECT")
