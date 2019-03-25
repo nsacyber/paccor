@@ -88,7 +88,7 @@ public class PlatformConfigurationFactoryV2Test {
         + "            \"" + ComponentIdentifierV2Factory.Json.PLATFORMCERTURI.name() + "\": {"
         + "                \"" + URIReferenceFactory.Json.UNIFORMRESOURCEIDENTIFIER.name() + "\": \"" + certUri + "\","
         + "                \"" + URIReferenceFactory.Json.HASHALGORITHM.name() + "\": \"" + certUriHashAlg + "\","
-        + "                \"" + URIReferenceFactory.Json.HASH.name() + "\": \"" + certUriHash + "\""
+        + "                \"" + URIReferenceFactory.Json.HASHVALUE.name() + "\": \"" + certUriHash + "\""
         + "            },"
         + "            \"" + ComponentIdentifierV2Factory.Json.STATUS.name() + "\": \"" + status + "\""
         + "        }]";

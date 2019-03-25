@@ -2,17 +2,33 @@
 
 ### User customizable values
 APP_HOME="`dirname "$0"`"
+COMPONENTS_URI="" # Specify the optional components URI field
+COMPONENTS_URI_LOCAL_COPY_FOR_HASH="" # If empty, the optional hashAlgorithm and hashValue fields will not be included for the URI
 PROPERTIES_URI="" # Specify the optional properties URI field
 PROPERTIES_URI_LOCAL_COPY_FOR_HASH="" # If empty, the optional hashAlgorithm and hashValue fields will not be included for the URI
 ENTERPRISE_NUMBERS_FILE="$APP_HOME""/enterprise-numbers"
 PEN_ROOT="1.3.6.1.4.1." # OID root for the private enterprise numbers
 
+### ComponentClass values
+COMPCLASS_REGISTRY_TCG="2.23.133.18.3.1"
+COMPCLASS_BASEBOARD="00000001" # waiting on TCG publication of componentclass registry
+COMPCLASS_BIOS="00000020"
+COMPCLASS_CHASSIS="00000300"
+COMPCLASS_CPU="00004000"
+COMPCLASS_HDD="00050000"
+COMPCLASS_NIC="00600000"
+COMPCLASS_RAM="07000000"
+
 ### JSON Structure Keywords
 JSON_COMPONENTS="COMPONENTS"
+JSON_COMPONENTSURI="COMPONENTSURI"
 JSON_PROPERTIES="PROPERTIES"
 JSON_PROPERTIESURI="PROPERTIESURI"
 JSON_PLATFORM="PLATFORM"
 #### JSON Component Keywords
+JSON_COMPONENTCLASS="COMPONENTCLASS"
+JSON_COMPONENTCLASSREGISTRY="COMPONENTCLASSREGISTRY"
+JSON_COMPONENTCLASSVALUE="COMPONENTCLASSVALUE"
 JSON_MANUFACTURER="MANUFACTURER"
 JSON_MODEL="MODEL"
 JSON_SERIAL="SERIAL"
@@ -23,6 +39,12 @@ JSON_ADDRESSES="ADDRESSES"
 JSON_ETHERNETMAC="ETHERNETMAC"
 JSON_WLANMAC="WLANMAC"
 JSON_BLUETOOTHMAC="BLUETOOTHMAC"
+JSON_COMPONENTPLATFORMCERT="PLATFORMCERT"
+JSON_ATTRIBUTECERTIDENTIFIER="ATTRIBUTECERTIDENTIFIER"
+JSON_GENERICCERTIDENTIFIER="GENERICCERTIDENTIFIER"
+JSON_ISSUER="ISSUER"
+JSON_COMPONENTPLATFORMCERTURI="PLATFORMCERTURI"
+JSON_STATUS="STATUS"
 #### JSON Platform Keywords (Subject Alternative Name)
 JSON_PLATFORMMODEL="PLATFORMMODEL"
 JSON_PLATFORMMANUFACTURERSTR="PLATFORMMANUFACTURERSTR"
@@ -51,6 +73,10 @@ JSON_PROPERTIESURI_TEMPLATE='
     \"'"$JSON_PROPERTIESURI"'\": {
         %s
     }'
+JSON_COMPONENTSURI_TEMPLATE='
+    \"'"$JSON_COMPONENTSURI"'\": {
+        %s
+    }'
 JSON_PROPERTY_ARRAY_TEMPLATE='
     \"'"$JSON_PROPERTIES"'\": [%s
     ]'
@@ -74,8 +100,35 @@ JSON_WLANMAC_TEMPLATE=' {
                 \"'"$JSON_WLANMAC"'\": \"%s\" } '
 JSON_BLUETOOTHMAC_TEMPLATE=' {
                 \"'"$JSON_BLUETOOTHMAC"'\": \"%s\" } '
+JSON_COMPONENTCLASS_TEMPLATE=' \"'"$JSON_COMPONENTCLASS"'\": {"
+        \"'"$JSON_COMPONENTCLASSREGISTRY"'\": \"%s\",
+        \"'"$JSON_COMPONENTCLASSVALUE"'\": \"%s\"
+    }'
+JSON_ATTRIBUTECERTIDENTIFIER_TEMPLATE=' \"'"$JSON_ATTRIBUTECERTIDENTIFIER"'\": {"
+        \"'"$JSON_HASHALG"'\": \"%s\",
+        \"'"$JSON_HASHVALUE"'\": \"%s\"
+    },'
+JSON_GENERICCERTIDENTIFIER_TEMPLATE=' \"'"$JSON_GENERICCERTIDENTIFIER"'\": {"
+        \"'"$JSON_ISSUER"'\": \"%s\",
+        \"'"$JSON_SERIAL"'\": \"%s\"
+    },'
+JSON_COMPONENTPLATFORMCERT_TEMPLATE='
+    \"'"$JSON_COMPONENTPLATFORMCERT"'\": {
+        %s
+    }'
+JSON_COMPONENTPLATFORMCERTURI_TEMPLATE='
+    \"'"$JSON_COMPONENTPLATFORMCERTURI"'\": {
+        %s
+    }'
+JSON_STATUS_TEMPLATE='
+    \"'"$JSON_STATUS"'\": {
+       
+    }'
 
 ### JSON Constructor Aides
+jsonComponentClass () {
+    printf "$JSON_COMPONENTCLASS_TEMPLATE" "${1}" "${2}"
+}
 jsonManufacturer () {
     manufacturer=$(printf '\"'"$JSON_MANUFACTURER"'\": \"%s\"' "${1}")
     tmpManufacturerId=$(queryForPen "${1}")
@@ -136,7 +189,11 @@ queryForPen () {
 }
 jsonProperty () {
     if [ -n "${1}" ] && [ -n "${2}" ]; then
-        printf "$JSON_PROPERTY_TEMPLATE" "${1}" "${2}"
+        if [ -n "${3}" ]; then
+            printf "$JSON_PROPERTY_TEMPLATE" "${1}" "${2}" "${3}"
+        else
+            printf "$JSON_PROPERTY_TEMPLATE" "${1}" "${2}"
+        fi
     fi
 }
 jsonUri () {
@@ -171,6 +228,20 @@ jsonPropertyArray () {
 }
 jsonPlatformObject () {
     printf "$JSON_PLATFORM_TEMPLATE" "$(toCSV "$@")"
+}
+jsonComponentsUri () {
+    if [ -n "$COMPONENTS_URI" ]; then
+        componentsUri=$(jsonUri "$COMPONENTS_URI")
+        componentsUriDetails=""
+        if [ -n "$PROPERTIES_URI_LOCAL_COPY_FOR_HASH" ]; then
+            hashAlg="2.16.840.1.101.3.4.2.1" # SHA256, see https://tools.ietf.org/html/rfc5754 for other common hash algorithm IDs
+            hashValue=$(sha256sum "$COMPONENTS_URI_LOCAL_COPY_FOR_HASH" | sed -r 's/^([0-9a-f]+).*/\1/' | tr -d [:space:] | xxd -r -p | base64 -w 0)
+            hashAlgStr=$(jsonHashAlg "$hashAlg")
+            hashValueStr=$(jsonHashValue "$hashValue")
+            propertiesUriDetails="$hashAlgStr"",""$hashValueStr"
+        fi
+	printf "$JSON_COMPONENTSURI_TEMPLATE" "$(toCSV "$componentsUri" "$componentsUriDetails")"
+    fi
 }
 jsonPropertiesUri () {
     if [ -n "$PROPERTIES_URI" ]; then
@@ -226,6 +297,7 @@ platform=$(jsonPlatformObject "$platformManufacturer" "$platformModel" "$platfor
 
 
 ### Gather component details
+chassisClass=jsonComponentClass("COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CHASSIS")
 chassisManufacturer=$(dmidecode -s chassis-manufacturer)
 chassisModel=$(dmidecode -s chassis-type)
 chassisSerial=$(dmidecode -s chassis-serial-number)
@@ -250,9 +322,10 @@ if [ -n "$chassisRevision" ]; then
     chassisOptional="$chassisOptional"",""$chassisRevision"
 fi
 chassisOptional=$(printf "$chassisOptional" | cut -c2-)
-componentChassis=$(jsonComponent "$chassisManufacturer" "$chassisModel" "$chassisOptional")
+componentChassis=$(jsonComponent "$chassisClass" "$chassisManufacturer" "$chassisModel" "$chassisOptional")
 
 ### Gather baseboard details
+baseboardClass=jsonComponentClass("COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BASEBOARD")
 baseboardManufacturer=$(dmidecode -s baseboard-manufacturer)
 baseboardModel=$(dmidecode -s baseboard-product-name)
 baseboardSerial=$(dmidecode -s baseboard-serial-number)
@@ -280,9 +353,10 @@ if [ -n "$baseboardRevision" ]; then
     baseboardOptional="$baseboardOptional"",""$baseboardRevision"
 fi
 baseboardOptional=$(printf "$baseboardOptional" | cut -c2-)
-componentBaseboard=$(jsonComponent "$baseboardManufacturer" "$baseboardModel" "$baseboardFieldReplaceable" "$baseboardOptional")
+componentBaseboard=$(jsonComponent "$baseboardClass" "$baseboardManufacturer" "$baseboardModel" "$baseboardFieldReplaceable" "$baseboardOptional")
 
 ### Gather BIOS details
+biosClass=jsonComponentClass("COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BIOS")
 biosUefiManufacturer=$(dmidecode -s bios-vendor)
 biosUefiModel=$(jsonModel "$(dmesg | grep efi | grep SMBIOS > /dev/null && printf "UEFI" || printf "BIOS")")
 biosUefiRevision=$(dmidecode -s bios-version)
@@ -294,7 +368,7 @@ biosUefiManufacturer=$(jsonManufacturer "$biosUefiManufacturer")
 if [ -n "$biosUefiRevision" ]; then
     biosUefiRevision=$(jsonRevision "$biosUefiRevision")
 fi
-componentBiosUefi=$(jsonComponent "$biosUefiManufacturer" "$biosUefiModel" "$biosUefiRevision")
+componentBiosUefi=$(jsonComponent "$biosClass" "$biosUefiManufacturer" "$biosUefiModel" "$biosUefiRevision")
 
 parseCpuData () {
     dmiCpu=$(dmidecode -t processor)
@@ -326,7 +400,8 @@ parseCpuData () {
             
             tmpManufacturer=$(jsonManufacturer "$manufacturer")
             tmpModel=$(jsonModel "$model")
-            newCpuData=$(jsonComponent "$tmpManufacturer" "$tmpModel" "$replaceable" "$theRest")
+            cpuClass=jsonComponentClass("COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CPU")
+            newCpuData=$(jsonComponent "$cpuClass" "$tmpManufacturer" "$tmpModel" "$replaceable" "$theRest")
             tmpData="$tmpData"",""$newCpuData"
 
             isNewCpu=""
@@ -390,9 +465,10 @@ parseRamData () {
             if [ "$manufacturer" != "$NOT_SPECIFIED" ] || [ "$model" != "$NOT_SPECIFIED" ] || { [ -n "$serialnumber" ] && [ "$serialnumber" != "$NOT_SPECIFIED" ]; } || { [ -n "$revision" ] && [ "$revision" != "$NOT_SPECIFIED" ]; }; then
             theRest=$(printf "$theRest" | cut -c2-)
             
+            ramClass=jsonComponentClass("COMPCLASS_REGISTRY_TCG" "$COMPCLASS_RAM")
             tmpManufacturer=$(jsonManufacturer "$manufacturer")
             tmpModel=$(jsonModel "$model")
-            newRamData=$(jsonComponent "$tmpManufacturer" "$tmpModel" "$replaceable" "$theRest")
+            newRamData=$(jsonComponent "$ramClass" "$tmpManufacturer" "$tmpModel" "$replaceable" "$theRest")
             tmpData="$tmpData"",""$newRamData"
             fi
             isNewRam=""
@@ -483,9 +559,10 @@ parseNicData () {
 
             theRest=$(printf "$theRest" | cut -c2-)
             
+			nicClass=jsonComponentClass("COMPCLASS_REGISTRY_TCG" "$COMPCLASS_NIC")
             tmpManufacturer=$(jsonManufacturer "$manufacturer")
             tmpModel=$(jsonModel "$model")
-            newNicData=$(jsonComponent "$tmpManufacturer" "$tmpModel" "$replaceable" "$theRest")
+            newNicData=$(jsonComponent "$nicClass" "$tmpManufacturer" "$tmpModel" "$replaceable" "$theRest")
             tmpData="$tmpData"",""$newNicData"
             
             isNewNic=""
@@ -577,9 +654,10 @@ parseHddData () {
 
             theRest=$(printf "$theRest" | cut -c2-)
             
+            hddClass=jsonComponentClass("COMPCLASS_REGISTRY_TCG" "$COMPCLASS_HDD")
             tmpManufacturer=$(jsonManufacturer "$manufacturer")
             tmpModel=$(jsonModel "$model")
-            newHddData=$(jsonComponent "$tmpManufacturer" "$tmpModel" "$replaceable" "$theRest")
+            newHddData=$(jsonComponent "$hddClass" "$tmpManufacturer" "$tmpModel" "$replaceable" "$theRest")
             tmpData="$tmpData"",""$newHddData"
 
             isNewHdd=""
@@ -632,6 +710,10 @@ propertyArray=$(jsonPropertyArray "$property1" "$property2")
 FINAL_JSON_OBJECT=$(jsonIntermediateFile "$platform" "$componentArray" "$propertyArray")
 
 ### Collate the URI details, if parameters above are blank, the fields will be excluded from the final JSON structure
+if [ -n "$COMPONENTS_URI" ]; then
+    componentsUri=$(jsonComponentsUri)
+    FINAL_JSON_OBJECT="$FINAL_JSON_OBJECT"",""$componentsUri"
+fi
 if [ -n "$PROPERTIES_URI" ]; then
     propertiesUri=$(jsonPropertiesUri)
     FINAL_JSON_OBJECT="$FINAL_JSON_OBJECT"",""$propertiesUri"
