@@ -46,7 +46,7 @@ public class TCGObjectIdentifier {
 	public static final ASN1ObjectIdentifier tcgAtPlatformConfigurationV2 = new ASN1ObjectIdentifier("2.23.133.5.1.7.2").intern();
 	public static final ASN1ObjectIdentifier tcgAlgorithmNull = new ASN1ObjectIdentifier("2.23.133.4.1").intern();
 	public static final ASN1ObjectIdentifier tcgKpEkCertificate = new ASN1ObjectIdentifier("2.23.133.8.1").intern();
-	public static final ASN1ObjectIdentifier tcgKpPlatformCertificate = new ASN1ObjectIdentifier("2.23.133.8.2").intern();
+	public static final ASN1ObjectIdentifier tcgKpPlatformAttributeCertificate = new ASN1ObjectIdentifier("2.23.133.8.2").intern();
 	public static final ASN1ObjectIdentifier tcgKpAikCertificate = new ASN1ObjectIdentifier("2.23.133.8.3").intern();
 	public static final ASN1ObjectIdentifier tcgKpPlatformKeyCertificate = new ASN1ObjectIdentifier("2.23.133.8.4").intern();
 	public static final ASN1ObjectIdentifier tcgKpDeltaPlatformAttributeCertificate = new ASN1ObjectIdentifier("2.23.133.8.5").intern();

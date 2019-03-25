@@ -10,13 +10,17 @@ import org.bouncycastle.asn1.x509.DistributionPointName;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.asn1.x509.ReasonFlags;
+import org.bouncycastle.cert.X509CertificateHolder;
+
+import cli.CliHelper;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Iterator;
 import factory.AuthorityInfoAccessFactory;
 import factory.CertificatePoliciesFactory;
 import factory.PolicyInformationFactory;
+import factory.TargetingInformationFactory;
 import factory.AuthorityInfoAccessFactory.ElementJson;
 import factory.AuthorityInfoAccessFactory.MethodJson;
 
@@ -24,7 +28,8 @@ public class OtherExtensionsJsonHelper {
     public enum Json {
         CERTIFICATEPOLICIES,
         AUTHORITYINFOACCESS,
-        CRLDISTRIBUTION; 
+        CRLDISTRIBUTION,
+        TARGETINGINFORMATION; 
     }
     
     public enum CrlJson {
@@ -33,6 +38,10 @@ public class OtherExtensionsJsonHelper {
         NAME,
         REASON,
         ISSUER;
+    }
+    
+    public enum TargetInformationJson {
+        FILE;
     }
     
     public static final CertificatePoliciesFactory policiesFromJsonFile(final String filename) {
@@ -117,5 +126,32 @@ public class OtherExtensionsJsonHelper {
         }
             
         return cdf;
+    }
+    
+    public static final TargetingInformationFactory ekTargetsFromJsonFile(final String filename) {
+        TargetingInformationFactory tif = TargetingInformationFactory.create();
+        
+        try {
+            final String jsonData = new String(Files.readAllBytes(Paths.get(filename)));
+            ObjectMapper objectMapper = new ObjectMapper();
+            final JsonNode root = objectMapper.readTree(jsonData);
+            if (root.has(Json.TARGETINGINFORMATION.name())) {
+                final JsonNode tiNode = root.get(Json.TARGETINGINFORMATION.name());
+                if (tiNode.isArray()) {
+                    for (final JsonNode target : tiNode) {
+                        if (target.has(TargetInformationJson.FILE.name())) {
+                            final JsonNode fileNode = target.get(TargetInformationJson.FILE.name());
+                            final String targetFilename = fileNode.asText();
+                            X509CertificateHolder cert = (X509CertificateHolder)CliHelper.loadCert(targetFilename, CliHelper.x509type.CERTIFICATE);
+                            tif.addCertificate(cert);
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            // catch file read error
+        }
+        
+        return tif;
     }
 }

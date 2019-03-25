@@ -5,22 +5,40 @@
     },
     "COMPONENTS": [
         {
-            "MANUFACTURER": "Oracle Corporation","MODEL": "Other"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00000001"
+            },"MANUFACTURER": "Oracle Corporation","MODEL": "Other"
         },
         {
-            "MANUFACTURER": "Oracle Corporation","MODEL": "VirtualBox"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00000020"
+            },"MANUFACTURER": "Oracle Corporation","MODEL": "VirtualBox"
         },
         {
-            "MANUFACTURER": "innotek GmbH","MODEL": "BIOS","SERIAL": "VirtualBox"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00000300"
+            },"MANUFACTURER": "innotek GmbH","MODEL": "BIOS","SERIAL": "VirtualBox"
         },
         {
-            "MANUFACTURER": "Intel Corporation","MODEL": "82540EM Gigabit Ethernet Controller"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00004000"
+            },"MANUFACTURER": "Intel Corporation","MODEL": "82540EM Gigabit Ethernet Controller"
         },
         {
-            "MANUFACTURER": "Advanced Micro Devices, Inc. [AMD]","MODEL": "79c970 [PCnet32 LANCE]"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00050000"
+            },"MANUFACTURER": "Advanced Micro Devices, Inc. [AMD]","MODEL": "79c970 [PCnet32 LANCE]"
         },
         {
-            "MANUFACTURER": "VBOX","MODEL": "HARDDISK"
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00600000"
+            },"MANUFACTURER": "VBOX","MODEL": "HARDDISK"
         }
     ]
 }

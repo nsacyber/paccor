@@ -3,19 +3,21 @@ package cli;
 import cli.CliHelper.x509type;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
-import factory.PlatformConfigurationFactory;
-import factory.PlatformCredentialFactory;
+import factory.PlatformConfigurationV2Factory;
+import factory.PlatformCertificateFactory;
 import factory.SubjectAlternativeNameFactory;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.GeneralName;
+import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.asn1.x509.Holder;
 import org.bouncycastle.asn1.x509.IssuerSerial;
+import org.bouncycastle.cert.X509AttributeCertificateHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.openssl.PEMParser;
 
 
 public class DeviceObserverCli {
@@ -25,7 +27,7 @@ public class DeviceObserverCli {
         argList = new DeviceObserverArgs();
     }
     
-    public PlatformCredentialFactory handleCommandLine(String[] args) throws IOException {
+    public PlatformCertificateFactory handleCommandLine(String[] args) throws IOException {
         JCommander jCommanderBuild = JCommander.newBuilder().addObject(argList).build();
         jCommanderBuild.setProgramName("observer");
         jCommanderBuild.setAcceptUnknownOptions(true);
@@ -35,8 +37,8 @@ public class DeviceObserverCli {
             System.exit(1);
         }
         
-        PlatformCredentialFactory pcf = 
-            collateCertDetails(argList.getComponentJsonFile(), argList.getEkCertFile(), argList.getPolicyRefJsonFile());
+        PlatformCertificateFactory pcf = 
+            collateCertDetails(argList.getComponentJsonFile(), argList.getHolderCertFile(), argList.getPolicyRefJsonFile());
         
         String result = pcf.toJson();
         if (argList.getOutFile() != null && !argList.getOutFile().isEmpty()) {
@@ -58,21 +60,68 @@ public class DeviceObserverCli {
         return pcf;
     }
     
-    public PlatformCredentialFactory collateCertDetails(String componentFile, String ekCertFile, String policyFile) throws IOException {
-        X509CertificateHolder ekCert = (X509CertificateHolder)CliHelper.loadCert(ekCertFile, x509type.CERTIFICATE);
-        Holder holder = new Holder(new IssuerSerial(ekCert.getIssuer(), ekCert.getSerialNumber()));
+    public PlatformCertificateFactory collateCertDetails(String componentFile, String ekCertFile, String policyFile) throws IOException {
+        // Base Platform Certificates must use an EKC (Certificate) as the Holder
+        // Delta Platform Certificates must use a PC (Attribute Certificate) as the Holder
+        X509CertificateHolder ekCert = null;
+        X509AttributeCertificateHolder pCert = null;
+        IssuerSerial issuerSerial = null;
+        boolean delta = false;
         
-        PlatformConfigurationFactory pConfig = 
-                PlatformConfigurationFactory.create()
+        try {
+            ekCert = (X509CertificateHolder)CliHelper.loadCert(ekCertFile, x509type.CERTIFICATE);
+            issuerSerial = new IssuerSerial(ekCert.getIssuer(), ekCert.getSerialNumber());
+        } catch (IOException e) {
+            
+        }
+        try {
+            pCert = (X509AttributeCertificateHolder)CliHelper.loadCert(ekCertFile, x509type.ATTRIBUTE_CERTIFICATE);
+            delta = true;
+            // X509AttributeCertificateHolder does not extract a compatible IssuerSerial object 
+            X500Name[] parts = pCert.getIssuer().getNames();
+            GeneralName[] gns = new GeneralName[parts.length];
+            for (int i = 0; i < parts.length; i++) {
+                gns[i] = new GeneralName(parts[i]);
+            }
+            issuerSerial = new IssuerSerial(new GeneralNames(gns), pCert.getSerialNumber());
+        } catch (IOException e) {
+            
+        }
+        
+        if (ekCert == null && pCert == null) {
+            throw new IOException("Invalid holder provided: " + ekCertFile);
+        }
+        
+        Holder holder = new Holder(issuerSerial);
+        
+        PlatformConfigurationV2Factory pConfig = 
+                PlatformConfigurationV2Factory.create()
                 .addDataFromJsonFile(componentFile);
         SubjectAlternativeNameFactory sanf = 
                 SubjectAlternativeNameFactory
                 .fromJsonFile(componentFile);
-        PlatformCredentialFactory pcf =
-                PlatformCredentialFactory.newPolicyRefJson(policyFile);
+        PlatformCertificateFactory pcf =
+                PlatformCertificateFactory.newPolicyRefJson(policyFile);
+        final GeneralNames san = sanf.build();
+        if (delta) {
+            pcf.setDeltaCertificate();
+            
+            // Proposed SubjectAlternativeName should match the SAN of the holder platform certificate
+            ASN1ObjectIdentifier sanOid = Extension.subjectAlternativeName;
+            boolean isCritical = PlatformCertificateFactory.criticalExtensions.get(sanOid).booleanValue();
+            Extension sanExt = new Extension(sanOid, isCritical, san.getEncoded());
+            if (sanExt.equals(pCert.getExtension(sanOid))) {
+                throw new IllegalArgumentException("Subject alternative name did not match holder.");
+            }
+        } else {
+            // Base certificates cannot use AttributeStatus in PlatformConfiguration Components and Properties
+            if (pConfig.isStatusUsed()) {
+                throw new IllegalArgumentException("AttributeStatus cannot be used for Components or PlatformProperties in a Base Platform Certificate.");
+            }
+        }
         pcf.platformConfiguration(pConfig.build());
         pcf.holder(holder);
-        pcf.addExtension(Extension.subjectAlternativeName, sanf.build());
+        pcf.addExtension(Extension.subjectAlternativeName, san);
         
         return pcf;
     }

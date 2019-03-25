@@ -30,8 +30,9 @@ import java.util.Map;
 import json.IntermediateInfoBean;
 import json.PolicyReferenceJsonHelper;
 import json.PolicyReferenceJsonHelper.PolicyRefJson;
-import tcg.credential.PlatformConfiguration;
+import tcg.credential.PlatformConfigurationV2;
 import tcg.credential.TBBSecurityAssertions;
+import tcg.credential.TCGCredentialType;
 import tcg.credential.TCGObjectIdentifier;
 import tcg.credential.TCGPlatformSpecification;
 import tcg.credential.TCGSpecificationVersion;
@@ -40,7 +41,7 @@ import tcg.credential.URIReference;
 /**
  * Functions to help manage the construction of a platform credential.
  */
-public class PlatformCredentialFactory {
+public class PlatformCertificateFactory {
     /**
      * Extension criticality as defined in the profile.
      */
@@ -57,6 +58,7 @@ public class PlatformCredentialFactory {
                 put(Extension.targetInformation, Boolean.TRUE); // Targeting Information
             }});
     
+    private boolean delta;
     private Holder holder;
     private AttributeCertificateIssuer issuer;
     private BigInteger serialNumber;
@@ -65,7 +67,8 @@ public class PlatformCredentialFactory {
     private Hashtable<ASN1ObjectIdentifier, ASN1Object> attributes;
     private Hashtable<ASN1ObjectIdentifier, Extension> extensions;
     
-    private PlatformCredentialFactory() {
+    private PlatformCertificateFactory() {
+        delta = false;
         holder = null;
         issuer = null;
         serialNumber = null;
@@ -74,17 +77,32 @@ public class PlatformCredentialFactory {
     }
     
     /**
-     * Begin creating a new platform credential.
+     * Begin creating a new platform certificate.
      */
-    public static final PlatformCredentialFactory create() {
-        return new PlatformCredentialFactory();
+    public static final PlatformCertificateFactory create() {
+        return new PlatformCertificateFactory();
+    }
+    
+    /**
+     * Reply with whether the factory will produce a delta platform certificate.
+     */
+    public final boolean isDeltaCertificate() {
+        return delta;
+    }
+    
+    /**
+     * Create a delta platform certificate.
+     */
+    public final PlatformCertificateFactory setDeltaCertificate() {
+        delta = true;
+        return this;
     }
     
     /**
      * Set the holder.
      * @param holder {@link Holder}
      */
-    public final PlatformCredentialFactory holder(final Holder holder) {
+    public final PlatformCertificateFactory holder(final Holder holder) {
         this.holder = holder;
         return this;
     }
@@ -93,7 +111,7 @@ public class PlatformCredentialFactory {
      * Set the issuer of the platform credential.
      * @param issuer {@link AttributeCertificateIssuer}
      */
-    public final PlatformCredentialFactory issuer(final AttributeCertificateIssuer issuer) {
+    public final PlatformCertificateFactory issuer(final AttributeCertificateIssuer issuer) {
         this.issuer = issuer;
         return this;
     }
@@ -102,7 +120,7 @@ public class PlatformCredentialFactory {
      * Set the serial number.
      * @param serialNumber {@link BigInteger}
      */
-    public final PlatformCredentialFactory serialNumber(final BigInteger serialNumber) {
+    public final PlatformCertificateFactory serialNumber(final BigInteger serialNumber) {
         this.serialNumber = serialNumber;
         return this;
     }
@@ -111,7 +129,7 @@ public class PlatformCredentialFactory {
      * Set the valid not before date.
      * @param notBefore {@link Date}
      */
-    public final PlatformCredentialFactory notBefore(final Date notBefore) {
+    public final PlatformCertificateFactory notBefore(final Date notBefore) {
         this.notBefore = notBefore;
         return this;
     }
@@ -120,7 +138,7 @@ public class PlatformCredentialFactory {
      * Set the valid not after date.
      * @param notAfter {@link Date}
      */
-    public final PlatformCredentialFactory notAfter(final Date notAfter) {
+    public final PlatformCertificateFactory notAfter(final Date notAfter) {
         this.notAfter = notAfter;
         return this;
     }
@@ -129,7 +147,7 @@ public class PlatformCredentialFactory {
      * Set the TCG Platform Specification attribute.
      * @param tps {@link TCGPlatformSpecification}
      */
-    public final PlatformCredentialFactory tcgPlatformSpecification(final TCGPlatformSpecification tps) {
+    public final PlatformCertificateFactory tcgPlatformSpecification(final TCGPlatformSpecification tps) {
         attributes.put(TCGObjectIdentifier.tcgAtTcgPlatformSpecification, tps);
         return this;
     }
@@ -137,7 +155,7 @@ public class PlatformCredentialFactory {
     /**
      * Set the TCG Certificate Specification attribute.
      */
-    public final PlatformCredentialFactory tcgCertificateSpecification(final TCGSpecificationVersion tcs) {
+    public final PlatformCertificateFactory tcgCertificateSpecification(final TCGSpecificationVersion tcs) {
         attributes.put(TCGObjectIdentifier.tcgAtTcgCertificateSpecification, tcs);
         return this;
     }
@@ -147,7 +165,7 @@ public class PlatformCredentialFactory {
      * Set the TCG Credential Specification attribute.
      * @param tcs {@link TCGCredentialSpecification}
      */
-    public final PlatformCredentialFactory tcgCredentialSpecification(final TCGSpecificationVersion tcs) {
+    public final PlatformCertificateFactory tcgCredentialSpecification(final TCGSpecificationVersion tcs) {
         attributes.put(TCGObjectIdentifier.tcgAtTcgCredentialSpecification, tcs);
         return this;
     }
@@ -157,8 +175,8 @@ public class PlatformCredentialFactory {
      * @param pConfig {@link PlatformConfiguration}
      * @see PlatformConfigurationFactory
      */
-    public final PlatformCredentialFactory platformConfiguration(final PlatformConfiguration pConfig) {
-        attributes.put(TCGObjectIdentifier.tcgAtPlatformConfigurationV1, pConfig);
+    public final PlatformCertificateFactory platformConfiguration(final PlatformConfigurationV2 pConfig) {
+        attributes.put(TCGObjectIdentifier.tcgAtPlatformConfigurationV2, pConfig);
         return this;
     }
     
@@ -167,7 +185,7 @@ public class PlatformCredentialFactory {
      * @param assertions {@link TBBSecurityAssertions}
      * @see TBBSecurityAssertionsFactory
      */
-    public final PlatformCredentialFactory tbbSecurityAssertions(final TBBSecurityAssertions assertions) {
+    public final PlatformCertificateFactory tbbSecurityAssertions(final TBBSecurityAssertions assertions) {
         attributes.put(TCGObjectIdentifier.tcgAtTbbSecurityAssersions, assertions);
         return this;
     }
@@ -176,7 +194,7 @@ public class PlatformCredentialFactory {
      * Set the platform configuration URI attribute.
      * @param uri {@link URIReference}
      */
-    public final PlatformCredentialFactory platformConfigUri(final URIReference uri) {
+    public final PlatformCertificateFactory platformConfigUri(final URIReference uri) {
         attributes.put(TCGObjectIdentifier.tcgAtPlatformConfigUri, uri);
         return this;
     }
@@ -185,7 +203,7 @@ public class PlatformCredentialFactory {
      * Add an extension.
      * @param ext {@link Extension}
      */
-    public final PlatformCredentialFactory addExtension(Extension ext) {
+    public final PlatformCertificateFactory addExtension(Extension ext) {
         extensions.put(ext.getExtnId(), ext);
         return this;
     }
@@ -197,7 +215,7 @@ public class PlatformCredentialFactory {
      * @param ext {@link Encodable} the extension object
      * @throws IOException see {@link Encodable#getEncoded}
      */
-    public final PlatformCredentialFactory addExtension(final ASN1ObjectIdentifier oid, final Encodable ext) throws IOException {
+    public final PlatformCertificateFactory addExtension(final ASN1ObjectIdentifier oid, final Encodable ext) throws IOException {
         boolean isCritical = false;
         if (criticalExtensions.containsKey(oid)) {
             isCritical = criticalExtensions.get(oid).booleanValue();
@@ -207,7 +225,7 @@ public class PlatformCredentialFactory {
     }
     
     /**
-     * Attribute Certificate structure:
+     * Base Platform Attribute Certificate structure:
      *   Holder (required)
      *   Issuer (required)
      *   Serial Number (required)
@@ -254,6 +272,16 @@ public class PlatformCredentialFactory {
         // Begin building the cert with values stored in this class
         X509v2AttributeCertificateBuilder xacb = new X509v2AttributeCertificateBuilder(ach, issuer, serialNumber, notBefore, notAfter);
         
+        ASN1ObjectIdentifier credentialType = TCGObjectIdentifier.tcgKpPlatformAttributeCertificate;
+        if (delta) {
+            credentialType = TCGObjectIdentifier.tcgKpDeltaPlatformAttributeCertificate;
+            
+            // Remove attributes which cannot be inside a delta platform certificate
+            attributes.remove(TCGObjectIdentifier.tcgAtTbbSecurityAssersions);
+            attributes.remove(TCGObjectIdentifier.tcgAtTcgPlatformSpecification);
+        }
+        attributes.put(TCGObjectIdentifier.tcgAtTcgCredentialType, new TCGCredentialType(credentialType));
+        
         // add in all attributes
         for (final ASN1ObjectIdentifier oid : attributes.keySet()) {
             xacb.addAttribute(oid, attributes.get(oid));
@@ -295,18 +323,18 @@ public class PlatformCredentialFactory {
         return mapper.writeValueAsString(iib);
     }
     
-    public static final PlatformCredentialFactory loadIntermediateInfofromJson(final String filename) throws IOException {
+    public static final PlatformCertificateFactory loadIntermediateInfofromJson(final String filename) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         IntermediateInfoBean iib = mapper.readValue(new File(filename), IntermediateInfoBean.class);
-        PlatformCredentialFactory pcf = PlatformCredentialFactory.create();
+        PlatformCertificateFactory pcf = PlatformCertificateFactory.create();
         pcf.holder = Holder.getInstance(Base64.decode(new String(iib.getHolder()).getBytes()));
         pcf.attributes = iib.convertAttributes();
         pcf.extensions = iib.convertExtentions();
         return pcf;
     }
 
-    public static final PlatformCredentialFactory newPolicyRefJson(final String filename) {
-        PlatformCredentialFactory pcf = PlatformCredentialFactory.create();
+    public static final PlatformCertificateFactory newPolicyRefJson(final String filename) {
+        PlatformCertificateFactory pcf = PlatformCertificateFactory.create();
         
         try {
             final String jsonData = new String(Files.readAllBytes(Paths.get(filename)));

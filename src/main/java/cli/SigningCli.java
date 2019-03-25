@@ -5,9 +5,8 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.ParameterException;
 import factory.AuthorityInfoAccessFactory;
 import factory.CertificatePoliciesFactory;
-import factory.PlatformCredentialFactory;
+import factory.PlatformCertificateFactory;
 import factory.TargetingInformationFactory;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -18,26 +17,22 @@ import java.util.Date;
 import json.OtherExtensionsJsonHelper;
 import key.SignerCredential;
 import operator.PcBcContentSignerBuilder;
-import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
-import org.bouncycastle.asn1.pkcs.RSAPrivateKey;
-import org.bouncycastle.asn1.sec.ECPrivateKey;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.AuthorityInformationAccess;
 import org.bouncycastle.asn1.x509.AuthorityKeyIdentifier;
 import org.bouncycastle.asn1.x509.CRLDistPoint;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.TargetInformation;
-import org.bouncycastle.asn1.x9.X9ObjectIdentifiers;
 import org.bouncycastle.cert.AttributeCertificateIssuer;
 import org.bouncycastle.cert.X509AttributeCertificateHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.bc.BcX509ExtensionUtils;
 import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.DefaultAlgorithmNameFinder;
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
 import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.util.encoders.Base64;
 
 
 public class SigningCli {
@@ -107,16 +102,16 @@ public class SigningCli {
         // Initialize the Platform Credential data
         // One option is to use the output from the AttributeCertInfo program
         // Another is to give this program all of the input that would have been given to the first program
-        PlatformCredentialFactory pcf = null;
+        PlatformCertificateFactory pcf = null;
         boolean hasObserverFile = argList.getObserverJsonFile() != null;
         boolean hasComponentFile = argList.getComponentJsonFile() != null;
-        boolean hasEkFile = argList.getEkCertFile() != null;
+        boolean hasEkFile = argList.getHolderCertFile() != null;
         boolean hasPolicyFile = argList.getPolicyRefJsonFile() != null;
         if (hasObserverFile) { 
-            pcf = PlatformCredentialFactory.loadIntermediateInfofromJson(argList.getObserverJsonFile());
+            pcf = PlatformCertificateFactory.loadIntermediateInfofromJson(argList.getObserverJsonFile());
         } else if(hasComponentFile && hasEkFile && hasPolicyFile) {
             DeviceObserverCli acic = new DeviceObserverCli();
-            pcf = acic.collateCertDetails(argList.getComponentJsonFile(), argList.getEkCertFile(), argList.getPolicyRefJsonFile());
+            pcf = acic.collateCertDetails(argList.getComponentJsonFile(), argList.getHolderCertFile(), argList.getPolicyRefJsonFile());
         } else {
             StringBuilder errorMsg = new StringBuilder();
             errorMsg.append("Missing required input file(s).  Please include:");
@@ -162,7 +157,7 @@ public class SigningCli {
         AuthorityInfoAccessFactory aiaf = OtherExtensionsJsonHelper.accessesFromJsonFile(argList.getExtensionsJsonFile());
         AuthorityInformationAccess aia = aiaf.build();
         CRLDistPoint cdp = OtherExtensionsJsonHelper.crlFromJsonFile(argList.getExtensionsJsonFile());
-        TargetingInformationFactory tif = null; // TargetingInformationFactory.create(); // add ek cert bundle via CLI 
+        TargetingInformationFactory tif = OtherExtensionsJsonHelper.ekTargetsFromJsonFile(argList.getExtensionsJsonFile()); 
         TargetInformation ti = tif != null ? tif.build() : null;
         
         pcf.addExtension(Extension.authorityKeyIdentifier, aki);
@@ -190,6 +185,7 @@ public class SigningCli {
         }
         
         // Convert the platform credential encoded bytes to a string for output
+        final byte[] output = argList.isPemOutput() ? (x509type.ATTRIBUTE_CERTIFICATE.getPemHeader() + Base64.toBase64String(ach.getEncoded()) + x509type.ATTRIBUTE_CERTIFICATE.getPemFooter()).getBytes() : ach.getEncoded();
         if (argList.getOutFile() != null && !argList.getOutFile().isEmpty()) {
             File file = new File(argList.getOutFile());
             if (file.exists()) {
@@ -200,13 +196,13 @@ public class SigningCli {
             
             FileOutputStream stream = new FileOutputStream(file);
             try {
-                stream.write(ach.getEncoded());
+                stream.write(output);
                 stream.flush();
             } finally {
                 stream.close();
             }
         } else if (!argList.isQuiet()) {
-            System.out.write(ach.getEncoded());
+            System.out.write(output);
         }
     }
     

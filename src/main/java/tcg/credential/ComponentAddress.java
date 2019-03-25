@@ -46,7 +46,7 @@ public class ComponentAddress extends ASN1Object {
 		if (elements[1] instanceof DERUTF8String) {
 			addressValue = (DERUTF8String) elements[1];
 		} else {
-			throw new IllegalArgumentException("Expected DERUTF8String, received " + elements[0].getClass().getName());
+			throw new IllegalArgumentException("Expected DERUTF8String, received " + elements[1].getClass().getName());
 		}
 	}
 

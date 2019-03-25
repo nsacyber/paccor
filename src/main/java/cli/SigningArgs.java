@@ -14,8 +14,8 @@ public class SigningArgs {
     @Parameter(names={"-c", "--componentJsonFile"}, order=1, description="the path to the JSON file output from the component script", validateWith={FileExistsParameterValidator.class, ReadFileParameterValidator.class})
     private String componentJsonFile;
     
-    @Parameter(names={"-e" , "--ekCertFile"}, order=2, description="the path to a X509v3 EK Certificate", validateWith={FileExistsParameterValidator.class, ReadFileParameterValidator.class})
-    private String ekCertFile;
+    @Parameter(names={"-e" , "--holderCertFile"}, order=2, description="if making a base certificate, provide the path to a X509v3 EK Certificate.  For delta certificate, provide the path to a platform certificate", validateWith={FileExistsParameterValidator.class, ReadFileParameterValidator.class})
+    private String holderCertFile;
     
     @Parameter(names={"-p", "--policyRefJsonFile"}, order=3, description="the path to the JSON file output from the policy reference script", validateWith={FileExistsParameterValidator.class, ReadFileParameterValidator.class})
     private String policyRefJsonFile;
@@ -42,7 +42,7 @@ public class SigningArgs {
     @Parameter(names={"-f", "--file"}, order=10, description="(optional field) the output file path.  if not set, stdout will be used.")
     private String outFile;
     
-    @Parameter(names={"--pem"}, order=11, description="output will be in DER format unless this flag is set on the command line")
+    @Parameter(names={"--pem"}, order=11, description="platform certificate will be output in PEM format")
     private boolean pem = false;
     
     @Parameter(names={"-h", "--help"}, order=12, help = true, description="print this help message")
@@ -51,8 +51,8 @@ public class SigningArgs {
     @Parameter(names={"--quiet"}, order=13, description="no output")
     private boolean quiet = false;
     
-    public String getEkCertFile() {
-        return ekCertFile;
+    public String getHolderCertFile() {
+        return holderCertFile;
     }
 
     public String getComponentJsonFile() {
