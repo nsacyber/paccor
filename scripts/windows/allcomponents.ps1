@@ -34,6 +34,9 @@ $JSON_PROPERTIES="PROPERTIES"
 $JSON_PROPERTIESURI="PROPERTIESURI"
 $JSON_PLATFORM="PLATFORM"
 #### JSON Component Keywords
+$JSON_COMPONENTCLASS="COMPONENTCLASS"
+$JSON_COMPONENTCLASSREGISTRY="COMPONENTCLASSREGISTRY"
+$JSON_COMPONENTCLASSVALUE="COMPONENTCLASSVALUE"
 $JSON_MANUFACTURER="MANUFACTURER"
 $JSON_MODEL="MODEL"
 $JSON_SERIAL="SERIAL"
@@ -147,7 +150,7 @@ function HexToByteArray { # Powershell doesn't have a built in BinToHex function
     }
 }
 function jsonComponentClass () {
-    echo ("$JSON_COMPONENTCLASS_TEMPLATE" -f "$($args[0])")
+    echo ("$JSON_COMPONENTCLASS_TEMPLATE" -f "$($args[0])","$($args[1])")
 }
 function jsonManufacturer () {
     $manufacturer=("`"$JSON_MANUFACTURER`": `"{0}`"" -f "$($args[0])")
