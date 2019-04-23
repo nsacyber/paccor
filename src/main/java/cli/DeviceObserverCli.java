@@ -110,7 +110,7 @@ public class DeviceObserverCli {
             ASN1ObjectIdentifier sanOid = Extension.subjectAlternativeName;
             boolean isCritical = PlatformCertificateFactory.criticalExtensions.get(sanOid).booleanValue();
             Extension sanExt = new Extension(sanOid, isCritical, san.getEncoded());
-            if (sanExt.equals(pCert.getExtension(sanOid))) {
+            if (!sanExt.equals(pCert.getExtension(sanOid))) {
                 throw new IllegalArgumentException("Subject alternative name did not match holder.");
             }
         } else {
