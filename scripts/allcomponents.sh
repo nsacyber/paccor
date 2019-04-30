@@ -100,15 +100,15 @@ JSON_WLANMAC_TEMPLATE=' {
                 \"'"$JSON_WLANMAC"'\": \"%s\" } '
 JSON_BLUETOOTHMAC_TEMPLATE=' {
                 \"'"$JSON_BLUETOOTHMAC"'\": \"%s\" } '
-JSON_COMPONENTCLASS_TEMPLATE=' \"'"$JSON_COMPONENTCLASS"'\": {"
+JSON_COMPONENTCLASS_TEMPLATE=' \"'"$JSON_COMPONENTCLASS"'\": {
         \"'"$JSON_COMPONENTCLASSREGISTRY"'\": \"%s\",
         \"'"$JSON_COMPONENTCLASSVALUE"'\": \"%s\"
     }'
-JSON_ATTRIBUTECERTIDENTIFIER_TEMPLATE=' \"'"$JSON_ATTRIBUTECERTIDENTIFIER"'\": {"
+JSON_ATTRIBUTECERTIDENTIFIER_TEMPLATE=' \"'"$JSON_ATTRIBUTECERTIDENTIFIER"'\": {
         \"'"$JSON_HASHALG"'\": \"%s\",
         \"'"$JSON_HASHVALUE"'\": \"%s\"
     },'
-JSON_GENERICCERTIDENTIFIER_TEMPLATE=' \"'"$JSON_GENERICCERTIDENTIFIER"'\": {"
+JSON_GENERICCERTIDENTIFIER_TEMPLATE=' \"'"$JSON_GENERICCERTIDENTIFIER"'\": {
         \"'"$JSON_ISSUER"'\": \"%s\",
         \"'"$JSON_SERIAL"'\": \"%s\"
     },'
@@ -297,7 +297,7 @@ platform=$(jsonPlatformObject "$platformManufacturer" "$platformModel" "$platfor
 
 
 ### Gather component details
-chassisClass=jsonComponentClass("COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CHASSIS")
+chassisClass=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CHASSIS")
 chassisManufacturer=$(dmidecode -s chassis-manufacturer)
 chassisModel=$(dmidecode -s chassis-type)
 chassisSerial=$(dmidecode -s chassis-serial-number)
@@ -325,7 +325,7 @@ chassisOptional=$(printf "$chassisOptional" | cut -c2-)
 componentChassis=$(jsonComponent "$chassisClass" "$chassisManufacturer" "$chassisModel" "$chassisOptional")
 
 ### Gather baseboard details
-baseboardClass=jsonComponentClass("COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BASEBOARD")
+baseboardClass=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BASEBOARD")
 baseboardManufacturer=$(dmidecode -s baseboard-manufacturer)
 baseboardModel=$(dmidecode -s baseboard-product-name)
 baseboardSerial=$(dmidecode -s baseboard-serial-number)
@@ -356,7 +356,7 @@ baseboardOptional=$(printf "$baseboardOptional" | cut -c2-)
 componentBaseboard=$(jsonComponent "$baseboardClass" "$baseboardManufacturer" "$baseboardModel" "$baseboardFieldReplaceable" "$baseboardOptional")
 
 ### Gather BIOS details
-biosClass=jsonComponentClass("COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BIOS")
+biosClass=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BIOS")
 biosUefiManufacturer=$(dmidecode -s bios-vendor)
 biosUefiModel=$(jsonModel "$(dmesg | grep efi | grep SMBIOS > /dev/null && printf "UEFI" || printf "BIOS")")
 biosUefiRevision=$(dmidecode -s bios-version)
@@ -400,7 +400,7 @@ parseCpuData () {
             
             tmpManufacturer=$(jsonManufacturer "$manufacturer")
             tmpModel=$(jsonModel "$model")
-            cpuClass=jsonComponentClass("COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CPU")
+            cpuClass=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CPU")
             newCpuData=$(jsonComponent "$cpuClass" "$tmpManufacturer" "$tmpModel" "$replaceable" "$theRest")
             tmpData="$tmpData"",""$newCpuData"
 
@@ -465,7 +465,7 @@ parseRamData () {
             if [ "$manufacturer" != "$NOT_SPECIFIED" ] || [ "$model" != "$NOT_SPECIFIED" ] || { [ -n "$serialnumber" ] && [ "$serialnumber" != "$NOT_SPECIFIED" ]; } || { [ -n "$revision" ] && [ "$revision" != "$NOT_SPECIFIED" ]; }; then
             theRest=$(printf "$theRest" | cut -c2-)
             
-            ramClass=jsonComponentClass("COMPCLASS_REGISTRY_TCG" "$COMPCLASS_RAM")
+            ramClass=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_RAM")
             tmpManufacturer=$(jsonManufacturer "$manufacturer")
             tmpModel=$(jsonModel "$model")
             newRamData=$(jsonComponent "$ramClass" "$tmpManufacturer" "$tmpModel" "$replaceable" "$theRest")
@@ -559,7 +559,7 @@ parseNicData () {
 
             theRest=$(printf "$theRest" | cut -c2-)
             
-			nicClass=jsonComponentClass("COMPCLASS_REGISTRY_TCG" "$COMPCLASS_NIC")
+            nicClass=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_NIC")
             tmpManufacturer=$(jsonManufacturer "$manufacturer")
             tmpModel=$(jsonModel "$model")
             newNicData=$(jsonComponent "$nicClass" "$tmpManufacturer" "$tmpModel" "$replaceable" "$theRest")
@@ -654,7 +654,7 @@ parseHddData () {
 
             theRest=$(printf "$theRest" | cut -c2-)
             
-            hddClass=jsonComponentClass("COMPCLASS_REGISTRY_TCG" "$COMPCLASS_HDD")
+            hddClass=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_HDD")
             tmpManufacturer=$(jsonManufacturer "$manufacturer")
             tmpModel=$(jsonModel "$model")
             newHddData=$(jsonComponent "$hddClass" "$tmpManufacturer" "$tmpModel" "$replaceable" "$theRest")

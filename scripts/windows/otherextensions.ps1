@@ -4,15 +4,15 @@ $certPolicyOid1="1.2.3" # Replace with a real Certificate Policy OID
 $certPolicyQualifierCPS1=""
 $certPolicyQualifierUserNotice1="TCG Trusted Platform Endorsement" # Don't change this value.
 #### Authority Information Access is an optional extension. To add additional access methods, more variables must be created and referenced below.
-$authorityInfoAccessMethod1="" # valid options are OCSP or CAISSUERS
-$authorityInfoAccessLocation1=""  # DN
+$authorityInfoAccessMethod1="OCSP" # valid options are OCSP or CAISSUERS
+$authorityInfoAccessLocation1="C=US,O=example.com,OU=PCTest"  # DN
 #### CRL Distribution is an optional extension.  Leave any blank to omit the extension.
-$crlType="" # valid options are 0 or 1
-$crlName="" # DN
-$crlReasonFlags="" # valid options are integers 0 thru 16
-$crlIssuer="" # CRL issuer DN
+$crlType="1" # valid options are 0 or 1
+$crlName="C=US,O=example.com,OU=PCTest" # DN
+$crlReasonFlags="3" # valid options are integers 0 thru 16
+$crlIssuer="C=US,O=example.com,OU=PCTest" # CRL issuer DN
 #### Targeting Information is an optional extension.  Leave the targetFile variable blank to omit the extension.
-targetFile="" # provide comma separated file paths to EK certificates
+$targetFile="fileA,fileB.txt,fileC.great.two,C:\Windows\n\blah two.portapot" # provide comma separated file paths to EK certificates
 
 ### The logic below can be changed by advanced users.
 #### SHA-256 was assumed to be acceptable for each of the hashAlg choices for URI References
@@ -37,8 +37,8 @@ $JSON_TYPE="TYPE"
 $JSON_NAME="NAME"
 $JSON_REASON="REASON"
 $JSON_ISSUER="ISSUER"
-JSON_TARGETINGINFORMATION="TARGETINGINFORMATION"
-JSON_FILE="FILE"
+$JSON_TARGETINGINFORMATION="TARGETINGINFORMATION"
+$JSON_FILE="FILE"
 
 ### JSON Structure Format
 $JSON_OTHER_EXTENSIONS_TEMPLATE="{{
@@ -62,27 +62,24 @@ $JSON_AUTHORITY_INFO_ACCESS_TEMPLATE="
     `"$JSON_AUTHORITYINFOACCESS`": [
         {0}
     ]"
-$JSON_AUTH_ACCESS_TEMPLATE='{
+$JSON_AUTH_ACCESS_TEMPLATE="{{
             `"$JSON_ACCESSMETHOD`": `"{0}`",
             `"$JSON_ACCESSLOCATION`": `"{1}`"
-        }'
+        }}"
 $JSON_CRL_DISTRIBUTION_TEMPLATE="
-    `"$JSON_CRLDISTRIBUTION`": {
-        `"$JSON_DISTRIBUTIONNAME`": {
+    `"$JSON_CRLDISTRIBUTION`": {{
+        `"$JSON_DISTRIBUTIONNAME`": {{
             `"$JSON_TYPE`": `"{0}`",
             `"$JSON_NAME`": `"{1}`"
-        },
+        }},
         `"$JSON_REASON`": `"{2}`",
         `"$JSON_ISSUER`": `"{3}`"
-    }
-"
+    }}"
 $JSON_TARGETING_INFORMATION_TEMPLATE="
-    `"$JSON_TARGETINGINFORMATION`": [
-        `"{0}`"
+    `"$JSON_TARGETINGINFORMATION`": [{0}
     ]"
-JSON_TARGETING_INFORMATION_FILE_TEMPLATE="
-        {{ `"$JSON_FILE`": `{0}`}
-"
+$JSON_TARGETING_INFORMATION_FILE_TEMPLATE="
+        {{ `"$JSON_FILE`": {0}}}" # {0} is not in quotes because the files will be escaped for JSON by powershell
 
 ### JSON Constructor Aides
 function toCSV() {
@@ -119,11 +116,14 @@ function jsonCRLDist() {
     echo ("$JSON_CRL_DISTRIBUTION_TEMPLATE" -f "$crlType","$crlName","$crlReasonFlags","$crlIssuer")
 }
 function jsonTargetingInformation() {
-    echo "$targetFile" | sed -n 1'p' | tr ',' '\n' | while read file; do
-        echo $file
-    done
-
-    echo ("JSON_TARGETING_INFORMATION_TEMPLATE" -f "$(toCSV($args))")
+    $targetInfo= @()
+    $targetFileSplit="$targetFile".Split(",")
+    for ($i = 0; $i -lt $targetFileSplit.Count ; $i++) {
+        $escaped=($targetFileSplit[$i] | ConvertTo-Json)
+        $formatted=("$JSON_TARGETING_INFORMATION_FILE_TEMPLATE" -f $escaped)
+        $targetInfo+=$formatted
+    }
+    echo ("$JSON_TARGETING_INFORMATION_TEMPLATE" -f "$(toCSV($targetInfo))")
 }
 
 function jsonOtherExtensionsFile() {
@@ -146,7 +146,12 @@ function jsonOtherExtensionsFile() {
 
     if ($crlType -and $crlName -and $crlReasonFlags -and $crlIssuer) {
         $crlDist=(jsonCRLDist)
-        $tmpData=","+ "$crlDist"
+        $tmpData+="," + "$crlDist"
+    }
+
+    if ($targetFile) {
+        $targets=(jsonTargetingInformation)
+        $tmpData+="," + "$targets"
     }
 
     echo ("$JSON_OTHER_EXTENSIONS_TEMPLATE" -f "$tmpData")

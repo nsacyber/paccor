@@ -78,8 +78,7 @@ JSON_CRL_DISTRIBUTION_TEMPLATE='
     }
 '
 JSON_TARGETING_INFORMATION_TEMPLATE='
-    \"'"$JSON_TARGETINGINFORMATION"'\": [
-        %s
+    \"'"$JSON_TARGETINGINFORMATION"'\": [%s
     ]'
 JSON_TARGETING_INFORMATION_FILE_TEMPLATE='
         {\"'"$JSON_FILE"'\": \"%s\"}
@@ -114,11 +113,13 @@ jsonCRLDist() {
     printf "$JSON_CRL_DISTRIBUTION_TEMPLATE" "$crlType" "$crlName" "$crlReasonFlags" "$crlIssuer"
 }
 jsonTargetingInformation() {
-    echo "$targetFile" | sed -n 1'p' | tr ',' '\n' | while read file; do
-        echo $file
-    done
-
-    printf "JSON_TARGETING_INFORMATION_TEMPLATE" "$(toCSV "$@")"
+    targetInfo=()
+    targetFileSplit=$(echo "$targetFile" | sed -n 1'p' | tr ',' '\n')
+    while read file; do
+        formatted=$(printf "$JSON_TARGETING_INFORMATION_FILE_TEMPLATE" "$file")
+        targetInfo+=("$formatted")
+    done <<< "$targetFileSplit"
+    printf "$JSON_TARGETING_INFORMATION_TEMPLATE" "$(toCSV "${targetInfo[@]}")"
 }
 
 jsonOtherExtensionsFile() {
@@ -144,8 +145,11 @@ jsonOtherExtensionsFile() {
         tmpData="$tmpData"",""$crlName"
     fi
 
-    targets=$(jsonTargetingInformation)
-
+    if [ -n "$targetFile" ]; then
+        targets=$(jsonTargetingInformation)
+        tmpData="$tmpData"",""$targets"
+    fi
+    
     printf "$JSON_OTHER_EXTENSIONS_TEMPLATE" "$tmpData"
 }
 
