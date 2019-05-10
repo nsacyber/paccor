@@ -186,7 +186,7 @@ public class PlatformCertificateFactory {
      * @see TBBSecurityAssertionsFactory
      */
     public final PlatformCertificateFactory tbbSecurityAssertions(final TBBSecurityAssertions assertions) {
-        attributes.put(TCGObjectIdentifier.tcgAtTbbSecurityAssersions, assertions);
+        attributes.put(TCGObjectIdentifier.tcgAtTbbSecurityAssertions, assertions);
         return this;
     }
     
@@ -277,10 +277,10 @@ public class PlatformCertificateFactory {
             credentialType = TCGObjectIdentifier.tcgKpDeltaPlatformAttributeCertificate;
             
             // Remove attributes which cannot be inside a delta platform certificate
-            attributes.remove(TCGObjectIdentifier.tcgAtTbbSecurityAssersions);
+            attributes.remove(TCGObjectIdentifier.tcgAtTbbSecurityAssertions);
             attributes.remove(TCGObjectIdentifier.tcgAtTcgPlatformSpecification);
         }
-        attributes.put(TCGObjectIdentifier.tcgAtTcgCredentialType, new TCGCredentialType(credentialType));
+        attributes.put(TCGObjectIdentifier.tcgAtTcgCertificateType, new TCGCredentialType(credentialType));
         
         // add in all attributes
         for (final ASN1ObjectIdentifier oid : attributes.keySet()) {
