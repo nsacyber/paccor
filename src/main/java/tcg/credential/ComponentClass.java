@@ -11,6 +11,7 @@ import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERUTF8String;
+import org.bouncycastle.util.Arrays;
 
 /**
  * <pre>
@@ -22,6 +23,7 @@ import org.bouncycastle.asn1.DERUTF8String;
  * </pre>
  */
 public class ComponentClass extends ASN1Object {
+    public static final int VALUE_SIZE = 4;
 
     // minimum 2, maximum 2
     ASN1ObjectIdentifier componentClassRegistry;
@@ -64,8 +66,17 @@ public class ComponentClass extends ASN1Object {
             throw new IllegalArgumentException("Component class value too large.  Given registry: " + componentClassRegistry.getId() + ", value: " + componentClassValueHex);
         }
         
+        byte[] valueArray = value.toByteArray();
+        int valueArrayLength = valueArray.length;
+        byte[] buffer = new byte[VALUE_SIZE];
+        for (int i = 0; i < VALUE_SIZE; i++) {
+            int bufferPos = VALUE_SIZE - i - 1;
+            int valueArrayPos = valueArrayLength - i - 1;
+            buffer[bufferPos] = valueArrayPos >= 0 ? valueArray[valueArrayPos] : (byte)0;
+        }
+        
         this.componentClassRegistry = componentClassRegistry;
-        this.componentClassValue = new DEROctetString(value.toByteArray());
+        this.componentClassValue = new DEROctetString(buffer);
     }
 
     public ComponentClass(ASN1ObjectIdentifier componentClassRegistry, ASN1OctetString componentClassValue) {

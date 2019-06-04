@@ -14,13 +14,14 @@ $PEN_ROOT="1.3.6.1.4.1." # OID root for the private enterprise numbers
 
 ### ComponentClass values
 $COMPCLASS_REGISTRY_TCG="2.23.133.18.3.1"
-$COMPCLASS_BASEBOARD="00000001" # waiting on TCG publication of componentclass registry
-$COMPCLASS_BIOS="00000020"
-$COMPCLASS_CHASSIS="00000300"
-$COMPCLASS_CPU="00004000"
-$COMPCLASS_HDD="00050000"
-$COMPCLASS_NIC="00600000"
-$COMPCLASS_RAM="07000000"
+$COMPCLASS_BASEBOARD="00030003" # these values are meant to be an example.  check the component class registry.
+$COMPCLASS_BIOS="00130003"
+$COMPCLASS_UEFI="00130002"
+$COMPCLASS_CHASSIS="00020001" # TODO:  chassis type is included in SMBIOS
+$COMPCLASS_CPU="00010002"
+$COMPCLASS_HDD="00070002"
+$COMPCLASS_NIC="00090002"
+$COMPCLASS_RAM="00060001"  # TODO: memory type is included in SMBIOS
 
 # Progress Groups
 #     1: Overall progress
