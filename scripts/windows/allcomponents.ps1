@@ -338,7 +338,7 @@ Write-Progress -Id 2 -ParentId 1 -Activity "Gathering platform information" -Cur
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 20
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering chassis information" -CurrentOperation "Querying WMIC" -PercentComplete 0
-$chassisClass=(jsonComponentClass "COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CHASSIS")
+$chassisClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CHASSIS")
 $chassisManufacturer=((wmic systemenclosure get manufacturer /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
 $chassisModel=((wmic systemenclosure get chassistypes /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
 $chassisSerial=((wmic systemenclosure get serialnumber /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
@@ -372,7 +372,7 @@ Write-Progress -Id 2 -ParentId 1 -Activity "Gathering chassis information" -Curr
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 30
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Querying WMIC" -PercentComplete 0
-$baseboardClass=(jsonComponentClass "COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BASEBOARD")
+$baseboardClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BASEBOARD")
 $baseboardManufacturer=((wmic baseboard get manufacturer /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
 $baseboardModel=((wmic baseboard get product /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
 $baseboardSerial=((wmic baseboard get serialnumber /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
@@ -417,7 +417,7 @@ Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -Cu
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 30
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering BIOS information" -CurrentOperation "Querying WMIC" -PercentComplete 0
-$biosClass=(jsonComponentClass "COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BIOS")
+$biosClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BIOS")
 $biosManufacturer=((wmic bios get manufacturer /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
 $biosModel=((wmic bios get name /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
 $biosSerial=((wmic bios get serialnumber /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
@@ -463,7 +463,7 @@ function parseCpuData() {
     for($i=0;$i -lt $numRows;$i++) {
         Write-Progress -Id 2 -ParentId 1 -Activity "Gathering CPU information" -CurrentOperation ("Cleaning output for CPU " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
 
-		$cpuClass=(jsonComponentClass "COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CPU")
+		$cpuClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CPU")
         $tmpManufacturer=$RS[$i].Manufacturer
         if (!$tmpManufacturer) {
             $tmpManufacturer=$NOT_SPECIFIED
@@ -511,7 +511,7 @@ function parseRamData() {
     for($i=0;$i -lt $numRows;$i++) {
         Write-Progress -Id 2 -ParentId 1 -Activity "Gathering RAM information" -CurrentOperation ("Cleaning output for Memory Chip " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
 
-		$ramClass=(jsonComponentClass "COMPCLASS_REGISTRY_TCG" "$COMPCLASS_RAM")
+		$ramClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_RAM")
         $tmpManufacturer=$RS[$i].Manufacturer
         if (!$tmpManufacturer) {
             $tmpManufacturer=$NOT_SPECIFIED
@@ -555,7 +555,7 @@ function parseNicData() {
     for($i=0;$i -lt $numRows;$i++) {
         Write-Progress -Id 2 -ParentId 1 -Activity "Gathering NIC information" -CurrentOperation ("Cleaning output for NIC " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
         
-		$nicClass=(jsonComponentClass "COMPCLASS_REGISTRY_TCG","$COMPCLASS_NIC")
+		$nicClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_NIC")
         $tmpManufacturer=$RS[$i].DriverProvider
         if (!$tmpManufacturer) {
             $tmpManufacturer=$NOT_SPECIFIED
@@ -613,7 +613,7 @@ function parseHddData() {
     for($i=0;$i -lt $numRows;$i++) {
         Write-Progress -Id 2 -ParentId 1 -Activity "Gathering Hard Disk information" -CurrentOperation ("Cleaning output for HDD " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
 
-        $hddClass=(jsonComponentClass "COMPCLASS_REGISTRY_TCG" "$COMPCLASS_HDD")
+        $hddClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_HDD")
         $tmpManufacturer=$RS[$i].Manufacturer
         if (!$tmpManufacturer) {
             $tmpManufacturer=$NOT_SPECIFIED
