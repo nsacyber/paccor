@@ -53,7 +53,9 @@ public class ValidatorCli {
     public static final void main(String[] args) throws Exception {
         ValidatorCli cli = new ValidatorCli();
         try {
-            cli.handleCommandLine(args);
+            if(!cli.handleCommandLine(args)) {
+                System.exit(1);
+            }
         } catch (ParameterException e) {
             System.out.println(e.getMessage());
         }
