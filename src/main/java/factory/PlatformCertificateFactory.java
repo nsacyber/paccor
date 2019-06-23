@@ -307,6 +307,7 @@ public class PlatformCertificateFactory {
         
         try {
             iib.setHolder(new String(Base64.encode(holder.getEncoded("DER"))));
+            iib.setDelta(delta);
             for (ASN1ObjectIdentifier oid : attributes.keySet()) {
                 iib.addAttribute(oid, attributes.get(oid));
             }
@@ -328,6 +329,7 @@ public class PlatformCertificateFactory {
         IntermediateInfoBean iib = mapper.readValue(new File(filename), IntermediateInfoBean.class);
         PlatformCertificateFactory pcf = PlatformCertificateFactory.create();
         pcf.holder = Holder.getInstance(Base64.decode(new String(iib.getHolder()).getBytes()));
+        pcf.delta = iib.isDelta();
         pcf.attributes = iib.convertAttributes();
         pcf.extensions = iib.convertExtentions();
         return pcf;
