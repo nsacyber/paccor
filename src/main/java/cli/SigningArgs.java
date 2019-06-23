@@ -8,7 +8,7 @@ import cli.pv.ReadFileParameterValidator;
 
 public class SigningArgs {
     // observerJson or ek+devJson+polJson
-    @Parameter(names={"-o", "--observerJsonFile"}, order=0, description="the JSON output from the observer program", validateWith={FileExistsParameterValidator.class, ReadFileParameterValidator.class})
+    @Parameter(hidden=true, names={"-o", "--observerJsonFile"}, order=0, description="the JSON output from the observer program", validateWith={FileExistsParameterValidator.class, ReadFileParameterValidator.class})
     private String observerJsonFile;
     
     @Parameter(names={"-c", "--componentJsonFile"}, order=1, description="the path to the JSON file output from the component script", validateWith={FileExistsParameterValidator.class, ReadFileParameterValidator.class})

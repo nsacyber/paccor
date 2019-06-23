@@ -13,11 +13,13 @@ public class IntermediateInfoBean {
     private String holder;
     private Map<String, String> attributes;
     private Map<String, String> extensions;
+    private boolean delta;
     
     public IntermediateInfoBean() {
         holder = "";
         attributes = new Hashtable<String, String>();
         extensions = new Hashtable<String, String>();
+        delta = false;
     }
     
     public String getHolder() {
@@ -25,6 +27,12 @@ public class IntermediateInfoBean {
     }
     public void setHolder(String holder) {
         this.holder = holder;
+    }
+    public boolean isDelta() {
+        return delta;
+    }
+    public void setDelta(boolean delta) {
+        this.delta = delta;
     }
     public Map<String, String> getAttributes() {
         return attributes;
