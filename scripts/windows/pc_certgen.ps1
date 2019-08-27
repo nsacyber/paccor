@@ -74,7 +74,7 @@ if (!(Test-Path "$componentlist" -PathType Leaf)) {
 # Step 3 create the reference options file
 if (!(Test-Path "$policyreference" -PathType Leaf)) {
     echo "Creating a Platform policy JSON file"
-    powershell -ExecutionPolicy Bypass "$policymaker_script" > "$policyreference"
+    powershell -ExecutionPolicy Bypass "$policymaker_script" "$policyreference"
     if (!$?) {
         echo "Failed to create the policy reference, exiting"
         Remove-Item "$policyreference" -Confirm:$false -Force
@@ -87,7 +87,7 @@ if (!(Test-Path "$policyreference" -PathType Leaf)) {
 # Step 4 create the extensions settings file
 if (!(Test-Path "$extsettings" -PathType Leaf)) {
     echo "Creating an extensions JSON file"
-    powershell -ExecutionPolicy Bypass "$extensions_script" > "$extsettings"
+    powershell -ExecutionPolicy Bypass "$extensions_script" "$extsettings"
     if (!$?) {
         echo "Failed to create the extensions file, exiting"
         Remove-Item "$extsettings" -Confirm:$false -Force

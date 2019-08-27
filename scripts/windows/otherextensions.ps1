@@ -1,18 +1,24 @@
+param(
+    [parameter(Mandatory=$true)]
+    [ValidateNotNull()]
+    [string]$filename
+)
+
 ### User customizable values
 #### Certificate Policies is a mandatory extension.  To add additional policies, more variables must be created and referenced below.
 $certPolicyOid1="1.2.3" # Replace with a real Certificate Policy OID
 $certPolicyQualifierCPS1=""
 $certPolicyQualifierUserNotice1="TCG Trusted Platform Endorsement" # Don't change this value.
 #### Authority Information Access is an optional extension. To add additional access methods, more variables must be created and referenced below.
-$authorityInfoAccessMethod1="OCSP" # valid options are OCSP or CAISSUERS
-$authorityInfoAccessLocation1="C=US,O=example.com,OU=PCTest"  # DN
+$authorityInfoAccessMethod1="" # valid options are OCSP or CAISSUERS
+$authorityInfoAccessLocation1=""  # DN
 #### CRL Distribution is an optional extension.  Leave any blank to omit the extension.
-$crlType="1" # valid options are 0 or 1
-$crlName="C=US,O=example.com,OU=PCTest" # DN
-$crlReasonFlags="3" # valid options are integers 0 thru 16
-$crlIssuer="C=US,O=example.com,OU=PCTest" # CRL issuer DN
+$crlType="" # valid options are 0 or 1
+$crlName="" # DN
+$crlReasonFlags="" # valid options are integers 0 thru 16
+$crlIssuer="" # CRL issuer DN
 #### Targeting Information is an optional extension.  Leave the targetFile variable blank to omit the extension.
-$targetFile="fileA,fileB.txt,fileC.great.two,C:\Windows\n\blah two.portapot" # provide comma separated file paths to EK certificates
+$targetFile="" # provide comma separated file paths to EK certificates
 
 ### The logic below can be changed by advanced users.
 #### SHA-256 was assumed to be acceptable for each of the hashAlg choices for URI References
@@ -160,4 +166,5 @@ function jsonOtherExtensionsFile() {
 
 ### Put it all together
 $finalData=(jsonOtherExtensionsFile)
-echo "$finalData"
+
+[IO.File]::WriteAllText($filename, "$finalData")

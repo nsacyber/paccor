@@ -1,11 +1,17 @@
+param(
+    [parameter(Mandatory=$true)]
+    [ValidateNotNull()]
+    [string]$filename
+)
+
 ### User customizable values
 $tcgPlatformSpecificationMajorVersion="1" # Released May 22, 2017
 $tcgPlatformSpecificationMinorVersion="3"
 $tcgPlatformSpecificationRevision="22"
 $tcgPlatformSpecificationClass="00000001"  # In HEX.  For the Client (TPM_PS_PC) in the structures document.
-$tcgCredentialSpecificationMajorVersion="1" # Released Jan 16, 2018
-$tcgCredentialSpecificationMinorVersion="0"
-$tcgCredentialSpecificationRevision="16"
+$tcgCredentialSpecificationMajorVersion="1" # 
+$tcgCredentialSpecificationMinorVersion="1"
+$tcgCredentialSpecificationRevision="17"
 $platformConfigUri="" # URL to a platform configuration document
 $platformConfigLocalCopyForHashing=""
 $tbbSecurityAssertionVersion="1" # default is 1 for this version of credential specification
@@ -281,4 +287,5 @@ function jsonReferenceOptionsFile() {
 
 ### Put it all together
 $finalData=(jsonReferenceOptionsFile)
-echo "$finalData"
+
+[IO.File]::WriteAllText($filename, "$finalData")
