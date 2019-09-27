@@ -138,7 +138,9 @@ public class ComponentIdentifierFactory {
      * @param value String
      */
     public final ComponentIdentifierFactory addComponentAddress(final ComponentAddressType type, final String value) {
-        componentAddress.add(new ComponentAddress(type.getOid(), new DERUTF8String(value)));
+        String filtered = value.toUpperCase();
+        filtered.replaceAll("[:-]", "");
+        componentAddress.add(new ComponentAddress(type.getOid(), new DERUTF8String(filtered)));
         return this;
     }
     
@@ -197,7 +199,15 @@ public class ComponentIdentifierFactory {
                         while (addressNodeMap.hasNext()) {
                             final Entry<String, JsonNode> addressNode = addressNodeMap.next();
                             ComponentIdentifierFactory.ComponentAddressType type = ComponentIdentifierFactory.ComponentAddressType.valueOf(addressNode.getKey());
-                            component.addComponentAddress(type, addressNode.getValue().asText());
+                            String rawAddress = addressNode.getValue().asText().trim();
+                            
+                            if(rawAddress != null && !rawAddress.isEmpty()) {
+                                String filtered = ComponentIdentifierV2Factory.standardizeMAC(rawAddress);
+                                component.addComponentAddress(type, filtered);
+                                if(rawAddress.equalsIgnoreCase(serial.asText())) {
+                                    component.componentSerial(filtered);
+                                }
+                            }
                             break; // remove the break to loosen rules regarding json structure of MAC addrs
                             // as it is, there should be one address definition per object
                         }
