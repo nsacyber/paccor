@@ -307,7 +307,15 @@ public class ComponentIdentifierV2Factory {
                         while (addressNodeMap.hasNext()) {
                             final Entry<String, JsonNode> addressNode = addressNodeMap.next();
                             ComponentIdentifierV2Factory.ComponentAddressType type = ComponentIdentifierV2Factory.ComponentAddressType.valueOf(addressNode.getKey());
-                            component.addComponentAddress(type, addressNode.getValue().asText());
+                            String rawAddress = addressNode.getValue().asText().trim();
+                            
+                            if(rawAddress != null && !rawAddress.isEmpty()) {
+                                String filtered = standardizeMAC(rawAddress);
+                                component.addComponentAddress(type, filtered);
+                                if(rawAddress.equalsIgnoreCase(serial.asText())) {
+                                    component.componentSerial(filtered);
+                                }
+                            }
                             break; // remove the break to loosen rules regarding json structure of MAC addrs
                             // as it is, there should be one address definition per object
                         }
@@ -317,5 +325,11 @@ public class ComponentIdentifierV2Factory {
         }
         
         return component;
+    }
+    
+    public static final String standardizeMAC(final String address) {
+        String filtered = address.toUpperCase();
+        filtered = filtered.replaceAll("[:-]", "");
+        return filtered;
     }
 }
