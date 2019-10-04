@@ -10,10 +10,24 @@ $PROPERTIES_URI="" # Specify the optional properties URI field
 $PROPERTIES_URI_LOCAL_COPY_FOR_HASH="" # If empty, the optional hashAlgorithm and hashValue fields will not be included for the URI
 $ENTERPRISE_NUMBERS_FILE="$APP_HOME/../enterprise-numbers"
 $PEN_ROOT="1.3.6.1.4.1." # OID root for the private enterprise numbers
+$SMBIOS_SCRIPT="$APP_HOME/SMBios.ps1"
+$HW_SCRIPT="$APP_HOME/hw.ps1" # For components not covered by SMBIOS
 
+### Load Raw SMBios Data
+. $SMBIOS_SCRIPT
+$smbios=(Get-SMBiosStructures)
+$SMBIOS_TYPE_PLATFORM="1"
+$SMBIOS_TYPE_CHASSIS="3"
+$SMBIOS_TYPE_BIOS="0"
+$SMBIOS_TYPE_BASEBOARD="2"
+$SMBIOS_TYPE_CPU="4"
+$SMBIOS_TYPE_RAM="17"
+
+### hw
+. $HW_SCRIPT
 
 ### ComponentClass values
-$COMPCLASS_REGISTRY_TCG="2.23.133.18.3.1"
+$COMPCLASS_REGISTRY_TCG="2.23.133.18.3.1" # switch off values within SMBIOS to reveal accurate component classes
 $COMPCLASS_BASEBOARD="00030003" # these values are meant to be an example.  check the component class registry.
 $COMPCLASS_BIOS="00130003"
 $COMPCLASS_UEFI="00130002"
@@ -22,11 +36,12 @@ $COMPCLASS_CPU="00010002"
 $COMPCLASS_HDD="00070002"
 $COMPCLASS_NIC="00090002"
 $COMPCLASS_RAM="00060001"  # TODO: memory type is included in SMBIOS
+$COMPCLASS_GFX="00050002"
 
-# Progress Groups
+# Progress Group IDs:
 #     1: Overall progress
 #     2: Component type
-#     3: Function progress per component 
+#     3: Function progress per component
 Write-Progress -Id 1 -Activity "Setting up to gather component details" -PercentComplete 0
 
 ### JSON Structure Keywords
@@ -131,7 +146,7 @@ $JSON_COMPONENTPLATFORMCERTURI_TEMPLATE='
     }}'
 $JSON_STATUS_TEMPLATE="
     `"$JSON_STATUS`": {{
-       
+
     }}"
 
 ### JSON Constructor Aides
@@ -143,7 +158,7 @@ function HexToByteArray { # Powershell doesn't have a built in BinToHex function
     }
 
     if ($str.Length -ne 0) {
-        ,@($str -split '([a-f0-9]{2})' | foreach-object { 
+        ,@($str -split '([a-f0-9]{2})' | foreach-object {
             if ($_) {
                 [System.Convert]::ToByte($_,16)
             }
@@ -155,11 +170,11 @@ function jsonComponentClass () {
 }
 function jsonManufacturer () {
     $manufacturer=("`"$JSON_MANUFACTURER`": `"{0}`"" -f "$($args[0])")
-    $tmpManufacturerId=(queryForPen "$($args[0])")
-    if (($tmpManufacturerId) -and ("$tmpManufacturerId" -ne "$PEN_ROOT")) {
-        $tmpManufacturerId=(jsonManufacturerId "$tmpManufacturerId")
-        $manufacturer="$manufacturer,$tmpManufacturerId"
-    }
+    #$tmpManufacturerId=(queryForPen "$($args[0])")
+    #if (($tmpManufacturerId) -and ("$tmpManufacturerId" -ne "$PEN_ROOT")) {
+    #    $tmpManufacturerId=(jsonManufacturerId "$tmpManufacturerId")
+    #    $manufacturer="$manufacturer,$tmpManufacturerId"
+    #}
     echo "$manufacturer"
 }
 function jsonModel () {
@@ -191,11 +206,11 @@ function jsonPlatformModel () {
 }
 function jsonPlatformManufacturerStr () {
     $manufacturer=("`"$JSON_PLATFORMMANUFACTURERSTR`": `"{0}`"" -f "$($args[0])")
-    $tmpManufacturerId=(queryForPen "$($args[0])")
-    if (($tmpManufacturerId) -and ("$tmpManufacturerId" -ne "$PEN_ROOT")) {
-        $tmpManufacturerId=(jsonPlatformManufacturerId "$tmpManufacturerId")
-        $manufacturer="$manufacturer,$tmpManufacturerId"
-    }
+    #$tmpManufacturerId=(queryForPen "$($args[0])")
+    #if (($tmpManufacturerId) -and ("$tmpManufacturerId" -ne "$PEN_ROOT")) {
+    #    $tmpManufacturerId=(jsonPlatformManufacturerId "$tmpManufacturerId")
+    #    $manufacturer="$manufacturer,$tmpManufacturerId"
+    #}
     echo "$manufacturer"
 }
 function jsonPlatformVersion () {
@@ -246,7 +261,7 @@ function toCSV () {
             $item=($args[0].Get($i))
 
             if ($item) {
-	            $value="$value,$($args[0].Get($i))"
+                $value="$value,$($args[0].Get($i))"
             }
         }
         echo "$value".Trim(" ", ",")
@@ -279,7 +294,7 @@ function jsonComponentsUri () {
             $hashValueStr=(jsonHashValue "$hashValue")
             $componentsUriDetails="$hashAlgStr"",""$hashValueStr"
         }
-	echo ("$JSON_COMPONENTSURI_TEMPLATE" -f "$(toCSV("$componentsUri","$componentsUriDetails"))")
+    echo ("$JSON_COMPONENTSURI_TEMPLATE" -f "$(toCSV("$componentsUri","$componentsUriDetails"))")
     }
 }
 function jsonPropertiesUri () {
@@ -293,7 +308,7 @@ function jsonPropertiesUri () {
             $hashValueStr=(jsonHashValue "$hashValue")
             $propertiesUriDetails="$hashAlgStr,$hashValueStr"
         }
-	    echo ("$JSON_PROPERTIESURI_TEMPLATE" -f "$(toCSV("$propertiesUri","$propertiesUriDetails"))")
+        echo ("$JSON_PROPERTIESURI_TEMPLATE" -f "$(toCSV("$propertiesUri","$propertiesUriDetails"))")
     }
 }
 function jsonIntermediateFile () {
@@ -302,193 +317,196 @@ function jsonIntermediateFile () {
 
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 10
 
-Write-Progress -Id 2 -ParentId 1 -Activity "Gathering platform information" -CurrentOperation "Querying WMIC" -PercentComplete 0
+Write-Progress -Id 2 -ParentId 1 -Activity "Gathering platform information" -CurrentOperation "Querying" -PercentComplete 0
 ### Gather platform details for the subject alternative name
-$platformManufacturer=((wmic computersystem get manufacturer /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$platformModel=((wmic computersystem get model /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$platformVersion=((wmic csproduct get version /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$platformSerial=((wmic csproduct get identifyingnumber /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
+$platformManufacturer=(Get-SMBiosString $smbios "$SMBIOS_TYPE_PLATFORM" 0x4)
+$platformModel=(Get-SMBiosString $smbios "$SMBIOS_TYPE_PLATFORM" 0x5)
+$platformVersion=(Get-SMBiosString $smbios "$SMBIOS_TYPE_PLATFORM" 0x6)
+$platformSerial=(Get-SMBiosString $smbios "$SMBIOS_TYPE_PLATFORM" 0x7)
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering platform information" -CurrentOperation "Cleaning output" -PercentComplete 40
-if (!$platformManufacturer) {
+if ([string]::IsNullOrEmpty($platformManufacturer) -or ($platformManufacturer.Trim().Length -eq 0)) {
     $platformManufacturer="$NOT_SPECIFIED"
 }
-$platformManufacturer=(jsonPlatformManufacturerStr "$platformManufacturer")
+$platformManufacturer=$(jsonPlatformManufacturerStr "$platformManufacturer".Trim())
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering platform information" -CurrentOperation "Cleaning output" -PercentComplete 55
-if (!$platformModel) {
+if ([string]::IsNullOrEmpty($platformModel) -or ($platformModel.Trim().Length -eq 0)) {
     $platformModel="$NOT_SPECIFIED"
 }
-$platformModel=(jsonPlatformModel "$platformModel")
+$platformModel=$(jsonPlatformModel "$platformModel".Trim())
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering platform information" -CurrentOperation "Cleaning output" -PercentComplete 70
-if (!$platformVersion) {
+if ([string]::IsNullOrEmpty($platformVersion) -or ($platformVersion.Trim().Length -eq 0)) {
     $platformVersion="$NOT_SPECIFIED"
 }
-$platformVersion=(jsonPlatformVersion "$platformVersion")
+$platformVersion=(jsonPlatformVersion "$platformVersion".Trim())
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering platform information" -CurrentOperation "Cleaning output" -PercentComplete 85
-if ($platformSerial) {
-    $platformSerial=(jsonPlatformSerial "$platformSerial")
+if (![string]::IsNullOrEmpty($platformSerial) -and ($platformSerial.Trim().Length -ne 0)) {
+    $platformSerial=(jsonPlatformSerial "$platformSerial".Trim())
 }
 $platform=(jsonPlatformObject "$platformManufacturer" "$platformModel" "$platformVersion" "$platformSerial")
-Write-Progress -Id 2 -ParentId 1 -Activity "Gathering platform information" -CurrentOperation "Cleaning output" -PercentComplete 100
+Write-Progress -Id 2 -ParentId 1 -Activity "Gathering platform information" -CurrentOperation "Done" -PercentComplete 100
 
 ### Gather component details
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 20
 
-Write-Progress -Id 2 -ParentId 1 -Activity "Gathering chassis information" -CurrentOperation "Querying WMIC" -PercentComplete 0
+Write-Progress -Id 2 -ParentId 1 -Activity "Gathering chassis information" -CurrentOperation "Querying" -PercentComplete 0
 $chassisClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CHASSIS")
-$chassisManufacturer=((wmic systemenclosure get manufacturer /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$chassisModel=((wmic systemenclosure get chassistypes /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$chassisSerial=((wmic systemenclosure get serialnumber /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$chassisRevision=((wmic systemenclosure get version /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
+$chassisManufacturer=(Get-SMBiosString $smbios "$SMBIOS_TYPE_CHASSIS" 0x4)
+$chassisModel=[string]($smbios["$SMBIOS_TYPE_CHASSIS"].data[0x5])
+$chassisSerial=(Get-SMBiosString $smbios "$SMBIOS_TYPE_CHASSIS" 0x7)
+$chassisRevision=(Get-SMBiosString $smbios "$SMBIOS_TYPE_CHASSIS" 0x6)
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering chassis information" -CurrentOperation "Cleaning output" -PercentComplete 40
-if (!$chassisManufacturer) {
+if ([string]::IsNullOrEmpty($chassisManufacturer) -or ($chassisManufacturer.Trim().Length -eq 0)) {
     $chassisManufacturer="$NOT_SPECIFIED"
 }
-$chassisManufacturer=(jsonManufacturer "$chassisManufacturer")
+$chassisManufacturer=$(jsonManufacturer "$chassisManufacturer".Trim())
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering chassis information" -CurrentOperation "Cleaning output" -PercentComplete 55
-if (!$chassisModel) {
+if ([string]::IsNullOrEmpty($chassisModel) -or ($chassisModel.Trim().Length -eq 0)) {
     $chassisModel="$NOT_SPECIFIED"
-} 
-$chassisModel=(jsonModel "$chassisModel")
+}
+$chassisModel=$(jsonModel "$chassisModel".Trim())
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering chassis information" -CurrentOperation "Cleaning output" -PercentComplete 70
-if ($chassisSerial) {
-    $chassisSerial=(jsonSerial "$chassisSerial")
+if (![string]::IsNullOrEmpty($chassisSerial) -and ($chassisSerial.Trim().Length -ne 0)) {
+    $chassisSerial=(jsonSerial "$chassisSerial".Trim())
 }
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering chassis information" -CurrentOperation "Cleaning output" -PercentComplete 85
-if ($chassisRevision) {
-    $chassisRevision=(jsonRevision "$chassisRevision")
+if (![string]::IsNullOrEmpty($chassisRevision) -and ($chassisRevision.Trim().Length -ne 0)) {
+    $chassisRevision=(jsonRevision "$chassisRevision".Trim())
 }
 $componentChassis=(jsonComponent "$chassisClass" "$chassisManufacturer" "$chassisModel" "$chassisSerial" "$chassisRevision")
-Write-Progress -Id 2 -ParentId 1 -Activity "Gathering chassis information" -CurrentOperation "Cleaning output" -PercentComplete 100
+Write-Progress -Id 2 -ParentId 1 -Activity "Gathering chassis information" -CurrentOperation "Done" -PercentComplete 100
 
 ### Gather baseboard details
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 30
 
-Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Querying WMIC" -PercentComplete 0
+Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Querying" -PercentComplete 0
 $baseboardClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BASEBOARD")
-$baseboardManufacturer=((wmic baseboard get manufacturer /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$baseboardModel=((wmic baseboard get product /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$baseboardSerial=((wmic baseboard get serialnumber /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$baseboardRevision=((wmic baseboard get version /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$baseboardHotSwappable=((wmic baseboard get hotswappable /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$baseboardRemovable=((wmic baseboard get removable /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$baseboardReplaceable=((wmic baseboard get replaceable /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
+$baseboardManufacturer=(Get-SMBiosString $smbios "$SMBIOS_TYPE_BASEBOARD" 0x4)
+$baseboardModel=(Get-SMBiosString $smbios "$SMBIOS_TYPE_BASEBOARD" 0x5)
+$baseboardSerial=(Get-SMBiosString $smbios "$SMBIOS_TYPE_BASEBOARD" 0x7)
+$baseboardRevision=(Get-SMBiosString $smbios "$SMBIOS_TYPE_BASEBOARD" 0x6)
+$baseboardFeatureFlags=$smbios["$SMBIOS_TYPE_BASEBOARD"].data[0x9]
+$baseboardReplaceableIndicator=0x1C # from Table 14
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Cleaning output" -PercentComplete 40
 $baseboardFieldReplaceableAnswer="false"
-if (("$baseboardHotSwappable" -eq "TRUE") -or ("$baseboardRemovable" -eq "TRUE") -or ("$baseboardReplaceable" -eq "TRUE")) {
+if ("$baseboardFeatureFlags" -band "$baseboardReplaceableIndicator") {
     $baseboardFieldReplaceableAnswer="true"
 }
 $baseboardFieldReplaceable=(jsonFieldReplaceable "$baseboardFieldReplaceableAnswer")
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Cleaning output" -PercentComplete 52
-if (!$baseboardManufacturer) {
+if ([string]::IsNullOrEmpty($baseboardManufacturer) -or ($baseboardManufacturer.Trim().Length -eq 0)) {
     $baseboardManufacturer="$NOT_SPECIFIED"
 }
-$baseboardManufacturer=(jsonManufacturer "$baseboardManufacturer")
+$baseboardManufacturer=$(jsonManufacturer "$baseboardManufacturer".Trim())
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Cleaning output" -PercentComplete 64
-if (!$baseboardModel) {
+if ([string]::IsNullOrEmpty($baseboardModel) -or ($baseboardModel.Trim().Length -eq 0)) {
     $baseboardModel="$NOT_SPECIFIED"
 }
-$baseboardModel=(jsonModel "$baseboardModel")
+$baseboardModel=$(jsonModel "$baseboardModel".Trim())
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Cleaning output" -PercentComplete 76
-if ($baseboardSerial) {
-    $baseboardSerial=(jsonSerial "$baseboardSerial")
+if (![string]::IsNullOrEmpty($baseboardSerial) -and ($baseboardSerial.Trim().Length -ne 0)) {
+    $baseboardSerial=(jsonSerial "$baseboardSerial".Trim())
 }
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Cleaning output" -PercentComplete 88
-if ("$baseboardRevision") {
-    $baseboardRevision=(jsonRevision "$baseboardRevision")
+if (![string]::IsNullOrEmpty($baseboardRevision) -and ($baseboardRevision.Trim().Length -ne 0)) {
+    $baseboardRevision=(jsonRevision "$baseboardRevision".Trim())
 }
 $componentBaseboard=(jsonComponent "$baseboardClass" "$baseboardManufacturer" "$baseboardModel" "$baseboardFieldReplaceable" "$baseboardSerial" "$baseboardRevision")
 
-Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Cleaning output" -PercentComplete 100
+Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Done" -PercentComplete 100
 
 ### Gather BIOS details
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 30
 
-Write-Progress -Id 2 -ParentId 1 -Activity "Gathering BIOS information" -CurrentOperation "Querying WMIC" -PercentComplete 0
+Write-Progress -Id 2 -ParentId 1 -Activity "Gathering BIOS information" -CurrentOperation "Querying" -PercentComplete 0
 $biosClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BIOS")
-$biosManufacturer=((wmic bios get manufacturer /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$biosModel=((wmic bios get name /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$biosSerial=((wmic bios get serialnumber /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
-$biosRevision=((wmic bios get version /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
+$biosManufacturer=(Get-SMBiosString $smbios "$SMBIOS_TYPE_BIOS" 0x4)
+$biosModel=""
+$biosSerial=""
+$biosRevision=(Get-SMBiosString $smbios "$SMBIOS_TYPE_BIOS" 0x5)
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering BIOS information" -CurrentOperation "Cleaning output" -PercentComplete 40
-if (!$biosManufacturer) {
+if ([string]::IsNullOrEmpty($biosManufacturer) -or ($biosManufacturer.Trim().Length -eq 0)) {
     $biosManufacturer="$NOT_SPECIFIED"
 }
-$biosManufacturer=(jsonManufacturer "$biosManufacturer")
+$biosManufacturer=$(jsonManufacturer "$biosManufacturer".Trim())
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering BIOS information" -CurrentOperation "Cleaning output" -PercentComplete 55
-if (!$biosModel) {
+if ([string]::IsNullOrEmpty($biosModel) -or ($biosModel.Trim().Length -eq 0)) {
     $biosModel="$NOT_SPECIFIED"
 }
-$biosModel=(jsonModel "$biosModel")
+$biosModel=$(jsonModel "$biosModel".Trim())
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering BIOS information" -CurrentOperation "Cleaning output" -PercentComplete 70
-if ($biosSerial) {
-    $biosSerial=(jsonSerial "$biosSerial")
+if (![string]::IsNullOrEmpty($biosSerial) -and ($biosSerial.Trim().Length -ne 0)) {
+    $biosSerial=(jsonSerial "$biosSerial".Trim())
 }
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering BIOS information" -CurrentOperation "Cleaning output" -PercentComplete 85
-if ($biosRevision) {
-    $biosRevision=(jsonRevision "$biosRevision")
+if (![string]::IsNullOrEmpty($biosRevision) -and ($biosRevision.Trim().Length -ne 0)) {
+    $biosRevision=(jsonRevision "$biosRevision".Trim())
 }
 $componentBios=(jsonComponent "$biosClass" "$biosManufacturer" "$biosModel" "$biosSerial" "$biosRevision")
 
-Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Cleaning output" -PercentComplete 100
+Write-Progress -Id 2 -ParentId 1 -Activity "Gathering baseboard information" -CurrentOperation "Done" -PercentComplete 100
 
 ### Gather CPU details
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 40
 
-Write-Progress -Id 2 -ParentId 1 -Activity "Gathering CPU information" -CurrentOperation "Querying WMIC" -PercentComplete 0
+Write-Progress -Id 2 -ParentId 1 -Activity "Gathering CPU information" -CurrentOperation "Querying" -PercentComplete 0
 function parseCpuData() {
-    $RS=(wmic cpu get manufacturer,family,serialnumber,revision,upgrademethod /FORMAT:CSV | ConvertFrom-Csv)
+    $RS=@($smbios["$SMBIOS_TYPE_CPU"])
     $component=""
-    $numRows=1
-    if ($RS.Count -gt 1) {
-        $numRows=($RS.Count)
-    }
-    
+    $numRows=$RS.Count
+    $processorNotUpgradableIndicator=0x6
+
     for($i=0;$i -lt $numRows;$i++) {
         Write-Progress -Id 2 -ParentId 1 -Activity "Gathering CPU information" -CurrentOperation ("Cleaning output for CPU " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
 
-		$cpuClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CPU")
-        $tmpManufacturer=$RS[$i].Manufacturer
-        if (!$tmpManufacturer) {
-            $tmpManufacturer=$NOT_SPECIFIED
-        }
-        $tmpManufacturer=(jsonManufacturer $tmpManufacturer)
-        $tmpModel=$RS[$i].Family
-        if (!$tmpModel) {
-            $tmpModel=$NOT_SPECIFIED
-        }
-        $tmpModel=(jsonModel $tmpModel)
+        $cpuClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CPU")
+        $tmpManufacturer=(Get-SMBiosString $RS $i 0x7)
+        $tmpModel=[string]($RS[$i].data[0x6]) # Enum value for Family
+        $tmpSerial=(Get-SMBiosString $RS $i 0x20)
+        $tmpRevision=(Get-SMBiosString $RS $i 0x10)
+        $tmpUpgradeMethod=$RS[$i].data[0x19] # Enum for Processor Upgrade
 
-        $tmpSerial=($RS[$i].Serialnumber)
-        if (![string]::IsNullOrEmpty($tmpSerial)) {
-            $tmpSerial=(jsonSerial $tmpSerial)
+        if ([string]::IsNullOrEmpty($tmpManufacturer) -or ($tmpManufacturer.Trim().Length -eq 0)) {
+            $tmpManufacturer="$NOT_SPECIFIED"
         }
-        $tmpRevision=($RS[$i].Revision)
-        if (![string]::IsNullOrEmpty($tmpRevision)) {
-            $tmpRevision=(jsonRevision $RS[$i].Revision)   
+        $tmpManufacturer=$(jsonManufacturer "$tmpManufacturer".Trim())
+
+        if ([string]::IsNullOrEmpty($tmpModel) -or ($tmpModel.Trim().Length -eq 0)) {
+            $tmpModel="$NOT_SPECIFIED"
         }
-        $tmpUpgradeMethod=($RS[$i].UpgradeMethod)
-        if (![string]::IsNullOrEmpty($tmpUpgradeMethod) -and ($tmpUpgradeMethod -eq "6")) {
-            $replaceable=(jsonFieldReplaceable "false")
+        $tmpModel=$(jsonModel "$tmpModel".Trim())
+
+        if (![string]::IsNullOrEmpty($tmpSerial) -and ($tmpSerial.Trim().Length -ne 0)) {
+            $tmpSerial=(jsonSerial "$tmpSerial".Trim())
+        }
+
+        if (![string]::IsNullOrEmpty($tmpRevision) -and ($tmpRevision.Trim().Length -ne 0)) {
+            $tmpRevision=(jsonRevision "$tmpRevision".Trim())
+        }
+
+        if ("$tmpUpgradeMethod" -eq "$processorNotUpgradableIndicator") {
+            $tmpUpgradeMethod="false"
         } else {
-            $replaceable=(jsonFieldReplaceable "true")
+            $tmpUpgradeMethod="true"
         }
+        $replaceable=(jsonFieldReplaceable "$tmpUpgradeMethod")
+
         $tmpComponent=(jsonComponent $cpuClass $tmpManufacturer $tmpModel $replaceable $tmpSerial $tmpRevision)
         $component+="$tmpComponent,"
     }
@@ -499,37 +517,42 @@ function parseCpuData() {
 ### Gather RAM details
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 50
 
-Write-Progress -Id 2 -ParentId 1 -Activity "Gathering RAM information" -CurrentOperation "Querying CIM" -PercentComplete 0
+Write-Progress -Id 2 -ParentId 1 -Activity "Gathering RAM information" -CurrentOperation "Querying" -PercentComplete 0
 function parseRamData() {
-    $RS=(Get-CimInstance -ClassName CIM_PhysicalMemory | select Manufacturer,PartNumber,SerialNumber,Version)
+    $RS=@($smbios["$SMBIOS_TYPE_RAM"])
     $component=""
-    $replaceable=(jsonFieldReplaceable "true") # WMI and CIM did not populate Removable nor Replaceable flags on my machine
-    $numRows=1
-    if ($RS.Count -gt 1) {
-        $numRows=($RS.Count)
-    }
+    $replaceable=(jsonFieldReplaceable "true") # Looking for reliable indicator
+    $numRows=$RS.Count
+
     for($i=0;$i -lt $numRows;$i++) {
         Write-Progress -Id 2 -ParentId 1 -Activity "Gathering RAM information" -CurrentOperation ("Cleaning output for Memory Chip " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
 
-		$ramClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_RAM")
-        $tmpManufacturer=$RS[$i].Manufacturer
-        if (!$tmpManufacturer) {
-            $tmpManufacturer=$NOT_SPECIFIED
-        }
-        $tmpManufacturer=(jsonManufacturer $tmpManufacturer)
-        $tmpModel=$RS[$i].PartNumber
-        if (!$tmpModel) {
-            $tmpModel=$NOT_SPECIFIED
-        }
-        $tmpModel=(jsonModel $tmpModel)
+        $ramClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_RAM")
+        $tmpManufacturer=(Get-SMBiosString $RS $i 0x17)
+        $tmpModel=(Get-SMBiosString $RS $i 0x1A)
+        $tmpSerial=(Get-SMBiosString $RS $i 0x18)
+        $tmpRevision=(Get-SMBiosString $RS $i 0x19)
 
-        $tmpSerial=($RS[$i].Serialnumber)
-        if (![string]::IsNullOrEmpty($tmpSerial)) {
-            $tmpSerial=(jsonSerial $tmpSerial)
+        if ([string]::IsNullOrEmpty($tmpManufacturer) -and [string]::IsNullOrEmpty($tmpModel) -and [string]::IsNullOrEmpty($tmpSerial) -and [string]::IsNullOrEmpty($tmpRevision)) {
+            Continue;
         }
-        $tmpRevision=($RS[$i].Version)
-        if (![string]::IsNullOrEmpty($tmpRevision)) {
-            $tmpRevision=(jsonRevision $tmpRevision)   
+
+        if ([string]::IsNullOrEmpty($tmpManufacturer) -or ($tmpManufacturer.Trim().Length -eq 0)) {
+            $tmpManufacturer="$NOT_SPECIFIED"
+        }
+        $tmpManufacturer=$(jsonManufacturer "$tmpManufacturer".Trim())
+
+        if ([string]::IsNullOrEmpty($tmpModel) -or ($tmpModel.Trim().Length -eq 0)) {
+            $tmpModel="$NOT_SPECIFIED"
+        }
+        $tmpModel=$(jsonModel "$tmpModel".Trim())
+
+        if (![string]::IsNullOrEmpty($tmpSerial) -and ($tmpSerial.Trim().Length -ne 0)) {
+            $tmpSerial=(jsonSerial "$tmpSerial".Trim())
+        }
+
+        if (![string]::IsNullOrEmpty($tmpRevision) -and ($tmpRevision.Trim().Length -ne 0)) {
+            $tmpRevision=(jsonRevision "$tmpRevision".Trim())
         }
         $tmpComponent=(jsonComponent $ramClass $tmpManufacturer $tmpModel $replaceable $tmpSerial $tmpRevision)
         $component+="$tmpComponent,"
@@ -544,37 +567,54 @@ Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 60
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering NIC information" -CurrentOperation "Querying CIM" -PercentComplete 0
 function parseNicData() {
-    #$RS=(Get-CimInstance -ClassName CIM_NetworkAdapter | select Manufacturer,ProductName,MacAddress,PhysicalAdapter,PNPDeviceID | where {($_.PhysicalAdapter -eq "True") -and ($_.PNPDeviceID -match "^(PCI|BTH)\.*")})
-    $RS=(Get-NetAdapter | select DriverProvider,HardwareInterface,MacAddress,DriverDescription,PhysicalMediaType,PNPDeviceID | where {($_.PhysicalMediaType -eq "BlueTooth" -or "Native 802.11" -or "802.3") -and ($_.PNPDeviceID -Match "^(BTH|PCI)\\.*$")})
+    $RS=@(Get-NetAdapter | select MacAddress,PhysicalMediaType,PNPDeviceID | where {($_.PhysicalMediaType -eq "Native 802.11" -or "802.3") -and ($_.PNPDeviceID -Match "^(PCI)\\.*$")})
     $component=""
     $replaceable=(jsonFieldReplaceable "true")
-    $numRows=1
-    if ($RS.Count -gt 1) {
-        $numRows=($RS.Count)
-    }
+    $numRows=$RS.Count
+
     for($i=0;$i -lt $numRows;$i++) {
         Write-Progress -Id 2 -ParentId 1 -Activity "Gathering NIC information" -CurrentOperation ("Cleaning output for NIC " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
-        
-		$nicClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_NIC")
-        $tmpManufacturer=$RS[$i].DriverProvider
-        if (!$tmpManufacturer) {
-            $tmpManufacturer=$NOT_SPECIFIED
-        }
-        $tmpManufacturer=(jsonManufacturer $tmpManufacturer)
-        $tmpModel=$RS[$i].DriverDescription
-        if (!$tmpModel) {
-            $tmpModel=$NOT_SPECIFIED
-        }
-        $tmpModel=(jsonModel $tmpModel)
 
+        $nicClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_NIC")
+
+        $pnpDevID=""
+        if(isPCI($RS[$i].PNPDeviceID)) {
+            $pnpDevID=(pciParse $RS[$i].PNPDeviceID)
+        } else {
+            Continue
+        }
+
+        $tmpManufacturer=$pnpDevID.vendor # PCI Vendor ID
+        $tmpModel=$pnpDevID.product  # PCI Device Hardware ID
         $tmpSerialConstant=($RS[$i].MacAddress)
+        $tmpSerialConstant=(standardizeMACAddr $tmpSerialConstant)
         $tmpSerial=""
-        if (![string]::IsNullOrEmpty($tmpSerialConstant)) {
-            $tmpSerial=(jsonSerial $tmpSerialConstant)
-        }
-
+        $tmpRevision=$pnpDevID.revision
         $tmpMediaType=$RS[$i].PhysicalMediaType
         $thisAddress=""
+
+        if ([string]::IsNullOrEmpty($tmpManufacturer) -or ($tmpManufacturer.Trim().Length -eq 0)) {
+            $tmpManufacturer="$NOT_SPECIFIED"
+        }
+        $tmpManufacturer=$(jsonManufacturer "$tmpManufacturer".Trim())
+
+
+        if ([string]::IsNullOrEmpty($tmpModel) -or ($tmpModel.Trim().Length -eq 0)) {
+            $tmpModel="$NOT_SPECIFIED"
+        }
+        $tmpModel=$(jsonModel "$tmpModel".Trim())
+
+
+
+        if (![string]::IsNullOrEmpty($tmpSerialConstant) -and ($tmpSerialConstant.Trim().Length -ne 0)) {
+            $tmpSerial=(jsonSerial "$tmpSerialConstant".Trim())
+        }
+
+
+        if (![string]::IsNullOrEmpty($tmpRevision) -and ($tmpRevision.Trim().Length -ne 0)) {
+            $tmpRevision=(jsonRevision "$tmpRevision".Trim())
+        }
+
         if ($tmpMediaType -and $tmpSerial) {
             if ("$tmpMediaType" -match "^.*802[.]11.*$") {
                 $thisAddress=(jsonWlanMac $tmpSerialConstant)
@@ -583,14 +623,14 @@ function parseNicData() {
                 $thisAddress=(jsonBluetoothMac $tmpSerialConstant)
             }
             elseif ("$tmpMediaType" -match "^.*802[.]3.*$") {
-                $thisAddress=(jsonEthernetMac $tmpSerialConstant) 
+                $thisAddress=(jsonEthernetMac $tmpSerialConstant)
             }
             if ($thisAddress) {
                 $thisAddress=(jsonAddress "$thisAddress")
             }
         }
 
-        $tmpComponent=(jsonComponent $nicClass $tmpManufacturer $tmpModel $replaceable $tmpSerial $thisAddress)
+        $tmpComponent=(jsonComponent $nicClass $tmpManufacturer $tmpModel $replaceable $tmpSerial $tmpRevision $thisAddress)
         $component+="$tmpComponent,"
     }
 
@@ -601,9 +641,9 @@ function parseNicData() {
 ### Gather HDD details
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 70
 
-Write-Progress -Id 2 -ParentId 1 -Activity "Gathering HDD information" -CurrentOperation "Querying CIM" -PercentComplete 0
+Write-Progress -Id 2 -ParentId 1 -Activity "Gathering HDD information" -CurrentOperation "Querying" -PercentComplete 0
 function parseHddData() {
-    $RS=(Get-CimInstance -ClassName CIM_DiskDrive | select manufacturer,model,serialnumber,firmwarerevision,mediatype | where mediatype -eq "Fixed hard disk media")
+    $RS=(Get-CimInstance -ClassName CIM_DiskDrive | select serialnumber,mediatype,pnpdeviceid,manufacturer,model | where mediatype -eq "Fixed hard disk media")
     $component=""
     $replaceable=(jsonFieldReplaceable "true")
     $numRows=1
@@ -614,25 +654,46 @@ function parseHddData() {
         Write-Progress -Id 2 -ParentId 1 -Activity "Gathering Hard Disk information" -CurrentOperation ("Cleaning output for HDD " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
 
         $hddClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_HDD")
-        $tmpManufacturer=$RS[$i].Manufacturer
-        if (!$tmpManufacturer) {
-            $tmpManufacturer=$NOT_SPECIFIED
-        }
-        $tmpManufacturer=(jsonManufacturer $tmpManufacturer)
-        $tmpModel=$RS[$i].Model
-        if (!$tmpModel) {
-            $tmpModel=$NOT_SPECIFIED
-        }
-        $tmpModel=(jsonModel $tmpModel)
 
-        $tmpSerial=($RS[$i].Serialnumber)
-        if (![string]::IsNullOrEmpty($tmpSerial)) {
-            $tmpSerial=(jsonSerial $tmpSerial)
+        $pnpDevID=""
+        if(isIDE($RS[$i].PNPDeviceID)) {
+            $pnpDevID=(ideDiskParse $RS[$i].PNPDeviceID)
+        } elseif(isSCSI($RS[$i].PNPDeviceID)) {
+            $pnpDevID=(scsiDiskParse $RS[$i].PNPDeviceID)
+        } else {
+            Continue
         }
-        $tmpRevision=($RS[$i].FirmwareRevision)
-        if (![string]::IsNullOrEmpty($tmpRevision)) {
-            $tmpRevision=(jsonRevision $tmpRevision)   
+
+        if(($pnpDevID -eq $null) -or (($pnpDevID -eq "(Standard disk drives)") -and ($pnpDevID.product -eq $null))) {
+		    $regex="^.{,16}$"
+            $pnpDevID=[pscustomobject]@{
+                product=($RS[$i].model -replace '^(.{0,16}).*$','$1')  # Strange behavior for this case, will return
+            }
         }
+
+        $tmpManufacturer=$pnpDevID.vendor # PCI Vendor ID
+        $tmpModel=$pnpDevID.product  # PCI Device Hardware ID
+        $tmpSerial=$RS[$i].serialnumber
+        $tmpRevision=$pnpDevID.revision
+
+        if ([string]::IsNullOrEmpty($tmpManufacturer) -or ($tmpManufacturer.Trim().Length -eq 0)) {
+            $tmpManufacturer="$NOT_SPECIFIED"
+        }
+        $tmpManufacturer=$(jsonManufacturer "$tmpManufacturer".Trim())
+
+        if ([string]::IsNullOrEmpty($tmpModel) -or ($tmpModel.Trim().Length -eq 0)) {
+            $tmpModel="$NOT_SPECIFIED"
+        }
+        $tmpModel=$(jsonModel "$tmpModel".Trim())
+
+        if (![string]::IsNullOrEmpty($tmpSerial) -and ($tmpSerial.Trim().Length -ne 0)) {
+            $tmpSerial=(jsonSerial "$tmpSerial".Trim())
+        }
+
+        if (![string]::IsNullOrEmpty($tmpRevision) -and ($tmpRevision.Trim().Length -ne 0)) {
+            $tmpRevision=(jsonRevision "$tmpRevision".Trim())
+        }
+
         $tmpComponent=(jsonComponent $hddClass $tmpManufacturer $tmpModel $replaceable $tmpSerial $tmpRevision)
         $component+="$tmpComponent,"
     }
@@ -641,12 +702,64 @@ function parseHddData() {
     return "$component".Trim(",")
 }
 
+### Gather GFX details
+Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 70
+
+Write-Progress -Id 2 -ParentId 1 -Activity "Gathering GFX information" -CurrentOperation "Querying" -PercentComplete 0
+function parseGfxData() {
+    $RS=(Get-CimInstance -ClassName CIM_VideoController | select pnpdeviceid )
+    $component=""
+    $replaceable=(jsonFieldReplaceable "true")
+    $numRows=1
+    if ($RS.Count -gt 1) {
+        $numRows=($RS.Count)
+    }
+    for($i=0;$i -lt $numRows;$i++) {
+        Write-Progress -Id 2 -ParentId 1 -Activity "Gathering Graphics information" -CurrentOperation ("Cleaning output for HDD " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
+
+        $hddClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_GFX")
+
+        $pnpDevID=""
+        if(isPCI($RS[$i].PNPDeviceID)) {
+            $pnpDevID=(pciParse $RS[$i].PNPDeviceID)
+        } else {
+            Continue
+        }
+
+        $tmpManufacturer=$pnpDevID.vendor # PCI Vendor ID
+        $tmpModel=$pnpDevID.product  # PCI Device Hardware ID
+        $tmpRevision=$pnpDevID.revision
+        # CIM Class does not contain serialnumber
+
+        if ([string]::IsNullOrEmpty($tmpManufacturer) -or ($tmpManufacturer.Trim().Length -eq 0)) {
+            $tmpManufacturer="$NOT_SPECIFIED"
+        }
+        $tmpManufacturer=$(jsonManufacturer "$tmpManufacturer".Trim())
+
+        if ([string]::IsNullOrEmpty($tmpModel) -or ($tmpModel.Trim().Length -eq 0)) {
+            $tmpModel="$NOT_SPECIFIED"
+        }
+        $tmpModel=$(jsonModel "$tmpModel".Trim())
+
+        if (![string]::IsNullOrEmpty($tmpRevision) -and ($tmpRevision.Trim().Length -ne 0)) {
+            $tmpRevision=(jsonRevision "$tmpRevision".Trim())
+        }
+
+        $tmpComponent=(jsonComponent $hddClass $tmpManufacturer $tmpModel $replaceable $tmpRevision)
+        $component+="$tmpComponent,"
+    }
+
+    Write-Progress -Id 2 -ParentId 1 -Activity "Gathering Graphics information" -CurrentOperation "Done" -PercentComplete 100
+    return "$component".Trim(",")
+}
+
 ### Collate the component details
 $componentsCPU=$(parseCpuData)
 $componentsRAM=$(parseRamData)
 $componentsNIC=$(parseNicData)
 $componentsHDD=$(parseHddData)
-$componentArray=(jsonComponentArray "$componentChassis" "$componentBaseboard" "$componentBios" "$componentsCPU" "$componentsRAM" "$componentsNIC" "$componentsHDD")
+$componentsGFX=$(parseGfxData)
+$componentArray=(jsonComponentArray "$componentChassis" "$componentBaseboard" "$componentBios" "$componentsCPU" "$componentsRAM" "$componentsNIC" "$componentsHDD" "$componentsGFX")
 
 ### Gather property details
 Write-Progress -Id 1 -Activity "Gathering properties" -PercentComplete 80
