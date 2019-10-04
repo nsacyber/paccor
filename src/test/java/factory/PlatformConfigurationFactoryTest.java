@@ -20,8 +20,11 @@ public class PlatformConfigurationFactoryTest {
         final String manufacturerId = "2.113.25.98";
         final String fieldReplaceable = "false";
         final String ethernetMac = "CD:85:EE:97:77:34";
+        final String ethernetMacNormalized = "CD85EE977734";
         final String wlanMac = "97:77:34:CD:85:EE";
+        final String wlanMacNormalized = "977734CD85EE";
         final String bluetoothMac = "55:78:3F:CB:A2:33";
+        final String bluetoothMacNormalized = "55783FCBA233";
         final String json = "["
 //        " {"
 //        + "    \"" + PlatformConfigurationFactory.Json.COMPONENTS.name() + "\": ["
@@ -68,12 +71,12 @@ public class PlatformConfigurationFactoryTest {
         ComponentAddress[] addressArray = component.getComponentAddress();
         Assert.assertEquals(addressArray.length, 4);
         Assert.assertEquals(addressArray[0].getAddressType(), ComponentIdentifierFactory.ComponentAddressType.ETHERNETMAC.getOid());
-        Assert.assertEquals(addressArray[0].getAddressValue().getString(), ethernetMac);
+        Assert.assertEquals(addressArray[0].getAddressValue().getString(), ethernetMacNormalized);
         Assert.assertEquals(addressArray[1].getAddressType(), ComponentIdentifierFactory.ComponentAddressType.WLANMAC.getOid());
-        Assert.assertEquals(addressArray[1].getAddressValue().getString(), wlanMac);
+        Assert.assertEquals(addressArray[1].getAddressValue().getString(), wlanMacNormalized);
         Assert.assertEquals(addressArray[2].getAddressType(), ComponentIdentifierFactory.ComponentAddressType.BLUETOOTHMAC.getOid());
-        Assert.assertEquals(addressArray[2].getAddressValue().getString(), bluetoothMac);
+        Assert.assertEquals(addressArray[2].getAddressValue().getString(), bluetoothMacNormalized);
         Assert.assertEquals(addressArray[3].getAddressType(), ComponentIdentifierFactory.ComponentAddressType.ETHERNETMAC.getOid());
-        Assert.assertEquals(addressArray[3].getAddressValue().getString(), bluetoothMac);
+        Assert.assertEquals(addressArray[3].getAddressValue().getString(), bluetoothMacNormalized);
     }
 }
