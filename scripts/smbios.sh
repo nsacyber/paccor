@@ -17,7 +17,7 @@ dmidecodeData () {
 }
 dmidecodeStrings () {
     handle="${1}"
-    str=$(dmidecode -H "$handle" -u | awk '/Strings/{f=1;next} /^\w+$/{f=0} f' | sed 's/^[^"]*$//g' | sed 's/.*"\(.*\)".*/\1/g' | sed 's/^\w+//g' | sed '/^[[:space:]]*$/d')
+    str=$(dmidecode -H "$handle" -u | awk '/Strings/{f=1;next} /^\w+$/{f=0} f' | sed 's/^[^"]*$//g' | sed 's/^\w+//g' | sed '/^[[:space:]]*$/d')
     old="$IFS"
     IFS=$'\n'
     tableStrings=($str)
@@ -48,13 +48,14 @@ dmidecodeGetString () {
     lenDec=$(printf "%d" "0x"${#tableStrings[@]})
     if [ $strrefDec -le $lenDec ] && [ $strrefDec -gt 0 ]; then
         str="${tableStrings[$strrefDec-1]}"
+        str=$(printf "$str" | sed 's/^[ \t]*"\?//;s/"\?[ \t]*$//')
     fi
     printf "$str"
 }
 
 
-
-#dmidecodeHandles "4"
+# Examples:
+#dmidecodeHandles "1"
 #numHandles=$(dmidecodeNumHandles)
 #echo $numHandles
 #echo ${tableHandles[*]}
@@ -65,13 +66,13 @@ dmidecodeGetString () {
 
 #dmidecodeData "${tableHandles[0]}"
 
-#manufacturer=${tableData[4]}
-
-#echo "${tableStrings[$manufacturer]}"
-#dmidecodeHandles "2"
-#dmidecodeParseHandle "${tableHandles[0]}"
-#result=$(dmidecodeGetByte "9")
-#result2=$(dmidecodeGetString $result)
-#echo $result2
-#result3=$(dmidecodeGetString $(dmidecodeGetByte "7"))
-#echo $result3
+#manufacturer=$(dmidecodeGetString $(dmidecodeGetByte "0x4"))
+#model=$(dmidecodeGetByte "0x6")
+#model=$(printf "%d" "0x""$model") # Convert to decimal
+#model=$(dmidecodeGetString $(dmidecodeGetByte "0x5"))
+#serial=$(dmidecodeGetString $(dmidecodeGetByte "0x7"))
+#revision=$(dmidecodeGetString $(dmidecodeGetByte "0x6"))
+#echo $manufacturer
+#echo $model
+#echo $serial
+#echo $revision

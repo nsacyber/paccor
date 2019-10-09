@@ -83,7 +83,7 @@ lshwGetVersionFromBusItem () {
 lshwGetSerialFromBusItem () {
     itemnumber="${1}"
     result=""
-    str=$(echo "${busitems[$itemnumber]}" | grep -e "^serial:.*$" | sed 's/^serial: \([0-9A-Za-Z:-]\+\)$/\1/')
+    str=$(echo "${busitems[$itemnumber]}" | grep -e "^serial:.*$" | sed 's/^serial: \([0-9A-Za-z:-]\+\)$/\1/')
     if [ -n "$str" ]; then
         result=$str
     fi
