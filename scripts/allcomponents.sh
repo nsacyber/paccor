@@ -600,13 +600,13 @@ parseNicData () {
         optional="$optional"",""$serial"
     fi
     if ! [[ -z "${revision// }" ]]; then
-        revision=$(echo "$revision" | sed 's/^[ \t]*//;s/[ \t]*$//')
+        revision=$(echo "$revision" | sed 's/^[ \t]*//;s/[ \t]*$//' | awk '{ print toupper($0) }')
         revision=$(jsonRevision "$revision")
         optional="$optional"",""$revision"
     fi
-        bluetoothCap=$(lshwBusItemBluetoothCap)
-        ethernetCap=$(lshwBusItemEthernetCap)
-        wirelessCap=$(lshwBusItemWirelessCap)
+        bluetoothCap=$(lshwBusItemBluetoothCap "$i")
+        ethernetCap=$(lshwBusItemEthernetCap "$i")
+        wirelessCap=$(lshwBusItemWirelessCap "$i")
 
         if ([ -n "$bluetoothCap" ] || [ -n "$ethernetCap" ] || [ -n "$wirelessCap" ]) && ! [[ -z "${serialConstant// }" ]]; then
             thisAddress=
@@ -673,7 +673,7 @@ parseHddData () {
         optional="$optional"",""$serial"
     fi
     if ! [[ -z "${revision// }" ]]; then
-        revision=$(echo "$revision" | sed 's/^[ \t]*//;s/[ \t]*$//')
+        revision=$(echo "$revision" | sed 's/^[ \t]*//;s/[ \t]*$//' | awk '{ print toupper($0) }')
         revision=$(jsonRevision "$revision")
         optional="$optional"",""$revision"
     fi
@@ -727,7 +727,7 @@ parseGfxData () {
         optional="$optional"",""$serial"
     fi
     if ! [[ -z "${revision// }" ]]; then
-        revision=$(echo "$revision" | sed 's/^[ \t]*//;s/[ \t]*$//')
+        revision=$(echo "$revision" | sed 's/^[ \t]*//;s/[ \t]*$//' | awk '{ print toupper($0) }')
         revision=$(jsonRevision "$revision")
         optional="$optional"",""$revision"
     fi
