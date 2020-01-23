@@ -9,19 +9,23 @@ dmidecodeHandles () {
 }
 dmidecodeData () {
     handle="${1}"
-    str=$(dmidecode -H "$handle" -u | awk '/Header and Data:/{f=1;next} /Strings/{f=0} f' | tr "\n\r\t" ' ' | tr -s ' ' | sed -e 's/^[[:space:]]*//' | sed -e 's/[[:space:]]*$//')
-    old="$IFS"
-    IFS=' '
-    tableData=($str)
-    IFS="$old"
+    if  [[ $handle =~ ^0x[0-9A-Fa-f]+$ ]]; then
+        str=$(dmidecode -H "$handle" -u | awk '/Header and Data:/{f=1;next} /Strings/{f=0} f' | tr "\n\r\t" ' ' | tr -s ' ' | sed -e 's/^[[:space:]]*//' | sed -e 's/[[:space:]]*$//')
+        old="$IFS"
+        IFS=' '
+        tableData=($str)
+        IFS="$old"
+    fi
 }
 dmidecodeStrings () {
     handle="${1}"
-    str=$(dmidecode -H "$handle" -u | awk '/Strings/{f=1;next} /^\w+$/{f=0} f' | sed 's/^[^"]*$//g' | sed 's/^\w+//g' | sed '/^[[:space:]]*$/d')
-    old="$IFS"
-    IFS=$'\n'
-    tableStrings=($str)
-    IFS="$old"
+    if  [[ $handle =~ ^0x[0-9A-Fa-f]+$ ]]; then
+        str=$(dmidecode -H "$handle" -u | awk '/Strings/{f=1;next} /^\w+$/{f=0} f' | sed 's/^[^"]*$//g' | sed 's/^\w+//g' | sed '/^[[:space:]]*$/d')
+        old="$IFS"
+        IFS=$'\n'
+        tableStrings=($str)
+        IFS="$old"
+    fi
 }
 dmidecodeParseHandle () {
     handle="${1}"
@@ -44,11 +48,13 @@ dmidecodeGetByte () {
 dmidecodeGetString () {
     strref="${1}"
     str=""
-    strrefDec=$(printf "%d" "0x""$strref")
-    lenDec=$(printf "%d" "0x"${#tableStrings[@]})
-    if [ $strrefDec -le $lenDec ] && [ $strrefDec -gt 0 ]; then
-        str="${tableStrings[$strrefDec-1]}"
-        str=$(printf "$str" | sed 's/^[ \t]*"\?//;s/"\?[ \t]*$//')
+    if [[ $strref =~ ^[0-9A-Fa-f]+$ ]]; then
+        strrefDec=$(printf "%d" "0x""$strref")
+        lenDec=$(printf "%d" "0x"${#tableStrings[@]})
+        if [ $strrefDec -le $lenDec ] && [ $strrefDec -gt 0 ]; then
+            str="${tableStrings[$strrefDec-1]}"
+            str=$(printf "$str" | sed 's/^[ \t]*"\?//;s/"\?[ \t]*$//')
+        fi
     fi
     printf "$str"
 }

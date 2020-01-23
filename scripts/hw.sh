@@ -56,7 +56,7 @@ lshwNumBusItems () {
 lshwGetVendorIDFromBusItem () {
     itemnumber="${1}"
     result=""
-    str=$(echo "${busitems[$itemnumber]}" | grep -e "^vendor:.*[^\[]\[.\+$" | sed 's/^vendor:.*[^\[]\[\([0-9A-Fa-f]\{4\}\)\]$/\1/')
+    str=$(echo "${busitems[$itemnumber]}" | grep -e "^vendor:.*[^\[]\[.\+$" | sed 's/^vendor:.*[^\[]\[\([0-9A-Fa-f]\+\)\]$/\1/')
     if [ -n "$str" ]; then
         result=$str
     fi
@@ -65,7 +65,7 @@ lshwGetVendorIDFromBusItem () {
 lshwGetProductIDFromBusItem () {
     itemnumber="${1}"
     result=""
-    str=$(echo "${busitems[$itemnumber]}" | grep -e "^product:.*[^\[]\[.\+$" | sed 's/^product:.*[^\[]\[[0-9A-Fa-f]\{4\}:\([0-9A-Fa-f]\{4\}\)\]$/\1/')
+    str=$(echo "${busitems[$itemnumber]}" | grep -e "^product:.*[^\[]\[.\+$" | sed 's/^product:.*[^\[]\[[0-9A-Fa-f]\+:\([0-9A-Fa-f]\+\)\]$/\1/')
     if [ -n "$str" ]; then
         result=$str
     fi
@@ -84,6 +84,15 @@ lshwGetSerialFromBusItem () {
     itemnumber="${1}"
     result=""
     str=$(echo "${busitems[$itemnumber]}" | grep -e "^serial:.*$" | sed 's/^serial: \([0-9A-Za-z:-]\+\)$/\1/')
+    if [ -n "$str" ]; then
+        result=$str
+    fi
+    printf "$result"
+}
+lshwGetLogicalNameFromBusItem () {
+    itemnumber="${1}"
+    result=""
+    str=$(echo "${busitems[$itemnumber]}" | grep -e "^logical name:.*$" | sed 's/^logical name: \(.\+\)$/\1/')
     if [ -n "$str" ]; then
         result=$str
     fi
@@ -129,6 +138,12 @@ lshwBusItemWirelessCap () {
     if (echo "${busitems[$itemnumber]}" | grep --quiet "capabilities.*wireless"); then
         result="1"
     fi
+    printf "$result"
+}
+ethtoolPermAddr () {
+    iface="${1}"
+    result=""
+    str=$(ethtool -P "$iface" 2> /dev/null | grep -e "^Perm.*$" | sed 's/^Permanent address: \([0-9a-f:]\+\)$/\1/')
     printf "$result"
 }
 #lshwParse "disk"

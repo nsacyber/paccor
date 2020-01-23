@@ -127,13 +127,14 @@ ospackage {
     os=LINUX
     arch=NOARCH
     version='1.1.3'
-    release='3'
+    release='4'
 
     into '/opt/paccor'
     user 'root'
     fileMode=0755
 
     requires('dmidecode', '3.2', GREATER | EQUAL)
+    requires('ethtool')
     requires('jq')
     requires('lshw')
     requires('vim-common')

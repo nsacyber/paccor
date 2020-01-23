@@ -570,11 +570,12 @@ parseNicData () {
 
     for ((i = 0 ; i < numHandles ; i++ )); do
         manufacturer=$(lshwGetVendorIDFromBusItem "$i")
-    model=$(lshwGetProductIDFromBusItem "$i")
-    serialConstant=$(lshwGetSerialFromBusItem "$i")
+        model=$(lshwGetProductIDFromBusItem "$i")
+        serialConstant=$(lshwGetLogicalNameFromBusItem "$i")
+        serialConstant=$(ethtoolPermAddr "$serialConstant")
         serialConstant=$(standardizeMACAddr "${serialConstant}")
         serial=""
-    revision=$(lshwGetVersionFromBusItem "$i")
+        revision=$(lshwGetVersionFromBusItem "$i")
 
         if [[ -z "${manufacturer// }" ]] && [[ -z "${model// }" ]] && (! [[ -z "${serialConstant// }" ]] || ! [[ -z "${revision// }" ]]); then
             manufacturer=$(lshwGetVendorNameFromBusItem "$i")
@@ -644,9 +645,9 @@ parseHddData () {
 
     for ((i = 0 ; i < numHandles ; i++ )); do
         manufacturer=$(lshwGetVendorIDFromBusItem "$i")
-    model=$(lshwGetProductIDFromBusItem "$i")
-    serial=$(lshwGetSerialFromBusItem "$i")
-    revision=$(lshwGetVersionFromBusItem "$i")
+        model=$(lshwGetProductIDFromBusItem "$i")
+        serial=$(lshwGetSerialFromBusItem "$i")
+        revision=$(lshwGetVersionFromBusItem "$i")
 
         if [[ -z "${manufacturer// }" ]] && [[ -z "${model// }" ]] && (! [[ -z "${serial// }" ]] || ! [[ -z "${revision// }" ]]); then
             model=$(lshwGetProductNameFromBusItem "$i")
@@ -705,7 +706,7 @@ parseGfxData () {
 
         if [[ -z "${manufacturer// }" ]] && [[ -z "${model// }" ]] && (! [[ -z "${serial// }" ]] || ! [[ -z "${revision// }" ]]); then
             manufacturer=$(lshwGetVendorNameFromBusItem "$i")
-        model=$(lshwGetProductNameFromBusItem "$i")
+            model=$(lshwGetProductNameFromBusItem "$i")
         fi
 
     if [[ -z "${manufacturer// }" ]]; then
