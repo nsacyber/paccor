@@ -142,9 +142,8 @@ lshwBusItemWirelessCap () {
 }
 ethtoolPermAddr () {
     iface="${1}"
-    result=""
     str=$(ethtool -P "$iface" 2> /dev/null | grep -e "^Perm.*$" | sed 's/^Permanent address: \([0-9a-f:]\+\)$/\1/')
-    printf "$result"
+    printf "$str"
 }
 #lshwParse "disk"
 #lshwNetwork
