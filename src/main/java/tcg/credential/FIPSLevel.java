@@ -11,7 +11,7 @@ import org.bouncycastle.asn1.DERSequence;
 /**
  * <pre>
  * FIPSLevel ::= SEQUENCE {
- *      version IA5STRING (SIZE (1..STRMAX)), -- “140-1” or “140-2”
+ *      version IA5STRING (SIZE (1..STRMAX)), -- 140-1 or 140-2
  *      level SecurityLevel,
  *      plus BOOLEAN DEFAULT FALSE }
  * </pre>

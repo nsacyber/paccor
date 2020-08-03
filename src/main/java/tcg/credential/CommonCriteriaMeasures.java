@@ -14,7 +14,7 @@ import org.bouncycastle.asn1.DERTaggedObject;
 /**
  * <pre>
  * CommonCriteriaMeasures ::= SEQUENCE {
- *      version IA5STRING (SIZE (1..STRMAX)), -- “2.2” or “3.1”; future syntax defined by CC
+ *      version IA5STRING (SIZE (1..STRMAX)), -- 2.2 or 3.1; future syntax defined by CC
  *      assuranceLevel EvaluationAssuranceLevel,
  *      evaluationStatus EvaluationStatus,
  *      plus BOOLEAN DEFAULT FALSE,
