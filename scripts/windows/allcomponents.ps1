@@ -494,10 +494,14 @@ function parseCpuData() {
 
         if (![string]::IsNullOrEmpty($tmpSerial) -and ($tmpSerial.Trim().Length -ne 0)) {
             $tmpSerial=(jsonSerial "$tmpSerial".Trim())
+        } else {
+            $tmpSerial=""
         }
 
         if (![string]::IsNullOrEmpty($tmpRevision) -and ($tmpRevision.Trim().Length -ne 0)) {
             $tmpRevision=(jsonRevision "$tmpRevision".Trim())
+        } else {
+            $tmpRevision=""
         }
 
         if ("$tmpUpgradeMethod" -eq "$processorNotUpgradableIndicator") {
@@ -549,10 +553,14 @@ function parseRamData() {
 
         if (![string]::IsNullOrEmpty($tmpSerial) -and ($tmpSerial.Trim().Length -ne 0)) {
             $tmpSerial=(jsonSerial "$tmpSerial".Trim())
+        } else {
+            $tmpSerial=""
         }
 
         if (![string]::IsNullOrEmpty($tmpRevision) -and ($tmpRevision.Trim().Length -ne 0)) {
             $tmpRevision=(jsonRevision "$tmpRevision".Trim())
+        } else {
+            $tmpRevision=""
         }
         $tmpComponent=(jsonComponent $ramClass $tmpManufacturer $tmpModel $replaceable $tmpSerial $tmpRevision)
         $component+="$tmpComponent,"
@@ -608,11 +616,15 @@ function parseNicData() {
 
         if (![string]::IsNullOrEmpty($tmpSerialConstant) -and ($tmpSerialConstant.Trim().Length -ne 0)) {
             $tmpSerial=(jsonSerial "$tmpSerialConstant".Trim())
+        } else {
+            $tmpSerial=""
         }
 
 
         if (![string]::IsNullOrEmpty($tmpRevision) -and ($tmpRevision.Trim().Length -ne 0)) {
             $tmpRevision=(jsonRevision "$tmpRevision".Trim())
+        } else {
+            $tmpRevision=""
         }
 
         if ($tmpMediaType -and $tmpSerial) {
@@ -688,10 +700,14 @@ function parseHddData() {
 
         if (![string]::IsNullOrEmpty($tmpSerial) -and ($tmpSerial.Trim().Length -ne 0)) {
             $tmpSerial=(jsonSerial "$tmpSerial".Trim())
+        } else {
+            $tmpSerial=""
         }
 
         if (![string]::IsNullOrEmpty($tmpRevision) -and ($tmpRevision.Trim().Length -ne 0)) {
             $tmpRevision=(jsonRevision "$tmpRevision".Trim())
+        } else {
+            $tmpRevision=""
         }
 
         $tmpComponent=(jsonComponent $hddClass $tmpManufacturer $tmpModel $replaceable $tmpSerial $tmpRevision)
@@ -717,7 +733,7 @@ function parseGfxData() {
     for($i=0;$i -lt $numRows;$i++) {
         Write-Progress -Id 2 -ParentId 1 -Activity "Gathering Graphics information" -CurrentOperation ("Cleaning output for HDD " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
 
-        $hddClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_GFX")
+        $gfxClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_GFX")
 
         $pnpDevID=""
         if(isPCI($RS[$i].PNPDeviceID)) {
@@ -743,9 +759,11 @@ function parseGfxData() {
 
         if (![string]::IsNullOrEmpty($tmpRevision) -and ($tmpRevision.Trim().Length -ne 0)) {
             $tmpRevision=(jsonRevision "$tmpRevision".Trim())
+        } else {
+            $tmpRevision=""
         }
 
-        $tmpComponent=(jsonComponent $hddClass $tmpManufacturer $tmpModel $replaceable $tmpRevision)
+        $tmpComponent=(jsonComponent $gfxClass $tmpManufacturer $tmpModel $replaceable $tmpRevision)
         $component+="$tmpComponent,"
     }
 
