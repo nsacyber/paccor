@@ -1,27 +1,9 @@
-task wrapper(type: Wrapper) {
-    gradleVersion = '2.10'
+wrapper {
+    gradleVersion = '4.5.1'
 }
+import org.gradle.util.VersionNumber
 
 allprojects {
-    task addPlugins << {
-        delete './build/plugins'
-        mkdir './build/plugins'
-        if (project.hasProperty('pluginDir')) {
-            if (pluginDir?.trim()) {
-                copy {
-                    from "$pluginDir"
-                    into 'build/plugins'
-                    include '*.jar'
-                    include '**/*.jar'
-                }
-            }
-        }
-    }
-
-    tasks.withType(JavaCompile) {
-        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
-    }
-
     repositories {
         mavenCentral();
     }
@@ -57,7 +39,15 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.netflix.nebula:gradle-ospackage-plugin:4.9.3'
+        // The ospackage plugin has breaking differences based on gradle version
+        // paccor must support gradle 4.5.1 for the forseeable future
+        String ospackage_version = "4.9.3" // verified to work with gradle 4.5.1
+        if ((VersionNumber.parse(gradle.gradleVersion) >= VersionNumber.parse('5.1'))) {
+            ospackage_version = "8.4.1"
+            project.logger.lifecycle("Selecting ospackage $ospackage_version for your gradle version $gradle.gradleVersion.")
+            project.logger.lifecycle("Customize the ospackage_version variable in build.gradle if met with plugin errors.")
+        }
+        classpath "com.netflix.nebula:gradle-ospackage-plugin:$ospackage_version"
     }
 }
 
@@ -71,12 +61,12 @@ ext.refsDir = new File(projectDir, 'refs')
 sourceCompatibility = 1.8
 
 dependencies {
-    compile libs.bouncycastle
-    compile libs.jackson
-    compile libs.jcommander
+    implementation libs.bouncycastle
+    implementation libs.jackson
+    implementation libs.jcommander
 
-    testCompile libs.testng
-    testCompile libs.powermock
+    testImplementation libs.testng
+    testImplementation libs.powermock
 }
 
 // Application packaging into a zip file
@@ -85,7 +75,7 @@ def createScript(project, mainClass, name) {
     outputDir       = new File(project.buildDir, 'scripts')
     mainClassName   = mainClass
     applicationName = name
-    classpath       = project.tasks[JavaPlugin.JAR_TASK_NAME].outputs.files + project.configurations.runtime
+    classpath       = project.tasks[JavaPlugin.JAR_TASK_NAME].outputs.files + project.configurations.runtimeClasspath
   }
   project.tasks[name].dependsOn(project.jar)
 
@@ -148,7 +138,7 @@ ospackage {
         into 'lib'
     }
 
-    from(configurations.runtime) {
+    from(configurations.runtimeClasspath) {
         into 'lib'
     }
 
