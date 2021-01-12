@@ -1,7 +1,7 @@
 $toolpath=(Split-Path -parent $PSCommandPath)
 $timestamp=(Get-Date -UFormat "%Y%m%d%H%M%S")
 #### Scripts and executable
-$componentlister_script="$toolpath" + "/allcomponents.ps1"
+$componentlister_script="$toolpath" + "/componentlist.ps1"
 $policymaker_script="$toolpath" + "/referenceoptions.ps1"
 $get_ek_script="$toolpath" + "/get_ek.ps1"
 $extensions_script="$toolpath" + "/otherextensions.ps1"

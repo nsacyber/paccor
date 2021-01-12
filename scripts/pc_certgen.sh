@@ -9,14 +9,14 @@
 toolpath="`dirname "$0"`"
 timestamp=$(date +%Y%m%d%H%M%S)
 #### Scripts and executable
-componentlister_script="$toolpath""/allcomponents.sh"
+componentlister_script="$toolpath""/componentlist.sh"
 policymaker_script="$toolpath""/referenceoptions.sh"
 get_ek_script="$toolpath""/get_ek.sh"
 extensions_script="$toolpath""/otherextensions.sh"
 signer_bin="$toolpath""/../bin/signer"
 validator_bin="$toolpath""/../bin/validator"
 #### Files
-workspace=$toolpath"/pc_testgen"
+workspace="$toolpath""/pc_testgen"
 tmpspace="/tmp"
 componentlist="$workspace""/localhost-componentlist.json"
 policyreference="$workspace""/localhost-policyreference.json"
