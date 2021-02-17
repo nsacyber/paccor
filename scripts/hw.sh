@@ -28,7 +28,7 @@ lshwParse () {
     numItemsDec=$(printf "%d" "0x"${#items[@]})
     for ((i = 0 ; i < numItemsDec ; i++ )); do
         matchesType=""
-        if (printf "${items[$i]}" | grep --quiet -e "^\*-"$type"[[:space:]]*\(DISABLED\)\?$"); then
+        if (printf "${items[$i]}" | grep --quiet -e "^\*-"$type"\?[0-9A-Fa-f]*[[:space:]]*\(DISABLED\)\?$"); then
             matchesType="1"
         fi
         isPhysical=""
