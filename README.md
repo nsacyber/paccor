@@ -34,7 +34,7 @@ To build the project yourself, paccor uses Gradle to manage build tasks. paccor 
 https://trustedcomputinggroup.org/resource/tcg-platform-attribute-credential-profile/
 
 ### The private enterprise numbers list came from:
-https://www.ietf.org/assignments/enterprise-numbers/enterprise-numbers
+http://www.iana.org/assignments/enterprise-numbers
 
 
 

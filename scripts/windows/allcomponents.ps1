@@ -655,7 +655,8 @@ Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 70
 
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering HDD information" -CurrentOperation "Querying" -PercentComplete 0
 function parseHddData() {
-    $RS=(Get-CimInstance -ClassName CIM_DiskDrive | select serialnumber,mediatype,pnpdeviceid,manufacturer,model | where mediatype -eq "Fixed hard disk media")
+    #$RS=(Get-CimInstance -ClassName CIM_DiskDrive | select serialnumber,mediatype,pnpdeviceid,manufacturer,model | where mediatype -eq "Fixed hard disk media")
+    $RS=(Get-PhysicalDisk | select serialnumber,mediatype,manufacturer,model)
     $component=""
     $replaceable=(jsonFieldReplaceable "true")
     $numRows=1
@@ -667,28 +668,32 @@ function parseHddData() {
 
         $hddClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_HDD")
 
-        $pnpDevID=""
-        if(isIDE($RS[$i].PNPDeviceID)) {
-            $pnpDevID=(ideDiskParse $RS[$i].PNPDeviceID)
-        } elseif(isSCSI($RS[$i].PNPDeviceID)) {
-            $pnpDevID=(scsiDiskParse $RS[$i].PNPDeviceID)
-        } else {
-            Continue
-        }
+        #$pnpDevID=""
+        #if(isIDE($RS[$i].PNPDeviceID)) {
+        #   $pnpDevID=(ideDiskParse $RS[$i].PNPDeviceID)
+        #} elseif(isSCSI($RS[$i].PNPDeviceID)) {
+        #   $pnpDevID=(scsiDiskParse $RS[$i].PNPDeviceID)
+        #} else {
+        #  Continue
+        #}
 
-        if(($pnpDevID -eq $null) -or (($pnpDevID -eq "(Standard disk drives)") -and ($pnpDevID.product -eq $null))) {
-		    $regex="^.{,16}$"
-            $pnpDevID=[pscustomobject]@{
-                product=($RS[$i].model -replace '^(.{0,16}).*$','$1')  # Strange behavior for this case, will return
-            }
-        }
+        #if(($pnpDevID -eq $null) -or (($pnpDevID -eq "(Standard disk drives)") -and ($pnpDevID.product -eq $null))) {
+		#   $regex="^.{,16}$"
+        #    $pnpDevID=[pscustomobject]@{
+        #       product=($RS[$i].model -replace '^(.{0,16}).*$','$1')  # Strange behavior for this case, will return
+        #   }
+        #}
 
-        $tmpManufacturer=$pnpDevID.vendor # PCI Vendor ID
-        $tmpModel=$pnpDevID.product  # PCI Device Hardware ID
+        #$tmpManufacturer=$pnpDevID.vendor 
+        #$tmpModel=$pnpDevID.product 
+        #$tmpSerial=$RS[$i].serialnumber
+        #$tmpRevision=$pnpDevID.revision
+
+        $tmpManufacturer=$RS[$i].manufacturer
+        $tmpModel=($RS[$i].model -replace '^(.{0,16}).*$','$1')
         $tmpSerial=$RS[$i].serialnumber
-        $tmpRevision=$pnpDevID.revision
 
-        if ([string]::IsNullOrEmpty($tmpManufacturer) -or ($tmpManufacturer.Trim().Length -eq 0)) {
+        if ([string]::IsNullOrEmpty($tmpManufacturer) -or ($tmpManufacturer.Trim().Length -eq 0) -or ($tmpManufacturer.Trim() -eq "NVMe")) {
             $tmpManufacturer="$NOT_SPECIFIED"
         }
         $tmpManufacturer=$(jsonManufacturer "$tmpManufacturer".Trim())

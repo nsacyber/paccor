@@ -701,7 +701,7 @@ parseNvmeData () {
     class=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_HDD")
 
     for ((i = 0 ; i < numHandles ; i++ )); do
-        manufacturer="" # Making this appear as it does on windows, lshw doesn't see nvme drives and nvme-cli doesn't return a manufacturer field
+        manufacturer="" # Making this appear as it does on windows, nvme-cli doesn't return a manufacturer field
         model=$(nvmeGetModelNumberForDevice "$i")
         serial=$(nvmeGetNguidForDevice "$i")
         if [[ $serial =~ ^[0]+$ ]]; then
