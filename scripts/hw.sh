@@ -58,7 +58,8 @@ lshwGetVendorIDFromBusItem () {
     result=""
     str=$(echo "${busitems[$itemnumber]}" | grep -e "^vendor:.*[^\[]\[.\+$" | sed 's/^vendor:.*[^\[]\[\([0-9A-Fa-f]\+\)\]$/\1/')
     if [ -n "$str" ]; then
-        result=$str
+        result="0000$str"
+        result="${result: -4}"
     fi
     printf "$result"
 }
@@ -67,7 +68,8 @@ lshwGetProductIDFromBusItem () {
     result=""
     str=$(echo "${busitems[$itemnumber]}" | grep -e "^product:.*[^\[]\[.\+$" | sed 's/^product:.*[^\[]\[[0-9A-Fa-f]\+:\([0-9A-Fa-f]\+\)\]$/\1/')
     if [ -n "$str" ]; then
-        result=$str
+        result="0000$str"
+        result="${result: -4}"
     fi
     printf "$result"
 }
