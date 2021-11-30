@@ -12,6 +12,7 @@ $ENTERPRISE_NUMBERS_FILE="$APP_HOME/../enterprise-numbers"
 $PEN_ROOT="1.3.6.1.4.1." # OID root for the private enterprise numbers
 $SMBIOS_SCRIPT="$APP_HOME/SMBios.ps1"
 $HW_SCRIPT="$APP_HOME/hw.ps1" # For components not covered by SMBIOS
+$NVME_SCRIPT="$APP_HOME/nvme.ps1" # For NVMe components
 
 ### Load Raw SMBios Data
 . $SMBIOS_SCRIPT
@@ -25,6 +26,8 @@ $SMBIOS_TYPE_RAM="17"
 
 ### hw
 . $HW_SCRIPT
+### nvme
+. $NVME_SCRIPT
 
 ### ComponentClass values
 $COMPCLASS_REGISTRY_TCG="2.23.133.18.3.1" # switch off values within SMBIOS to reveal accurate component classes
@@ -656,12 +659,16 @@ Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 70
 Write-Progress -Id 2 -ParentId 1 -Activity "Gathering HDD information" -CurrentOperation "Querying" -PercentComplete 0
 function parseHddData() {
     #$RS=(Get-CimInstance -ClassName CIM_DiskDrive | select serialnumber,mediatype,pnpdeviceid,manufacturer,model | where mediatype -eq "Fixed hard disk media")
-    $RS=(Get-PhysicalDisk | select serialnumber,mediatype,manufacturer,model)
+    $RS=(Get-PhysicalDisk | select serialnumber,mediatype,manufacturer,model,bustype | where BusType -ne NVMe)
     $component=""
     $replaceable=(jsonFieldReplaceable "true")
-    $numRows=1
-    if ($RS.Count -gt 1) {
-        $numRows=($RS.Count)
+    $numRows=0
+    if ($RS -ne $null) {
+		if ($RS -is [array]) {
+			$numRows=($RS.Count)
+		} else {
+			$numRows=1
+        }
     }
     for($i=0;$i -lt $numRows;$i++) {
         Write-Progress -Id 2 -ParentId 1 -Activity "Gathering Hard Disk information" -CurrentOperation ("Cleaning output for HDD " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
@@ -723,6 +730,63 @@ function parseHddData() {
     return "$component".Trim(",")
 }
 
+function parseNvmeData() {
+    $RS=((Get-PhysicalDisk | where BusType -eq NVMe).DeviceID)
+    $component=""
+    $replaceable=(jsonFieldReplaceable "true") # Looking for reliable indicator
+
+    $hddClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_HDD")
+
+    $nvme=(Get-NVMeIdentifyData $RS)
+    $numRows=$RS.Count
+
+    for($i=0;$i -lt $numRows;$i++) {
+        Write-Progress -Id 2 -ParentId 1 -Activity "Gathering NVMe Disk information" -CurrentOperation ("Cleaning output for NVMe Disk " + ($i+1)) -PercentComplete ((($i+1) / $numRows) * 100)
+
+        $tmpManufacturer=""
+        $tmpModel=(NvmeGetModelNumberForDeviceNumber $nvme $RS[$i])
+        $tmpSerial=(NvmeGetNguidForDevice $nvme $RS[$i]) 
+        if ("$tmpSerial" -match "^[0]+$") {
+            $tmpSerial=(NvmeGetEuiForDevice $nvme $RS[$i])
+        }
+
+        if ([string]::IsNullOrEmpty($tmpManufacturer) -and [string]::IsNullOrEmpty($tmpModel) -and [string]::IsNullOrEmpty($tmpSerial) -and [string]::IsNullOrEmpty($tmpRevision)) {
+            Continue;
+        }
+
+        if ([string]::IsNullOrEmpty($tmpManufacturer) -or ($tmpManufacturer.Trim().Length -eq 0)) {
+            $tmpManufacturer="$NOT_SPECIFIED"
+        }
+        $tmpManufacturer=$(jsonManufacturer "$tmpManufacturer".Trim())
+
+        if ([string]::IsNullOrEmpty($tmpModel) -or ($tmpModel.Trim().Length -eq 0)) {
+            $tmpModel="$NOT_SPECIFIED"
+        } else {
+            $tmpModel=($tmpModel -replace '^(.{0,16}).*$','$1') # Reformatting for consistency for now.
+        }
+        $tmpModel=$(jsonModel "$tmpModel".Trim())
+
+        if (![string]::IsNullOrEmpty($tmpSerial) -and ($tmpSerial.Trim().Length -ne 0)) {
+            $tmpSerial=("$tmpSerial".Trim())
+            $tmpSerial=($tmpSerial -replace "(.{4})", '$1_' -replace "_$", '.') # Reformatting for consistency for now.
+            $tmpSerial=(jsonSerial $tmpSerial)
+        } else {
+            $tmpSerial=""
+        }
+
+        if (![string]::IsNullOrEmpty($tmpRevision) -and ($tmpRevision.Trim().Length -ne 0)) {
+            $tmpRevision=(jsonRevision "$tmpRevision".Trim())
+        } else {
+            $tmpRevision=""
+        }
+        $tmpComponent=(jsonComponent $hddClass $tmpManufacturer $tmpModel $replaceable $tmpSerial $tmpRevision)
+        $component+="$tmpComponent,"
+    }
+
+    Write-Progress -Id 2 -ParentId 1 -Activity "Gathering NVMe Disk information" -CurrentOperation "Done" -PercentComplete 100
+    return "$component".Trim(",")
+}
+
 ### Gather GFX details
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 70
 
@@ -781,8 +845,9 @@ $componentsCPU=$(parseCpuData)
 $componentsRAM=$(parseRamData)
 $componentsNIC=$(parseNicData)
 $componentsHDD=$(parseHddData)
+$componentsNVMe=$(parseNvmeData)
 $componentsGFX=$(parseGfxData)
-$componentArray=(jsonComponentArray "$componentChassis" "$componentBaseboard" "$componentBios" "$componentsCPU" "$componentsRAM" "$componentsNIC" "$componentsHDD" "$componentsGFX")
+$componentArray=(jsonComponentArray "$componentChassis" "$componentBaseboard" "$componentBios" "$componentsCPU" "$componentsRAM" "$componentsNIC" "$componentsHDD" "$componentsNVMe" "$componentsGFX")
 
 ### Gather property details
 Write-Progress -Id 1 -Activity "Gathering properties" -PercentComplete 80
