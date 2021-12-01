@@ -20,7 +20,8 @@ To build the project yourself, paccor uses Gradle to manage build tasks. paccor 
   * On Windows use:<br/>
   ```gradlew.bat clean build buildRpm buildDeb distZip```
   * Validation of the gradle wrapper jar file is performed by a GitHub Action maintained by Gradle:<br/>
-  https://github.com/marketplace/actions/gradle-wrapper-validation
+  https://github.com/marketplace/actions/gradle-wrapper-validation<br/>
+  Instructions to verify the Gradle Wrapper JAR locally are available [here](https://docs.gradle.org/current/userguide/gradle_wrapper.html#wrapper_checksum_verification).
 
 ## Minimum software requirements:
 * Gradle 4.5.1
