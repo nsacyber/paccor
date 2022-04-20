@@ -20,7 +20,7 @@ dmidecodeData () {
 dmidecodeStrings () {
     handle="${1}"
     if  [[ $handle =~ ^0x[0-9A-Fa-f]+$ ]]; then
-        str=$(dmidecode -H "$handle" -u | awk '/Strings/{f=1;next} /^\w+$/{f=0} f' | sed 's/^[^"]*$//g' | sed 's/^\w+//g' | sed '/^[[:space:]]*$/d')
+        str=$(dmidecode -H "$handle" -u | awk '/Strings/{f=1;next} /^\w+$/{f=0} f' | sed 's/\t//g' | sed ':a;N;$!ba;s/\n/\t/g' | sed 's/[[:space:]]00[[:space:]]/&"/g' | sed 's/"[^\t]*/&"/g' | sed 's/\t/\n/g' | sed 's/^[^"]*$//g' | sed 's/^\w+//g' | sed 's/""/"/g' | sed '/^[[:space:]]*$/d')
         old="$IFS"
         IFS=$'\n'
         tableStrings=($str)
