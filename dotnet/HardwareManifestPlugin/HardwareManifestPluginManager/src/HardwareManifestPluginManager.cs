@@ -3,7 +3,7 @@ using org.iso.standards.swid;
 using Serilog;
 using System.Reflection;
 
-namespace HardwareManifestPluginManager {
+namespace paccor {
     public class HardwareManifestPluginManager {
         private static readonly ILogger log = Log.ForContext<HardwareManifestPluginManager>();
 
