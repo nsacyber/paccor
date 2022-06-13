@@ -59,3 +59,11 @@ build/
 # rejected diff applications
 *.rej
 
+### c# build files, visual studio files
+*.user
+*.cache
+.vs/
+bin/
+generated/
+obj/
+
