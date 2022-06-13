@@ -20,7 +20,7 @@ namespace HardwareManifestPlugin {
             get;
         }
 
-        SoftwareIdentity SWID {
+        SoftwareIdentity? SWID {
             get;
         }
 
@@ -52,19 +52,10 @@ namespace HardwareManifestPlugin {
             return SWID != null;
         }
 
-        string GatherHardwareManifestAsJsonString();
-
         /// <summary>
         /// Kick off the hardware collection procedure within the Hardware Manifest Plugin.
         /// </summary>
-        /// <returns>True if hardware collection by the plugin was successful. False otherwise.</returns>
-        bool GatherHardwareInformation();
-        /// <summary>
-        /// All PlatformConfiguration, PlatformConfigurationV2, and Name Attributes will be output as a JSON string.
-        /// </summary>
-        /// <returns></returns>
-        string OutputAsJsonString();
-        
-        
+        /// <returns>The full manifest as a JSON string.</returns>
+        string GatherHardwareManifestAsJsonString();        
     }
 }

@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <Target Name="CopyFiles" BeforeTargets="PreBuildEvent">
+    <ItemGroup>
+      <PaccorScriptsLinux Include="..\..\..\scripts\*.*" />
+	  <PaccorScriptsWindows Include="..\..\..\scripts\windows\*.*" />
+    </ItemGroup>
+    <Copy
+      SourceFiles="@(PaccorScriptsLinux)"
+      DestinationFolder="$(ProjectDir)scripts"
+    />
+	<Copy
+      SourceFiles="@(PaccorScriptsWindows)"
+      DestinationFolder="$(ProjectDir)scripts/windows"
+    />
+	<ItemGroup> 
+      <Content Include="scripts\**"> 
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </Content> 
+	</ItemGroup>
+  </Target>
+
+  
+  <ItemGroup>
+    <ProjectReference Include="..\..\HardwareManifestPlugin\HardwareManifestPlugin\HardwareManifestPlugin.csproj" />
+  </ItemGroup>
+</Project>

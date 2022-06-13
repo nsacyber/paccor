@@ -7,9 +7,11 @@ namespace HardwareManifestPluginManager {
     public class HardwareManifestPluginManagerUtils {
         private static readonly ILogger log = Log.ForContext<HardwareManifestPluginManagerUtils>();
 
+#pragma warning disable CS8604 // Possible null reference argument.
         public static readonly string pluginsPath = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath), "plugins");
         public static readonly string trustPath = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath), "trust");
-        
+#pragma warning restore CS8604 // Possible null reference argument.
+
         public static List<IHardwareManifest> LoadPlugins(List<string> names, bool swidEnforced) {
             string[] pluginDlls = System.IO.Directory.GetFiles(pluginsPath, "*.dll");
             List<IHardwareManifest> manifests = new();
@@ -18,7 +20,7 @@ namespace HardwareManifestPluginManager {
                 IHardwareManifest? manifest = GatherManifestIfNameSelected(pluginAssembly, names);
                 if (manifest != null) {
                     bool trustManifest = !swidEnforced;
-                    if (swidEnforced) {
+                    if (swidEnforced && manifest.ContainsSWID()) {
                         trustManifest = VerifySWIDWithEnvelopedSignature(manifest.SWID);
                     }
                     if (trustManifest) {
