@@ -12,14 +12,8 @@
       <PaccorScriptsLinux Include="..\..\..\scripts\*.*" />
 	  <PaccorScriptsWindows Include="..\..\..\scripts\windows\*.*" />
     </ItemGroup>
-    <Copy
-      SourceFiles="@(PaccorScriptsLinux)"
-      DestinationFolder="$(ProjectDir)scripts"
-    />
-	<Copy
-      SourceFiles="@(PaccorScriptsWindows)"
-      DestinationFolder="$(ProjectDir)scripts/windows"
-    />
+    <Copy SourceFiles="@(PaccorScriptsLinux)" DestinationFolder="$(ProjectDir)scripts" />
+	<Copy SourceFiles="@(PaccorScriptsWindows)" DestinationFolder="$(ProjectDir)scripts/windows" />
 	<ItemGroup> 
       <Content Include="scripts\**"> 
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

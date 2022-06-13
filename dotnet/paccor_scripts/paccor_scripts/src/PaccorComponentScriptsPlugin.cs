@@ -1,12 +1,12 @@
 ﻿using HardwareManifestPlugin;
 using org.iso.standards.swid;
 using PlatformCertificateFromProto;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace paccor_scripts {
     public class PaccorComponentScriptsPlugin : IHardwareManifest {
-        public static readonly string scripts = Path.GetFullPath(Path.GetDirectoryName(Environment.ProcessPath), "scripts");
-        //public static readonly string linux_path = Path.GetFullPath(Path.Combine(scripts, "linux"));
+        public static readonly string scripts = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(PaccorComponentScriptsPlugin).Assembly.Location)!, "scripts"));
         public static readonly string linux_components = Path.GetFullPath(Path.Combine(scripts, "allcomponents.sh"));
         public static readonly string win_path = Path.GetFullPath(Path.Combine(scripts, "windows"));
         public static readonly string win_temp_output = Path.GetFullPath(Path.Combine(win_path, "out.json"));
@@ -45,9 +45,9 @@ namespace paccor_scripts {
                 }
                 // The allcomponents powershell script writes output to a file to preserve binary data
                 // that can get corrupted during redirection
-                json = System.IO.File.ReadAllText(win_temp_output);
                 if (System.IO.File.Exists(win_temp_output)) {
-                    System.IO.File.Delete(win_temp_output);
+                    json = System.IO.File.ReadAllText(win_temp_output);
+                    //System.IO.File.Delete(win_temp_output);
                 }
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
                 //await $"scripts/00magic.sh --param {arg}".Bash(this.logger);

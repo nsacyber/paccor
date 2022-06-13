@@ -4,7 +4,7 @@ namespace paccor_scripts {
     public static class ShellHelper {
         public static Task<Tuple<int, string, string>> Bash(this string cmd) {
             var escapedArgs = cmd.Replace("\"", "\\\"");
-            ProcessStartInfo info = new ProcessStartInfo {
+            ProcessStartInfo info = new() {
                 FileName = "bash",
                 Arguments = $"\"{escapedArgs}\"",
                 RedirectStandardOutput = true,
@@ -17,7 +17,7 @@ namespace paccor_scripts {
 
         public static Task<Tuple<int, string, string>> Powershell(this string cmd, string outFile) {
             char ch = '"'; // couldn't get escaping to work properly without this method
-            ProcessStartInfo info = new ProcessStartInfo {
+            ProcessStartInfo info = new() {
                 FileName = "powershell.exe",
                 Arguments = "-NoProfile -ExecutionPolicy Bypass -File " + ch + cmd + ch + " " + ch + outFile + ch,
                 RedirectStandardOutput = true,
@@ -29,8 +29,8 @@ namespace paccor_scripts {
         }
 
         private static Task<Tuple<int, string, string>> Execute(ProcessStartInfo info) {
-            TaskCompletionSource<Tuple<int, string, string>> source = new TaskCompletionSource<Tuple<int, string, string>>();
-            Process process = new Process {
+            TaskCompletionSource<Tuple<int, string, string>> source = new();
+            Process process = new() {
                 StartInfo = info,
                 EnableRaisingEvents = true
             };
