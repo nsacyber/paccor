@@ -39,7 +39,7 @@ namespace HardwareManifestPluginManager {
         private static Assembly LoadAssemblyfromDll(string relativePath) {
             string fullPath = Path.GetFullPath(relativePath).Replace('\\', Path.DirectorySeparatorChar);
 
-            log.Warning($"Seeing if this assembly implements IHardwareManifest: {fullPath}");
+            log.Debug($"Seeing if this assembly implements IHardwareManifest: {fullPath}");
             PluginLoadContext loadContext = new(fullPath);
             return loadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(fullPath)));
         }
@@ -53,7 +53,7 @@ namespace HardwareManifestPluginManager {
                     }
                 }
             }
-            log.Warning($"Can't find any type which implements IHardwareManifest in {assembly}.\n");
+            log.Debug($"Can't find any type which implements IHardwareManifest in {assembly}.\n");
             return null;
         }
 
