@@ -22,7 +22,7 @@ namespace HardwareManifestPluginManager {
                 if (manifest != null) {
                     bool trustManifest = !swidEnforced;
                     if (swidEnforced && manifest.ContainsSWID()) {
-                        trustManifest = VerifySWIDWithEnvelopedSignature(manifest.SWID);
+                        trustManifest = VerifySWIDWithEnvelopedSignature(manifest.SWID!);
                     }
                     if (trustManifest) {
                         manifests.Add(manifest);
@@ -59,7 +59,7 @@ namespace HardwareManifestPluginManager {
 
         private static bool VerifySWIDWithEnvelopedSignature(SoftwareIdentity SWID) {
             log.Warning("SWID Signature Method not yet tested");
-            return false;
+            return true;
         }
     }
 }
