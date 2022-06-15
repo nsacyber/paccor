@@ -15,6 +15,7 @@ namespace HardwareManifestPluginManager {
         public static List<IHardwareManifest> LoadPlugins(List<string> names, bool swidEnforced) {
             string[] pluginDlls = System.IO.Directory.GetFiles(pluginsPath, "*.dll");
             List<IHardwareManifest> manifests = new();
+            List<Tuple<string, string>> namesWithArgs = new();
             foreach(string dllPath in pluginDlls) {
                 Assembly pluginAssembly = LoadAssemblyfromDll(dllPath);
                 IHardwareManifest? manifest = GatherManifestIfNameSelected(pluginAssembly, names);
