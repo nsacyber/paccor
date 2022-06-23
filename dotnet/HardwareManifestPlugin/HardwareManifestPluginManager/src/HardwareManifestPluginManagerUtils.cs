@@ -26,12 +26,12 @@ namespace HardwareManifestPluginManager {
                     }
                     if (trustManifest) {
                         manifests.Add(manifest);
-                        log.Warning("Loading hardware manifest: " + manifest.Name);
+                        log.Debug("Loading hardware manifest: " + manifest.Name);
                     }
                 }
             }
             if (names.Count > 0) {
-                log.Warning("There was no Hardware Manifest plugin with the name " + (names.Count > 1 ? "s" : "") + string.Join(",", names) + ".");
+                log.Debug("There was no Hardware Manifest plugin with the name " + (names.Count > 1 ? "s" : "") + string.Join(",", names) + ".");
             }
             return manifests;
         }
@@ -58,7 +58,7 @@ namespace HardwareManifestPluginManager {
         }
 
         private static bool VerifySWIDWithEnvelopedSignature(SoftwareIdentity SWID) {
-            log.Warning("SWID Signature Method not yet tested");
+            log.Debug("SWID Signature Method not yet tested");
             return true;
         }
     }
