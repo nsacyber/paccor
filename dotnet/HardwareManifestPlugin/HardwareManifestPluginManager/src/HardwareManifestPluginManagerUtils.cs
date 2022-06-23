@@ -48,7 +48,7 @@ namespace HardwareManifestPluginManager {
             foreach (Type type in assembly.GetTypes()) {
                 if (typeof(IHardwareManifest).IsAssignableFrom(type)) {
                     if (Activator.CreateInstance(type) is IHardwareManifest result && names.Remove(result.Name)) {
-                        log.Warning("Found " + result.Name + ".");
+                        log.Debug("Found " + result.Name + ".");
                         return result;
                     }
                 }
