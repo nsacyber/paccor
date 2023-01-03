@@ -86,6 +86,10 @@ $JSON_HASHVALUE="HASHVALUE"
 $JSON_NAME="NAME"
 $JSON_VALUE="VALUE"
 $JSON_PROP_STATUS="STATUS"
+#### JSON Status Keywords
+$JSON_STATUS_ADDED="ADDED"
+$JSON_STATUS_MODIFIED="MODIFIED"
+$JSON_STATUS_REMOVED="REMOVED"
 $NOT_SPECIFIED="Not Specified"
 
 
@@ -862,7 +866,7 @@ $componentArray=(jsonComponentArray "$componentChassis" "$componentBaseboard" "$
 Write-Progress -Id 1 -Activity "Gathering properties" -PercentComplete 80
 $osCaption=((wmic os get caption /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
 $property1=(jsonProperty "caption" "$osCaption")  ## Example1
-$property2=(jsonProperty "caption" "$osCaption" "samplestatus") ## Example2 (including optional status field)
+$property2=(jsonProperty "caption" "$osCaption") # "$JSON_STATUS_ADDED") ## Example2 with optional third status argument
 
 ### Collate the property details
 $propertyArray=(jsonPropertyArray "$property1" "$property2")

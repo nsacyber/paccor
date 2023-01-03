@@ -77,6 +77,10 @@ JSON_HASHVALUE="HASHVALUE"
 JSON_NAME="NAME"
 JSON_VALUE="VALUE"
 JSON_PROP_STATUS="STATUS"
+#### JSON Status Keywords
+JSON_STATUS_ADDED="ADDED"
+JSON_STATUS_MODIFIED="MODIFIED"
+JSON_STATUS_REMOVED="REMOVED"
 NOT_SPECIFIED="Not Specified"
 
 
@@ -804,7 +808,7 @@ parseGfxData () {
 
 ### Gather property details
 property1=$(jsonProperty "uname -r" "$(uname -r)")  ## Example1
-property2=$(jsonProperty "OS Release" "$(grep 'PRETTY_NAME=' /etc/os-release | sed 's/[^=]*=//' | sed -e 's/^[[:space:]\"]*//' | sed -e 's/[[:space:]\"]*$//')" "samplestatus") ## Example2
+property2=$(jsonProperty "OS Release" "$(grep 'PRETTY_NAME=' /etc/os-release | sed 's/[^=]*=//' | sed -e 's/^[[:space:]\"]*//' | sed -e 's/[[:space:]\"]*$//')") # "$JSON_STATUS_ADDED") ## Example2 with optional third status argument
 
 ### Collate the component details
 componentsCPU=$(parseCpuData)
