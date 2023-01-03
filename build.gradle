@@ -115,9 +115,8 @@ applicationDistribution.from("./") {
 ospackage {
     packageName='paccor'
     os=LINUX
-    arch=all
     version='1.1.4'
-    release='6'
+    release='7'
 
     into '/opt/paccor'
     user 'root'
