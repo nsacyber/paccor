@@ -4,6 +4,18 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Authors>NSA Cybersecurity Directorate</Authors>
+    <PackageId>paccor.HardwareManifestPluginManager</PackageId>
+    <PackageVersion>1.0.0</PackageVersion>
+    <PackageTags>paccor;platform;certificate;hardware;manifest;plugin;manager</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageIcon>icon.png</PackageIcon>
+    <!--Source Link github.com/dotnet/sourcelink -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,4 +27,14 @@
     <ProjectReference Include="..\HardwareManifestPlugin\HardwareManifestPlugin.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--Source Link -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
+  </ItemGroup>
+  <ItemGroup>
+    <!--Package resources -->
+    <None Include="..\..\..\LICENSE.md" Pack="true" PackagePath="LICENSE.md" />
+    <None Include="..\..\..\images\paccorpluginslogoicon.png" Pack="true" PackagePath="icon.png" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 </Project>
