@@ -22,11 +22,11 @@ allprojects {
     // here to ensure that all projects are using the same versions of common
     // dependencies:
     ext.libs = [
-      bouncycastle:  ['org.bouncycastle:bcpkix-jdk15on:1.55', // Bouncy Castle license
-                      'org.bouncycastle:bcprov-ext-jdk15on:1.55'],
-      jackson:       ['com.fasterxml.jackson.core:jackson-core:2.9.4', // Apache 2.0
-                      'com.fasterxml.jackson.core:jackson-annotations:2.9.4',
-                      'com.fasterxml.jackson.core:jackson-databind:2.9.4'],
+      bouncycastle:  ['org.bouncycastle:bcpkix-jdk15on:1.67', // Bouncy Castle license
+                      'org.bouncycastle:bcprov-ext-jdk15on:1.67'],
+      jackson:       ['com.fasterxml.jackson.core:jackson-core:2.15.2', // Apache 2.0
+                      'com.fasterxml.jackson.core:jackson-annotations:2.15.2',
+                      'com.fasterxml.jackson.core:jackson-databind:2.15.2'],
       jcommander:    'com.beust:jcommander:1.72', // cli and required by testng, Apache 2.0
       powermock:     ['org.powermock:powermock-module-testng:1.6.5', // Apache 2.0
                       'org.powermock:powermock-api-mockito:1.6.5'],
@@ -55,6 +55,8 @@ apply plugin: 'eclipse'
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'nebula.ospackage'
+apply plugin: 'maven'
+apply plugin: 'signing'
 
 ext.refsDir = new File(projectDir, 'refs')
 
@@ -67,6 +69,74 @@ dependencies {
 
     testImplementation libs.testng
     testImplementation libs.powermock
+}
+
+// Maven packaging and signing
+group = 'io.github.nsacyber.paccor'
+version = '1.1.4r9'
+tasks.withType(Javadoc) {
+      failOnError false
+}
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+signing {
+    sign configurations.archives
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            pom.project {
+                name 'paccor'
+                packaging 'jar'
+                // optionally artifactId can be defined here
+                description 'The Platform Attribute Certificate Creator can gather component details, create, sign, and validate the TCG-defined Platform Credential. #nsacyber'
+                url 'https://github.com/nsacyber/paccor'
+
+                scm {
+                  connection 'scm:git:git://github.com:nsacyber/paccor.git'
+                  developerConnection 'scm:git:git://github.com:nsacyber/paccor.git'
+                  url 'https://github.com/nsacyber/paccor'
+                }
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution 'repo'
+                    }
+                }
+                developers {
+                    developer {
+                      id 'iadgovuser29'
+                      name 'iadgovuser29'
+                      email '33426478+iadgovuser29@users.noreply.github.com'
+                      organization 'NSA Cybersecurity Directorate'
+                      organizationUrl 'https://github.com/nsacyber'
+                    }
+                }
+            }
+            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+            repository(url: "https://${sonatypeDomain}/service/local/staging/deploy/maven2/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+            snapshotRepository(url: "https://${sonatypeDomain}/content/repositories/snapshots/") {
+                authentication(userName: ossrhUsername, password: ossrhPassword)
+            }
+        }
+    }
 }
 
 // Application packaging into a zip file
@@ -116,7 +186,7 @@ ospackage {
     packageName='paccor'
     os=LINUX
     version='1.1.4'
-    release='8'
+    release='9'
 
     into '/opt/paccor'
     user 'root'
