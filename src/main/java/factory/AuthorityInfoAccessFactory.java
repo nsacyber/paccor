@@ -44,6 +44,7 @@ public class AuthorityInfoAccessFactory {
     
     /**
      * Begin defining the authority info access extension.
+     * @return A new AuthorityInfoAccessFactory builder.
      */
     public static final AuthorityInfoAccessFactory create() {
         AuthorityInfoAccessFactory aiaf = new AuthorityInfoAccessFactory();
@@ -53,6 +54,7 @@ public class AuthorityInfoAccessFactory {
     /**
      * Add a method and location element.
      * @param element {@link AccessDescription}
+     * @return The AuthorityInfoAccessFactory object with a new element added.
      */
     public final AuthorityInfoAccessFactory addElement(final AccessDescription element) {
         elements.add(element);
@@ -63,6 +65,7 @@ public class AuthorityInfoAccessFactory {
      * Add an element using the enumerated methods.
      * @param type {@link AuthorityInfoAccessFactory.MethodJson}
      * @param location {@link GeneralName}
+     * @return The AuthorityInfoAccessFactory object with a new element added.
      */
     public final AuthorityInfoAccessFactory addElement(final MethodJson type, final GeneralName location) {
         elements.add(new AccessDescription(type.getOid(), location));

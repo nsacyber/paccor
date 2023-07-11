@@ -45,6 +45,7 @@ public class PlatformConfigurationV2Factory {
     
     /**
      * Begin defining the platform configuration attribute.
+     * @return A new PlatformConfigurationV2Factory builder.
      */
     public static final PlatformConfigurationV2Factory create() {
         return new PlatformConfigurationV2Factory();
@@ -52,8 +53,9 @@ public class PlatformConfigurationV2Factory {
     
     /**
      * Add a component definition.
-     * @param component {@link ComponentIdentifier}
+     * @param component {@link ComponentIdentifierV2}
      * @see ComponentIdentifierFactory
+     * @return The PlatformConfigurationV2Factory object with a new component added.
      */
     public final PlatformConfigurationV2Factory addComponent(final ComponentIdentifierV2 component) {
         platformConfigComponents.add(component);
@@ -64,7 +66,8 @@ public class PlatformConfigurationV2Factory {
      * Add a new platform property.
      * @param name String property name
      * @param value String property value
-     * @see PlatformProperties
+     * @see PlatformPropertiesV2
+     * @return The PlatformConfigurationV2Factory object with a new property added.
      */
     public final PlatformConfigurationV2Factory addProperty(final String name, final String value) {
         return addProperty(name, value, null);
@@ -75,7 +78,8 @@ public class PlatformConfigurationV2Factory {
      * @param name String property name
      * @param value String property value
      * @param status AttributeStatus property status
-     * @see PlatformProperties
+     * @see PlatformPropertiesV2
+     * @return The PlatformConfigurationV2Factory object with a new property added.
      */
     public final PlatformConfigurationV2Factory addProperty(final String name, final String value, final AttributeStatus status) {
         platformConfigProperties.add(new PlatformPropertiesV2(new DERUTF8String(name), new DERUTF8String(value), status));
@@ -85,6 +89,7 @@ public class PlatformConfigurationV2Factory {
     /**
      * Set the components URI.
      * @param uriRef {@link URIReference}
+     * @return The PlatformConfigurationV2Factory object with the components URI set.
      */
     public final PlatformConfigurationV2Factory setComponentsUri(final URIReference uriRef) {
         componentIdentifiersUri = uriRef;
@@ -94,12 +99,18 @@ public class PlatformConfigurationV2Factory {
     /**
      * Set the properties URI.
      * @param uriRef {@link URIReference}
+     * @return The PlatformConfigurationV2Factory object with the properties URI set.
      */
     public final PlatformConfigurationV2Factory setPropertiesUri(final URIReference uriRef) {
         platformPropertiesUri = uriRef;
         return this;
     }
     
+    /**
+     * Determine if this PlatformConfigurationV2Factory builder contains components that have
+     * information in their status field.
+     * @return True if components or properties utilize their status field.
+     */
     public final boolean isStatusUsed() {
         boolean status = false;
         for (int i = 0; i < platformConfigComponents.size() && !status; i++) {
@@ -114,7 +125,7 @@ public class PlatformConfigurationV2Factory {
     
     /**
      * Compile all of the data given to this factory.
-     * @return {@link PlatformConfiguration}
+     * @return {@link PlatformConfigurationV2}
      */
     public final PlatformConfigurationV2 build() {
         // All parameters to this object are optional.
@@ -131,6 +142,7 @@ public class PlatformConfigurationV2Factory {
      * Read a file for JSON data to incorporate into the platform configuration.
      * @param jsonFile String file to read containing JSON data
      * @see PlatformConfigurationV2Factory.Json
+     * @return The PlatformConfigurationV2Factory object with new information from the file.
      */
     public final PlatformConfigurationV2Factory addDataFromJsonFile(final String jsonFile) {
         try {
@@ -164,8 +176,9 @@ public class PlatformConfigurationV2Factory {
     
     /**
      * Parse the JSON objects for component data.
-     * @param refNode JsonNode with {@link ComponentIdentifier} data
+     * @param refNode JsonNode with {@link ComponentIdentifierV2} data
      * @see ComponentIdentifierFactory.Json
+     * @return The PlatformConfigurationFactory object with new components from the JSON data.
      */
     public final PlatformConfigurationV2Factory addComponentsFromJsonNode(final JsonNode refNode) {
         if (refNode.isArray()) {
@@ -181,6 +194,7 @@ public class PlatformConfigurationV2Factory {
      * Parse the JSON object for components URI data.
      * @param refNode JsonNode with the properties URI data
      * @see URIReferenceFactory.Json
+     * @return The PlatformConfigurationFactory object with the components URI found in the JSON data.
      */
     public final PlatformConfigurationV2Factory setComponentsUriFromJsonNode(final JsonNode refNode) {
         URIReferenceFactory urif = URIReferenceFactory.fromJsonNode(refNode);   
@@ -190,8 +204,9 @@ public class PlatformConfigurationV2Factory {
     
     /**
      * Parse the JSON objects for properties data.
-     * @param refNode JsonNode with {@link PlatformProperties} data
+     * @param refNode JsonNode with {@link PlatformPropertiesV2} data
      * @see PlatformConfigurationV2Factory.Json
+     * @return The PlatformConfigurationFactory object with new properties from the JSON data.
      */
     public final PlatformConfigurationV2Factory addPropertiesFromJsonNode(final JsonNode refNode) {
         if (refNode.isArray()) {
@@ -222,6 +237,7 @@ public class PlatformConfigurationV2Factory {
      * Parse the JSON object for properties URI data.
      * @param refNode JsonNode with the properties URI data
      * @see URIReferenceFactory.Json
+     * @return The PlatformConfigurationFactory object with the properties URI found in the JSON data.
      */
     public final PlatformConfigurationV2Factory setPropertiesUriFromJsonNode(final JsonNode refNode) {
         URIReferenceFactory urif = URIReferenceFactory.fromJsonNode(refNode);   

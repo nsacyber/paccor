@@ -1,18 +1,21 @@
 package cli;
 
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.testng.PowerMockTestCase;
+import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
-import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 import java.io.File;
 import java.lang.reflect.Method;
 import java.security.KeyStore;
 
+@RunWith(PowerMockRunner.class)
 @PrepareForTest({CliHelper.class, SigningCli.class})
-public class SigningCliTest extends PowerMockTestCase {
+public class SigningCliTest {
     private static final String TEMP_FOLDER = System.getProperty("java.io.tmpdir") + "/";
     private static final String IN_EK = "src/test/resources/ek.cer";
     private static final String IN_DEV_JSON = "src/test/resources/deviceInfo.json";
@@ -52,7 +55,8 @@ public class SigningCliTest extends PowerMockTestCase {
     public static final String OUT_FILE_PKCS12 = TEMP_FOLDER + "blah3.pem";
     
     @BeforeClass
-    public void removeOldOutFiles() throws Exception {
+    @AfterClass
+    public static void removeOldOutFiles() throws Exception {
         String[] filenames = new String[]{OUT_FILE, OUT_PKCS1_FILE, OUT_FILE_LARGE_2187, OUT_FILE_MEDIUM_2187, OUT_FILE_FLAWED_2187, OUT_FILE_PKCS12};
         for (String filename : filenames) {
             File file = new File(filename);
@@ -62,7 +66,7 @@ public class SigningCliTest extends PowerMockTestCase {
         }
     }
     
-    @Test(groups="1")
+    @Test
     public void test1NoExceptions() throws Exception {
         String[] args = {"-e", IN_EK, "-c", IN_DEV_JSON, "-p", IN_POL_JSON,
                          "-x", IN_OXT_JSON, "-k", IN_PRIV_KEY, "-P", IN_PUB_CERT,
@@ -74,7 +78,7 @@ public class SigningCliTest extends PowerMockTestCase {
         Assert.assertTrue(file.exists());
     }
     
-    @Test(groups="pkcs1")
+    @Test
     public void test1NoExceptionsPKCS1RSA() throws Exception {
         String[] args = {"-e", IN_EK, "-c", IN_DEV_JSON, "-p", IN_POL_JSON,
                          "-x", IN_OXT_JSON, "-k", IN_PKCS1_KEY, "-P", IN_PKCS1_PUB,
@@ -86,7 +90,7 @@ public class SigningCliTest extends PowerMockTestCase {
         Assert.assertTrue(file.exists());
     }
     
-    @Test(groups="Large2187")
+    @Test
     public void testLarge2187NoExceptions() throws Exception {
         String[] args = {"-e", IN_EK_2187, "-c", IN_DEV_JSON_LARGE_2187, "-p", IN_POL_JSON_2187,
                          "-x", IN_OXT_JSON_2187, "-k", IN_PRIV_KEY_2187, "-P", PUB_CERT_2187,
@@ -98,7 +102,7 @@ public class SigningCliTest extends PowerMockTestCase {
         Assert.assertTrue(file.exists());
     }
     
-    @Test(groups="Medium2187")
+    @Test
     public void testMedium2187NoExceptions() throws Exception {
         String[] args = {"-e", IN_EK_2187, "-c", IN_DEV_JSON_MEDIUM_2187, "-p", IN_POL_JSON_2187,
                          "-x", IN_OXT_JSON_2187, "-k", IN_PRIV_KEY_2187, "-P", PUB_CERT_2187,
@@ -110,7 +114,7 @@ public class SigningCliTest extends PowerMockTestCase {
         Assert.assertTrue(file.exists());
     }
     
-    @Test(groups="Flawed2187")
+    @Test
     public void testFlawed2187NoExceptions() throws Exception {
         String[] args = {"-e", IN_EK_2187, "-c", IN_DEV_JSON_FLAWED_2187, "-p", IN_POL_JSON_2187,
                          "-x", IN_OXT_JSON_2187, "-k", IN_PRIV_KEY_2187, "-P", PUB_CERT_2187,
@@ -122,7 +126,7 @@ public class SigningCliTest extends PowerMockTestCase {
         Assert.assertTrue(file.exists());
     }
     
-    @Test(groups="pkcs12")
+    @Test
     public void testPKCS12() throws Exception {
     	Method method = Whitebox.getMethod(CliHelper.class, "getPassword", String.class);
     	PowerMockito.stub(method).toReturn(new KeyStore.PasswordProtection("password".toCharArray()));

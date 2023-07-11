@@ -16,6 +16,7 @@ public class CertificatePoliciesFactory {
     
     /**
      * Begin creating a new certificate policies object.
+     * @return A new AuthorityInfoAccessFactory builder.
      */
     public static final CertificatePoliciesFactory create() {
         CertificatePoliciesFactory cpf = new CertificatePoliciesFactory();
@@ -25,6 +26,7 @@ public class CertificatePoliciesFactory {
     /**
      * Add another policy information object.
      * @param pi {@link PolicyInformation}
+     * @return The CertificatePoliciesFactory object with new policy information added.
      */
     public final CertificatePoliciesFactory addPolicyInformation(PolicyInformation pi) {
         policies.add(pi);

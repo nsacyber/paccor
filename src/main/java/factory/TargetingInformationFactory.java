@@ -26,6 +26,7 @@ private Vector<Target> elements = new Vector<Target>();
     
     /**
      * Begin defining the target information extension.
+     * @return A new TargetingInformationFactory builder.
      */
     public static final TargetingInformationFactory create() {
         TargetingInformationFactory tif = new TargetingInformationFactory();
@@ -35,6 +36,7 @@ private Vector<Target> elements = new Vector<Target>();
     /**
      * Add a target element.
      * @param element {@link Target}
+     * @return The TargetingInformationFactory object with a target element added.
      */
     public final TargetingInformationFactory addElement(final Target element) {
         elements.add(element);
@@ -42,9 +44,9 @@ private Vector<Target> elements = new Vector<Target>();
     }
     
     /**
-     * 
-     * @param cert
-     * @return
+     * Add a certificate.
+     * @param cert {@link X509CertificateHolder}
+     * @return The TargetingInformationFactory object with a certificate added.
      */
     public final TargetingInformationFactory addCertificate(final X509CertificateHolder cert) {
         X500Name subjectName = cert.getSubject();
