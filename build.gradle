@@ -8,6 +8,14 @@ allprojects {
         mavenCentral();
     }
 
+    tasks.withType(Test) {
+        afterSuite { desc, result ->
+            if (desc.parent == null) {
+                logger.lifecycle("${result.successfulTestCount}/${result.testCount} tests passed")
+            }
+        }
+    }
+
     // Version definitions of all of the libraries we're using.  They're defined
     // here to ensure that all projects are using the same versions of common
     // dependencies:
@@ -17,11 +25,10 @@ allprojects {
       jackson:       ['com.fasterxml.jackson.core:jackson-core:2.15.2', // Apache 2.0
                       'com.fasterxml.jackson.core:jackson-annotations:2.15.2',
                       'com.fasterxml.jackson.core:jackson-databind:2.15.2'],
-      jcommander:    'com.beust:jcommander:1.72', // cli and required by testng, Apache 2.0
+      jcommander:    'com.beust:jcommander:1.72', // Apache 2.0
       junit:         'junit:junit:4.13.2', // EPL 1.0
-      powermock:     ['org.powermock:powermock-module-junit4:1.6.5', // Apache 2.0 // 'org.powermock:powermock-module-testng:1.6.5', // Apache 2.0
-                      'org.powermock:powermock-api-mockito:1.6.5'],
-      testng:        'org.testng:testng:6.13.1', // Apache 2.0
+      powermock:     ['org.powermock:powermock-module-junit4:1.6.5', // Apache 2.0
+                      'org.powermock:powermock-api-mockito:1.6.5']
     ]
 }
 
@@ -58,14 +65,13 @@ dependencies {
     implementation libs.jackson
     implementation libs.jcommander
 
-    //testImplementation libs.testng
     testImplementation libs.junit
     testImplementation libs.powermock
 }
 
 // Maven packaging and signing
 group = 'io.github.nsacyber.paccor'
-version = '1.1.4r10'
+version = '1.1.4r11'
 task javadocJar(type: Jar) {
     classifier = 'javadoc'
     from javadoc
@@ -175,7 +181,7 @@ ospackage {
     packageName='paccor'
     os=LINUX
     version='1.1.4'
-    release='10'
+    release='11'
 
     into '/opt/paccor'
     user 'root'
