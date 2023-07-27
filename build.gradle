@@ -72,6 +72,15 @@ dependencies {
 // Maven packaging and signing
 group = 'io.github.nsacyber.paccor'
 version = '1.1.4r11'
+project.gradle.taskGraph.whenReady { graph ->
+    project.tasks.findAll().forEach { task ->
+      if (task.name.contains("signArchives") || task.name.contains("uploadArchives")) {
+          // If this is set to true, the signing and maven
+          // properties in gradle.properties must be set.
+          task.enabled = false 
+    }
+  }
+}
 task javadocJar(type: Jar) {
     classifier = 'javadoc'
     from javadoc
