@@ -2,9 +2,9 @@ package factory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import java.io.IOException;
+import org.junit.Assert;
+import org.junit.Test;
 import tcg.credential.ComponentAddress;
 import tcg.credential.ComponentIdentifier;
 import tcg.credential.PlatformConfiguration;
@@ -63,20 +63,20 @@ public class PlatformConfigurationFactoryTest {
         ComponentIdentifier[] array = pc.getComponentIdentifier();
         Assert.assertEquals(array.length, 1);
         ComponentIdentifier component = array[0];
-        Assert.assertEquals(component.getComponentManufacturer().getString(), manufacturer);
-        Assert.assertEquals(component.getComponentModel().getString(), model);
-        Assert.assertEquals(component.getComponentSerial().getString(), serial);
-        Assert.assertEquals(component.getComponentRevision().getString(), revision);
-        Assert.assertEquals(component.getComponentManufacturerId().getId(), manufacturerId);
+        Assert.assertEquals(manufacturer, component.getComponentManufacturer().getString());
+        Assert.assertEquals(model, component.getComponentModel().getString());
+        Assert.assertEquals(serial, component.getComponentSerial().getString());
+        Assert.assertEquals(revision, component.getComponentRevision().getString());
+        Assert.assertEquals(manufacturerId, component.getComponentManufacturerId().getId());
         ComponentAddress[] addressArray = component.getComponentAddress();
-        Assert.assertEquals(addressArray.length, 4);
-        Assert.assertEquals(addressArray[0].getAddressType(), ComponentIdentifierFactory.ComponentAddressType.ETHERNETMAC.getOid());
-        Assert.assertEquals(addressArray[0].getAddressValue().getString(), ethernetMacNormalized);
-        Assert.assertEquals(addressArray[1].getAddressType(), ComponentIdentifierFactory.ComponentAddressType.WLANMAC.getOid());
-        Assert.assertEquals(addressArray[1].getAddressValue().getString(), wlanMacNormalized);
-        Assert.assertEquals(addressArray[2].getAddressType(), ComponentIdentifierFactory.ComponentAddressType.BLUETOOTHMAC.getOid());
-        Assert.assertEquals(addressArray[2].getAddressValue().getString(), bluetoothMacNormalized);
-        Assert.assertEquals(addressArray[3].getAddressType(), ComponentIdentifierFactory.ComponentAddressType.ETHERNETMAC.getOid());
-        Assert.assertEquals(addressArray[3].getAddressValue().getString(), bluetoothMacNormalized);
+        Assert.assertEquals(4, addressArray.length);
+        Assert.assertEquals(ComponentIdentifierFactory.ComponentAddressType.ETHERNETMAC.getOid(), addressArray[0].getAddressType());
+        Assert.assertEquals(ethernetMacNormalized, addressArray[0].getAddressValue().getString());
+        Assert.assertEquals(ComponentIdentifierFactory.ComponentAddressType.WLANMAC.getOid(), addressArray[1].getAddressType());
+        Assert.assertEquals(wlanMacNormalized, addressArray[1].getAddressValue().getString());
+        Assert.assertEquals(ComponentIdentifierFactory.ComponentAddressType.BLUETOOTHMAC.getOid(), addressArray[2].getAddressType());
+        Assert.assertEquals(bluetoothMacNormalized, addressArray[2].getAddressValue().getString());
+        Assert.assertEquals(ComponentIdentifierFactory.ComponentAddressType.ETHERNETMAC.getOid(), addressArray[3].getAddressType());
+        Assert.assertEquals(bluetoothMacNormalized, addressArray[3].getAddressValue().getString());
     }
 }

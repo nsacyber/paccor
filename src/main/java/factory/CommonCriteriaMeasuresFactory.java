@@ -12,7 +12,7 @@ import tcg.credential.URIReference;
 
 /**
  * Functions to help manage the creation of the common criteria measures object.
- * @see https://www.commoncriteriaportal.org/cc/
+ * See <a href="https://www.commoncriteriaportal.org/cc/">https://www.commoncriteriaportal.org/cc/</a>
  */
 public class CommonCriteriaMeasuresFactory {
     /**
@@ -54,6 +54,7 @@ public class CommonCriteriaMeasuresFactory {
     
     /**
      * Begin creating a new common criteria measures object.
+     * @return A new CommonCriteriaMeasuresFactory builder.
      */
     public static final CommonCriteriaMeasuresFactory create() {
         return new CommonCriteriaMeasuresFactory();
@@ -62,6 +63,7 @@ public class CommonCriteriaMeasuresFactory {
     /**
      * Set the version. Required field.
      * @param version {@link DERIA5String}
+     * @return The CommonCriteriaMeasuresFactory object with the version set.
      */
     public final CommonCriteriaMeasuresFactory version(final DERIA5String version) {
         this.version = version;
@@ -71,6 +73,7 @@ public class CommonCriteriaMeasuresFactory {
     /**
      * Set the assurance level. Required field. 
      * @param option {@link EvaluationAssuranceLevel}
+     * @return The CommonCriteriaMeasuresFactory object with the assurance level set.
      */
     public final CommonCriteriaMeasuresFactory assuranceLevel(final EvaluationAssuranceLevel option) {
         assuranceLevel = option;
@@ -80,6 +83,7 @@ public class CommonCriteriaMeasuresFactory {
     /**
      * Set the evaluation status. Required field.
      * @param option {@link EvaluationStatus}
+     * @return The CommonCriteriaMeasuresFactory object with the evaluation status set.
      */
     public final CommonCriteriaMeasuresFactory evaluationStatus(final EvaluationStatus option) {
         evaluationStatus = option;
@@ -89,6 +93,7 @@ public class CommonCriteriaMeasuresFactory {
     /**
      * Required field.  Defaults to false.
      * @param setting boolean
+     * @return The CommonCriteriaMeasuresFactory object with the plus bit set.
      */
     public final CommonCriteriaMeasuresFactory plus(final ASN1Boolean setting) {
         plus = setting;
@@ -98,6 +103,7 @@ public class CommonCriteriaMeasuresFactory {
     /**
      * Set the strength of function. Optional field.
      * @param option {@link StrengthOfFunction}
+     * @return The CommonCriteriaMeasuresFactory object with the strength of function set.
      */
     public final CommonCriteriaMeasuresFactory strengthOfFunction(final StrengthOfFunction option) {
         strengthOfFunction = option;
@@ -107,6 +113,7 @@ public class CommonCriteriaMeasuresFactory {
     /**
      * Set the profile OID. Optional field.
      * @param oid String
+     * @return The CommonCriteriaMeasuresFactory object with the profile OID set.
      */
     public final CommonCriteriaMeasuresFactory profileOid(final String oid) {
         profileOid = new ASN1ObjectIdentifier(oid);
@@ -117,6 +124,7 @@ public class CommonCriteriaMeasuresFactory {
      * Set the profile URI. Optional field.
      * @param uriRef {@link URIReference}
      * @see URIReferenceFactory
+     * @return The CommonCriteriaMeasuresFactory object with the profile URI set.
      */
     public final CommonCriteriaMeasuresFactory profileUri(final URIReference uriRef) {
         profileUri = uriRef;
@@ -126,6 +134,7 @@ public class CommonCriteriaMeasuresFactory {
     /**
      * Set the target oid. Optional field.
      * @param oid String
+     * @return The CommonCriteriaMeasuresFactory object with the target OID set.
      */
     public final CommonCriteriaMeasuresFactory targetOid(final String oid) {
         targetOid = new ASN1ObjectIdentifier(oid);
@@ -136,6 +145,7 @@ public class CommonCriteriaMeasuresFactory {
      * Set the target URI. Optional field.
      * @param uriRef {@link URIReference}
      * @see URIReferenceFactory
+     * @return The CommonCriteriaMeasuresFactory object with the target URI set.
      */
     public final CommonCriteriaMeasuresFactory targetUri(final URIReference uriRef) {
         targetUri = uriRef;
@@ -155,6 +165,7 @@ public class CommonCriteriaMeasuresFactory {
     /**
      * Create a new common criteria measure object from a JSON node.
      * @param refNode JsonNode
+     * @return A new CommonCriteriaMeasuresFactory with fields filled out from JSON.
      */
     public static final CommonCriteriaMeasuresFactory fromJsonNode(final JsonNode refNode) {
         CommonCriteriaMeasuresFactory ccmf = null;

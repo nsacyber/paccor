@@ -78,6 +78,7 @@ public class PlatformCertificateFactory {
     
     /**
      * Begin creating a new platform certificate.
+     * @return A new PlatformCertificateFactory builder.
      */
     public static final PlatformCertificateFactory create() {
         return new PlatformCertificateFactory();
@@ -85,6 +86,7 @@ public class PlatformCertificateFactory {
     
     /**
      * Reply with whether the factory will produce a delta platform certificate.
+     * @return True if the object contains data representing a delta platform certificate.
      */
     public final boolean isDeltaCertificate() {
         return delta;
@@ -92,6 +94,7 @@ public class PlatformCertificateFactory {
     
     /**
      * Create a delta platform certificate.
+     * @return The PlatformCertificateFactory object with the delta certificate flag set.
      */
     public final PlatformCertificateFactory setDeltaCertificate() {
         delta = true;
@@ -101,6 +104,7 @@ public class PlatformCertificateFactory {
     /**
      * Set the holder.
      * @param holder {@link Holder}
+     * @return The PlatformCertificateFactory object with the holder set.
      */
     public final PlatformCertificateFactory holder(final Holder holder) {
         this.holder = holder;
@@ -110,6 +114,7 @@ public class PlatformCertificateFactory {
     /**
      * Set the issuer of the platform credential.
      * @param issuer {@link AttributeCertificateIssuer}
+     * @return The PlatformCertificateFactory object with the issuer set.
      */
     public final PlatformCertificateFactory issuer(final AttributeCertificateIssuer issuer) {
         this.issuer = issuer;
@@ -119,6 +124,7 @@ public class PlatformCertificateFactory {
     /**
      * Set the serial number.
      * @param serialNumber {@link BigInteger}
+     * @return The PlatformCertificateFactory object with the serial number set.
      */
     public final PlatformCertificateFactory serialNumber(final BigInteger serialNumber) {
         this.serialNumber = serialNumber;
@@ -128,6 +134,7 @@ public class PlatformCertificateFactory {
     /**
      * Set the valid not before date.
      * @param notBefore {@link Date}
+     * @return The PlatformCertificateFactory object with the not before date set.
      */
     public final PlatformCertificateFactory notBefore(final Date notBefore) {
         this.notBefore = notBefore;
@@ -137,6 +144,7 @@ public class PlatformCertificateFactory {
     /**
      * Set the valid not after date.
      * @param notAfter {@link Date}
+     * @return The PlatformCertificateFactory object with the not after date set.
      */
     public final PlatformCertificateFactory notAfter(final Date notAfter) {
         this.notAfter = notAfter;
@@ -146,6 +154,7 @@ public class PlatformCertificateFactory {
     /**
      * Set the TCG Platform Specification attribute.
      * @param tps {@link TCGPlatformSpecification}
+     * @return The PlatformCertificateFactory object with the TCG platform specification set.
      */
     public final PlatformCertificateFactory tcgPlatformSpecification(final TCGPlatformSpecification tps) {
         attributes.put(TCGObjectIdentifier.tcgAtTcgPlatformSpecification, tps);
@@ -154,6 +163,8 @@ public class PlatformCertificateFactory {
     
     /**
      * Set the TCG Certificate Specification attribute.
+     * @param tcs {@link TCGSpecificationVersion}
+     * @return The PlatformCertificateFactory object with the TCG certificate specification set.
      */
     public final PlatformCertificateFactory tcgCertificateSpecification(final TCGSpecificationVersion tcs) {
         attributes.put(TCGObjectIdentifier.tcgAtTcgCertificateSpecification, tcs);
@@ -163,7 +174,8 @@ public class PlatformCertificateFactory {
     /**
      * @deprecated Use tcgCertificateSpecification
      * Set the TCG Credential Specification attribute.
-     * @param tcs {@link TCGCredentialSpecification}
+     * @param tcs {@link TCGSpecificationVersion}
+     * @return The PlatformCertificateFactory object with the TCG certificate specification set.
      */
     public final PlatformCertificateFactory tcgCredentialSpecification(final TCGSpecificationVersion tcs) {
         attributes.put(TCGObjectIdentifier.tcgAtTcgCredentialSpecification, tcs);
@@ -172,8 +184,9 @@ public class PlatformCertificateFactory {
     
     /**
      * Set the platform configuration attribute.
-     * @param pConfig {@link PlatformConfiguration}
+     * @param pConfig {@link PlatformConfigurationV2}
      * @see PlatformConfigurationFactory
+     * @return The PlatformCertificateFactory object with the platform configuration set.
      */
     public final PlatformCertificateFactory platformConfiguration(final PlatformConfigurationV2 pConfig) {
         attributes.put(TCGObjectIdentifier.tcgAtPlatformConfigurationV2, pConfig);
@@ -184,6 +197,7 @@ public class PlatformCertificateFactory {
      * Set the TBB Security Assertions attribute.
      * @param assertions {@link TBBSecurityAssertions}
      * @see TBBSecurityAssertionsFactory
+     * @return The PlatformCertificateFactory object with the TBB security assertions set.
      */
     public final PlatformCertificateFactory tbbSecurityAssertions(final TBBSecurityAssertions assertions) {
         attributes.put(TCGObjectIdentifier.tcgAtTbbSecurityAssertions, assertions);
@@ -193,6 +207,7 @@ public class PlatformCertificateFactory {
     /**
      * Set the platform configuration URI attribute.
      * @param uri {@link URIReference}
+     * @return The PlatformCertificateFactory object with the platform config URI set.
      */
     public final PlatformCertificateFactory platformConfigUri(final URIReference uri) {
         attributes.put(TCGObjectIdentifier.tcgAtPlatformConfigUri, uri);
@@ -202,6 +217,7 @@ public class PlatformCertificateFactory {
     /**
      * Add an extension.
      * @param ext {@link Extension}
+     * @return The PlatformCertificateFactory object with an extension added.
      */
     public final PlatformCertificateFactory addExtension(Extension ext) {
         extensions.put(ext.getExtnId(), ext);
@@ -213,6 +229,7 @@ public class PlatformCertificateFactory {
      * If the oid is not known, the extension will be set to non-critical.
      * @param oid {@link ASN1ObjectIdentifier} of the extension
      * @param ext {@link Encodable} the extension object
+     * @return The PlatformCertificateFactory object with an extension added.
      * @throws IOException see {@link Encodable#getEncoded}
      */
     public final PlatformCertificateFactory addExtension(final ASN1ObjectIdentifier oid, final Encodable ext) throws IOException {
@@ -302,6 +319,11 @@ public class PlatformCertificateFactory {
         return xach;
     }
     
+    /**
+     * Serializes the PlatformCertificateFactory into a JSON String.
+     * @throws JsonProcessingException If there is an issue with serialization.
+     * @return The PlatformCertificateFactory object as a String.
+     */
     public final String toJson() throws JsonProcessingException {
         IntermediateInfoBean iib = new IntermediateInfoBean();
         
@@ -324,6 +346,12 @@ public class PlatformCertificateFactory {
         return mapper.writeValueAsString(iib);
     }
     
+    /**
+     * Converts data from JSON into a PlatformCertificateFactory builder.
+     * @param filename The filename of a file containing JSON data.
+     * @return A new PlatformCertificateFactory filled out with information from the file.
+     * @throws IOException If there is a problem reading the file or with the JSON data inside the file.
+     */
     public static final PlatformCertificateFactory loadIntermediateInfofromJson(final String filename) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         IntermediateInfoBean iib = mapper.readValue(new File(filename), IntermediateInfoBean.class);
@@ -335,6 +363,12 @@ public class PlatformCertificateFactory {
         return pcf;
     }
 
+    /**
+     * Creates a new PlatformCertificateFactory builder starting with policy reference data stored as JSON 
+     * in a file.
+     * @param filename The filename of a file containing JSON data.
+     * @return A new PlatformCertificateFactory filled out with information from the file.
+     */
     public static final PlatformCertificateFactory newPolicyRefJson(final String filename) {
         PlatformCertificateFactory pcf = PlatformCertificateFactory.create();
         

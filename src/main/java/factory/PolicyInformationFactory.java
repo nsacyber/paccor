@@ -54,6 +54,7 @@ public class PolicyInformationFactory {
     
     /**
      * Begin defining the policy information object.
+     * @return A new PolicyInformationFactory builder.
      */
     public static final PolicyInformationFactory create() {
         PolicyInformationFactory pif = new PolicyInformationFactory();
@@ -63,6 +64,7 @@ public class PolicyInformationFactory {
     /**
      * Set the policy OID.
      * @param oid {@link ASN1ObjectIdentifier}
+     * @return The PolicyInformationFactory object with the policy identifier OID set.
      */
     public final PolicyInformationFactory policyIdentifier(final ASN1ObjectIdentifier oid) {
         this.oid = oid;
@@ -72,6 +74,7 @@ public class PolicyInformationFactory {
     /**
      * Add a policy qualifier.
      * @param qualifier {@link PolicyQualifierInfo}
+     * @return The PolicyInformationFactory object with the policy qualifier information set.
      */
     public final PolicyInformationFactory addQualifier(final PolicyQualifierInfo qualifier) {
         qualifiers.add(qualifier);
@@ -82,6 +85,7 @@ public class PolicyInformationFactory {
      * Add a policy qualifier using the enumerated qualifier list.
      * @param type {@link PolicyInformationFactory.QualifierJson}
      * @param value {@link ASN1Encodable}
+     * @return The PolicyInformationFactory object with a new qualifier added.
      */
     public final PolicyInformationFactory addQualifier(final QualifierJson type, final ASN1Encodable value) {
         qualifiers.add(new PolicyQualifierInfo(type.getOid(), value));
@@ -102,6 +106,7 @@ public class PolicyInformationFactory {
     /**
      * Create a new policy information object from a JSON node.
      * @param refNode JsonNode representing a policy information JSON object
+     * @return The PolicyInformationFactory object with new information from the JSON data.
      */
     public static final PolicyInformationFactory fromJsonNode(final JsonNode refNode) {
         PolicyInformationFactory pif = create();

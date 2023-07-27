@@ -56,6 +56,7 @@ public class SubjectAlternativeNameFactory {
     
     /**
      * Begin defining the subject alternative name extension.
+     * @return A new SubjectAlternativeNameFactory builder.
      */
     public static final SubjectAlternativeNameFactory create() {
         return new SubjectAlternativeNameFactory();
@@ -64,6 +65,7 @@ public class SubjectAlternativeNameFactory {
     /**
      * Add another descriptor.
      * @param name {@link RDN}
+     * @return The SubjectAlternativeNameFactory object with an RDN added.
      */
     public final SubjectAlternativeNameFactory addRDN(final RDN name) {
         if (name != null) {
@@ -76,6 +78,7 @@ public class SubjectAlternativeNameFactory {
      * Add another descriptor.
      * @param oid {@link ASN1ObjectIdentifier}
      * @param name {@link DERUTF8String}
+     * @return The SubjectAlternativeNameFactory object with an RDN added.
      */
     public final SubjectAlternativeNameFactory addRDN(final ASN1ObjectIdentifier oid, final DERUTF8String name) {
         if (oid != null && name != null) {
@@ -99,7 +102,8 @@ public class SubjectAlternativeNameFactory {
      * Read a file for JSON data to incorporate into the subject alternative name.
      * @param jsonFile String file to read containing JSON data
      * @see SubjectAlternativeNameFactory.Json
-     * @throws IOException see {@link ObjectMapper.readTree(JsonNode)}
+     * @throws IOException If there are issues reading the file or with the JSON structure.
+     * @return The SubjectAlternativeNameFactory object with new information from the file.
      */
     public static final SubjectAlternativeNameFactory fromJsonFile(final String jsonFile) throws IOException {
         SubjectAlternativeNameFactory psdaf = create();
@@ -117,6 +121,7 @@ public class SubjectAlternativeNameFactory {
      * Parse the JSON objects for SAN data.
      * @param refNode JsonNode
      * @see SubjectAlternativeNameFactory.Json
+     * @return The SubjectAlternativeNameFactory object with new components from the JSON data.
      */
     public final SubjectAlternativeNameFactory fromJsonNode(final JsonNode refNode) {
         if (refNode.has(ElementJson.PLATFORMMODEL.name()) && refNode.has(ElementJson.PLATFORMMANUFACTURERSTR.name()) && refNode.has(ElementJson.PLATFORMVERSION.name())) {

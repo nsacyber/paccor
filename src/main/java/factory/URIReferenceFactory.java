@@ -33,6 +33,7 @@ public class URIReferenceFactory {
     
     /**
      * Begin defining the URI reference.
+     * @return A new URIReferenceFactory builder.
      */
     public static final URIReferenceFactory create() {
         return new URIReferenceFactory();
@@ -41,6 +42,7 @@ public class URIReferenceFactory {
     /**
      * Set the URI. Required field.
      * @param uri {@link DERIA5String}
+     * @return The URIReferenceFactory object with the URI set.
      */
     public final URIReferenceFactory uniformResourceIdentifier(final DERIA5String uri) {
         uniformResourceIdentifier = uri;
@@ -50,6 +52,7 @@ public class URIReferenceFactory {
     /**
      * Set the hash algorithm ID. Optional field.
      * @param algId {@link AlgorithmIdentifier}
+     * @return The URIReferenceFactory object with the hash algorithm set.
      */
     public final URIReferenceFactory hashAlgorithm(final AlgorithmIdentifier algId) {
         hashAlgorithm = algId;
@@ -59,6 +62,7 @@ public class URIReferenceFactory {
     /**
      * Set the hash value. Optional field.
      * @param bitString {@link DERBitString}
+     * @return The URIReferenceFactory object with the hash value set.
      */
     public final URIReferenceFactory hashValue(final DERBitString bitString) {
         hashValue = bitString;
@@ -83,6 +87,7 @@ public class URIReferenceFactory {
      * Parse the JSON objects for component data.
      * @param refNode JsonNode with {@link URIReference} data
      * @see URIReferenceFactory.Json
+     * @return The URIReferenceFactory object with new components from the JSON data.
      */
     public static final URIReferenceFactory fromJsonNode(final JsonNode refNode) {
         URIReferenceFactory urif = null;

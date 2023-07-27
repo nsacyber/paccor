@@ -3,17 +3,19 @@ package cli;
 import java.lang.reflect.Method;
 import java.security.KeyStore;
 
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.testng.PowerMockTestCase;
+import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 
 import key.SignerCredential;
 
+@RunWith(PowerMockRunner.class)
 @PrepareForTest(CliHelper.class)
-public class CliHelperTest extends PowerMockTestCase {
+public class CliHelperTest {
 	private static final String IN_TMPPKCS12 = "src/test/resources/TestCA2.cert.example.pkcs12";
 	
 	@Test

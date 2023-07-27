@@ -65,6 +65,7 @@ public class ComponentIdentifierFactory {
 
     /**
      * Begin defining the component identifier object.
+     * @return A new ComponentIdentifierFactory builder.
      */
     public static final ComponentIdentifierFactory create() {
         return new ComponentIdentifierFactory();
@@ -73,6 +74,7 @@ public class ComponentIdentifierFactory {
     /**
      * Set the component manufacturer. Required field.
      * @param manufacturer String
+     * @return The ComponentIdentifierFactory object with the component manufacturer set.
      */
     public final ComponentIdentifierFactory componentManufacturer(final String manufacturer) {
         componentManufacturer = new DERUTF8String(manufacturer);
@@ -82,6 +84,7 @@ public class ComponentIdentifierFactory {
     /**
      * Set the component model. Required field.
      * @param model String
+     * @return The ComponentIdentifierFactory object with the component model set.
      */
     public final ComponentIdentifierFactory componentModel(final String model) {
         componentModel = new DERUTF8String(model);
@@ -91,6 +94,7 @@ public class ComponentIdentifierFactory {
     /**
      * Set the component serial number. Optional field.
      * @param serial String
+     * @return The ComponentIdentifierFactory object with the component serial number set.
      */
     public final ComponentIdentifierFactory componentSerial(final String serial) {
         componentSerial = serial != null && !serial.trim().isEmpty() ? new DERUTF8String(serial) : null;
@@ -100,6 +104,7 @@ public class ComponentIdentifierFactory {
     /**
      * Set the component revision field. Optional field.
      * @param revision String
+     * @return The ComponentIdentifierFactory object with the component revision set.
      */
     public final ComponentIdentifierFactory componentRevision(final String revision) {
         componentRevision = revision != null && !revision.trim().isEmpty() ? new DERUTF8String(revision) : null;
@@ -109,6 +114,7 @@ public class ComponentIdentifierFactory {
     /**
      * Set the component manufacturer oid. Optional field.
      * @param manufacturerId String
+     * @return The ComponentIdentifierFactory object with the component manufacturer ID set.
      */
     public final ComponentIdentifierFactory componentManufacturerId(final String manufacturerId) {
         componentManufacturerId = manufacturerId != null && !manufacturerId.trim().isEmpty() ? new ASN1ObjectIdentifier(manufacturerId) : null;
@@ -118,6 +124,7 @@ public class ComponentIdentifierFactory {
     /**
      * Set the field replaceable flag. Optional field.
      * @param fieldReplaceable boolean
+     * @return The ComponentIdentifierFactory object with the field replaceable bit set.
      */
     public final ComponentIdentifierFactory fieldReplaceable(final boolean fieldReplaceable) {
         this.fieldReplaceable = ASN1Boolean.getInstance(fieldReplaceable);
@@ -126,6 +133,7 @@ public class ComponentIdentifierFactory {
     
     /**
      * Since it is an optional field, the field replaceable flag could be unset.
+     * @return The ComponentIdentifierFactory object with the field replaceable bit unset.
      */
     public final ComponentIdentifierFactory unsetFieldReplaceable() {
         this.fieldReplaceable = null;
@@ -136,6 +144,7 @@ public class ComponentIdentifierFactory {
      * Add a component address.
      * @param type {@link ComponentIdentifierFactory.ComponentAddressType} type of address as defined by the profile.
      * @param value String
+     * @return The ComponentIdentifierFactory object with a component address added.
      */
     public final ComponentIdentifierFactory addComponentAddress(final ComponentAddressType type, final String value) {
         String filtered = value.toUpperCase();

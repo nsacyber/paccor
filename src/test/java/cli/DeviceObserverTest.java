@@ -1,6 +1,7 @@
 package cli;
 
-import org.testng.annotations.Test;
+import org.junit.Test;
+
 import factory.PlatformCertificateFactory;
 
 public class DeviceObserverTest {

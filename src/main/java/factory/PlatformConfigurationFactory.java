@@ -41,6 +41,7 @@ public class PlatformConfigurationFactory {
     
     /**
      * Begin defining the platform configuration attribute.
+     * @return A new PlatformConfigurationFactory builder.
      */
     public static final PlatformConfigurationFactory create() {
         return new PlatformConfigurationFactory();
@@ -50,6 +51,7 @@ public class PlatformConfigurationFactory {
      * Add a component definition.
      * @param component {@link ComponentIdentifier}
      * @see ComponentIdentifierFactory
+     * @return The PlatformConfigurationFactory object with a new component added.
      */
     public final PlatformConfigurationFactory addComponent(final ComponentIdentifier component) {
         platformConfigComponents.add(component);
@@ -61,6 +63,7 @@ public class PlatformConfigurationFactory {
      * @param name String property name
      * @param value String property value
      * @see PlatformProperties
+     * @return The PlatformConfigurationFactory object with a new component added.
      */
     public final PlatformConfigurationFactory addProperty(final String name, final String value) {
         platformConfigProperties.add(new PlatformProperties(new DERUTF8String(name), new DERUTF8String(value)));
@@ -70,6 +73,7 @@ public class PlatformConfigurationFactory {
     /**
      * Set the properties URI.
      * @param uriRef {@link URIReference}
+     * @return The PlatformConfigurationFactory object with the properties URI set.
      */
     public final PlatformConfigurationFactory setPropertiesUri(final URIReference uriRef) {
         uriReference = uriRef;
@@ -94,6 +98,7 @@ public class PlatformConfigurationFactory {
      * Read a file for JSON data to incorporate into the platform configuration.
      * @param jsonFile String file to read containing JSON data
      * @see PlatformConfigurationFactory.Json
+     * @return The PlatformConfigurationFactory object with new information from the file.
      */
     public final PlatformConfigurationFactory addDataFromJsonFile(final String jsonFile) {
         try {
@@ -124,6 +129,7 @@ public class PlatformConfigurationFactory {
      * Parse the JSON objects for component data.
      * @param refNode JsonNode with {@link ComponentIdentifier} data
      * @see ComponentIdentifierFactory.Json
+     * @return The PlatformConfigurationFactory object with new components from the JSON data.
      */
     public final PlatformConfigurationFactory addComponentsFromJsonNode(final JsonNode refNode) {
         if (refNode.isArray()) {
@@ -139,6 +145,7 @@ public class PlatformConfigurationFactory {
      * Parse the JSON objects for properties data.
      * @param refNode JsonNode with {@link PlatformProperties} data
      * @see PlatformConfigurationFactory.Json
+     * @return The PlatformConfigurationFactory object with new properties from the JSON data.
      */
     public final PlatformConfigurationFactory addPropertiesFromJsonNode(final JsonNode refNode) {
         if (refNode.isArray()) {
@@ -163,6 +170,7 @@ public class PlatformConfigurationFactory {
      * Parse the JSON object for properties URI data.
      * @param refNode JsonNode with the properties URI data
      * @see URIReferenceFactory.Json
+     * @return The PlatformConfigurationFactory object with the properties URI found in the JSON data.
      */
     public final PlatformConfigurationFactory setPropertiesUriFromJsonNode(final JsonNode refNode) {
         URIReferenceFactory urif = URIReferenceFactory.fromJsonNode(refNode);   

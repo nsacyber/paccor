@@ -53,6 +53,7 @@ public class TBBSecurityAssertionsFactory {
     
     /**
      * Begin defining the TBB security assertions attribute.
+     * @return A new TBBSecurityAssertionsFactory builder.
      */
     public static final TBBSecurityAssertionsFactory create() {
         return new TBBSecurityAssertionsFactory();
@@ -61,6 +62,7 @@ public class TBBSecurityAssertionsFactory {
     /**
      * Set the version. Required field.  Defaults to 1.
      * @param version {@link ASN1Integer}
+     * @return The TBBSecurityAssertionsFactory object with the version set.
      */
     public final TBBSecurityAssertionsFactory version(final ASN1Integer version) {
         this.version = version;
@@ -71,6 +73,7 @@ public class TBBSecurityAssertionsFactory {
      * Set the common criteria measures field. Optional field.
      * @param ccInfo {@link CommonCriteriaMeasures}
      * @see CommonCriteriaMeasuresFactory
+     * @return The TBBSecurityAssertionsFactory object with the common criteria info block set.
      */
     public final TBBSecurityAssertionsFactory ccInfo(final CommonCriteriaMeasures ccInfo) {
         this.ccInfo = ccInfo;
@@ -80,6 +83,7 @@ public class TBBSecurityAssertionsFactory {
     /**
      * Set the FIPS level. Optional field.
      * @param level {@link FIPSLevel}
+     * @return The TBBSecurityAssertionsFactory object with the FIPS information set.
      */
     public final TBBSecurityAssertionsFactory fipsLevel(final FIPSLevel level) {
         fipsLevel = level;
@@ -89,6 +93,7 @@ public class TBBSecurityAssertionsFactory {
     /**
      * Set the measurement root type. Optional field.
      * @param type {@link MeasurementRootType}
+     * @return The TBBSecurityAssertionsFactory object with the rtmType set.
      */
     public final TBBSecurityAssertionsFactory rtmType(final MeasurementRootType type) {
         rtmType = type;
@@ -98,6 +103,7 @@ public class TBBSecurityAssertionsFactory {
     /**
      * Set the ISO9000 certified flag. Required field.  Defaults to false.
      * @param certified {@link ASN1Boolean}
+     * @return The TBBSecurityAssertionsFactory object with the ISO 9000 bit set.
      */
     public final TBBSecurityAssertionsFactory iso9000Certified(final ASN1Boolean certified) {
         iso9000Certified = certified;
@@ -108,6 +114,7 @@ public class TBBSecurityAssertionsFactory {
      * Set the ISO9000 URI. Optional field.
      * This field is defined as a string in the profile.  It is not a URIReference.
      * @param uri {@link DERIA5String}
+     * @return The TBBSecurityAssertionsFactory object with the ISO 9000 URI set.
      */
     public final TBBSecurityAssertionsFactory iso9000Uri(final DERIA5String uri) {
         iso9000Uri = uri;
@@ -128,6 +135,7 @@ public class TBBSecurityAssertionsFactory {
      * Parse the JSON objects for TBB security assertions.
      * @param refNode JsonNode with {@link TBBSecurityAssertions} data
      * @see TBBSecurityAssertionsFactory.Json
+     * @return The TBBSecurityAssertionsFactory object with new components from the JSON data.
      */
     public final TBBSecurityAssertionsFactory fromJsonNode(final JsonNode refNode) {
         if (refNode.has(Json.VERSION.name()) && refNode.has(Json.ISO9000CERTIFIED.name())) {

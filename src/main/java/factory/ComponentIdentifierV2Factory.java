@@ -96,6 +96,7 @@ public class ComponentIdentifierV2Factory {
 
     /**
      * Begin defining the component identifier object.
+     * @return A new ComponentIdentifierV2Factory builder.
      */
     public static final ComponentIdentifierV2Factory create() {
         return new ComponentIdentifierV2Factory();
@@ -104,6 +105,7 @@ public class ComponentIdentifierV2Factory {
     /**
      * Set the component class. Required field.
      * @param componentClass ComponentClass
+     * @return The ComponentIdentifierV2Factory object with the component class set.
      */
     public final ComponentIdentifierV2Factory componentClass(final ComponentClass componentClass) {
         this.componentClass = componentClass;
@@ -113,6 +115,7 @@ public class ComponentIdentifierV2Factory {
     /**
      * Set the component manufacturer. Required field.
      * @param manufacturer String
+     * @return The ComponentIdentifierV2Factory object with the component manufacturer set.
      */
     public final ComponentIdentifierV2Factory componentManufacturer(final String manufacturer) {
         componentManufacturer = new DERUTF8String(manufacturer);
@@ -122,6 +125,7 @@ public class ComponentIdentifierV2Factory {
     /**
      * Set the component model. Required field.
      * @param model String
+     * @return The ComponentIdentifierV2Factory object with the component model set.
      */
     public final ComponentIdentifierV2Factory componentModel(final String model) {
         componentModel = new DERUTF8String(model);
@@ -131,6 +135,7 @@ public class ComponentIdentifierV2Factory {
     /**
      * Set the component serial number. Optional field.
      * @param serial String
+     * @return The ComponentIdentifierV2Factory object with the component serial number set.
      */
     public final ComponentIdentifierV2Factory componentSerial(final String serial) {
         componentSerial = serial != null && !serial.trim().isEmpty() ? new DERUTF8String(serial) : null;
@@ -140,6 +145,7 @@ public class ComponentIdentifierV2Factory {
     /**
      * Set the component revision field. Optional field.
      * @param revision String
+     * @return The ComponentIdentifierV2Factory object with the component revision set.
      */
     public final ComponentIdentifierV2Factory componentRevision(final String revision) {
         componentRevision = revision != null && !revision.trim().isEmpty() ? new DERUTF8String(revision) : null;
@@ -149,6 +155,7 @@ public class ComponentIdentifierV2Factory {
     /**
      * Set the component manufacturer oid. Optional field.
      * @param manufacturerId String
+     * @return The ComponentIdentifierV2Factory object with the component manufacturer ID set.
      */
     public final ComponentIdentifierV2Factory componentManufacturerId(final String manufacturerId) {
         componentManufacturerId = manufacturerId != null && !manufacturerId.trim().isEmpty() ? new ASN1ObjectIdentifier(manufacturerId) : null;
@@ -158,6 +165,7 @@ public class ComponentIdentifierV2Factory {
     /**
      * Set the field replaceable flag. Optional field.
      * @param fieldReplaceable boolean
+     * @return The ComponentIdentifierV2Factory object with the field replaceable bit set.
      */
     public final ComponentIdentifierV2Factory fieldReplaceable(final boolean fieldReplaceable) {
         this.fieldReplaceable = ASN1Boolean.getInstance(fieldReplaceable);
@@ -166,6 +174,7 @@ public class ComponentIdentifierV2Factory {
     
     /**
      * Since it is an optional field, the field replaceable flag could be unset.
+     * @return The ComponentIdentifierV2Factory object with the field replaceable bit unset.
      */
     public final ComponentIdentifierV2Factory unsetFieldReplaceable() {
         this.fieldReplaceable = null;
@@ -176,6 +185,7 @@ public class ComponentIdentifierV2Factory {
      * Add a component address.
      * @param type {@link ComponentIdentifierV2Factory.ComponentAddressType} type of address as defined by the profile.
      * @param value String
+     * @return The ComponentIdentifierV2Factory object with a component address added.
      */
     public final ComponentIdentifierV2Factory addComponentAddress(final ComponentAddressType type, final String value) {
         componentAddress.add(new ComponentAddress(type.getOid(), new DERUTF8String(value)));
@@ -185,6 +195,7 @@ public class ComponentIdentifierV2Factory {
     /**
      * Add the component platform certificate. Optional field.
      * @param ci {@link CertificateIdentifier}
+     * @return The ComponentIdentifierV2Factory object with the component platform certificate set.
      */
     public final ComponentIdentifierV2Factory componentPlatformCert(CertificateIdentifier ci) {
         componentPlatformCert = ci;
@@ -194,6 +205,7 @@ public class ComponentIdentifierV2Factory {
     /**
      * Add the component platform certificate. Optional field.
      * @param ref {@link URIReference}
+     * @return The ComponentIdentifierV2Factory object with the component platform certificate uri set.
      */
     public final ComponentIdentifierV2Factory componentPlatformCertUri(URIReference ref) {
         componentPlatformCertUri = ref;
@@ -203,6 +215,7 @@ public class ComponentIdentifierV2Factory {
     /**
      * Set the attribute status. Optional field.
      * @param option {@link AttributeStatus}
+     * @return The ComponentIdentifierV2Factory object with the status set.
      */
     public final ComponentIdentifierV2Factory status(final AttributeStatus option) {
         status = option;
@@ -211,7 +224,7 @@ public class ComponentIdentifierV2Factory {
     
     /**
      * Compile all of the data given to this factory.
-     * @return {@link ComponentIdentifier}
+     * @return {@link ComponentIdentifierV2}
      */
     public final ComponentIdentifierV2 build() {
         ComponentIdentifierV2 component =
