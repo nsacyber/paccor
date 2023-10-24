@@ -7,7 +7,7 @@
     <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageId>paccor.paccor_scripts</PackageId>
-    <PackageVersion>1.0.0</PackageVersion>
+    <PackageVersion>1.0.1</PackageVersion>
     <PackageTags>paccor;platform;certificate;hardware;manifest;scripts;component;class;registry;evidence;collection</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -27,6 +27,11 @@
     <Copy SourceFiles="@(PaccorScriptsLinux)" DestinationFolder="$(ProjectDir)scripts" />
 	<Copy SourceFiles="@(PaccorScriptsWindows)" DestinationFolder="$(ProjectDir)scripts/windows" />
 	<ItemGroup> 
+      <Content Include="resources\**"> 
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </Content> 
       <Content Include="scripts\**"> 
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		<CopyToPublishDirectory>Always</CopyToPublishDirectory>
