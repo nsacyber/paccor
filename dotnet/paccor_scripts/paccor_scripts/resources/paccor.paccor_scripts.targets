@@ -1,0 +1,8 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <dotnet_paccor_scripts_directory>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)/../scripts/'))</dotnet_paccor_scripts_directory>
+        <dotnet_paccor_scripts_windows_directory>$([System.IO.Path]::GetFullPath('$(dotnet_paccor_scripts_directory)/windows'))</dotnet_paccor_scripts_windows_directory>
+        <dotnet_paccor_scripts_files>$([System.IO.Path]::GetFullPath('$(dotnet_paccor_scripts_directory)/*'))</dotnet_paccor_scripts_files>
+        <dotnet_paccor_scripts_windows_files>$([System.IO.Path]::GetFullPath('$(dotnet_paccor_scripts_windows_directory)/*'))</dotnet_paccor_scripts_windows_files>
+    </PropertyGroup>
+</Project>
