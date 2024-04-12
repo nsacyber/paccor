@@ -1,7 +1,7 @@
 ﻿using HardwareManifestProto;
 
 namespace HardwareManifestPlugin {
-    public abstract class HardwareManifest : IHardwareManifest {
+    public abstract class HardwareManifestPlugin : IHardwareManifestPlugin {
         public string Name {
             get;
             protected set;

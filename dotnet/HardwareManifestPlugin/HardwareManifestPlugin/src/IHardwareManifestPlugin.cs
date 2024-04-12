@@ -1,7 +1,7 @@
 ﻿using HardwareManifestProto;
 
 namespace HardwareManifestPlugin {
-    public interface IHardwareManifest {
+    public interface IHardwareManifestPlugin {
         string Name {
             get;
         }

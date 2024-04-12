@@ -12,13 +12,13 @@ namespace HardwareManifestPluginManager {
         public static readonly string TrustPath = Path.Combine(Path.GetDirectoryName(Environment.ProcessPath), "trust");
 #pragma warning restore CS8604 // Possible null reference argument.
 
-        public static List<IHardwareManifest> LoadPlugins(List<string> names, bool sbomExpected) {
+        public static List<IHardwareManifestPlugin> LoadPlugins(List<string> names, bool sbomExpected) {
             string[] pluginDlls = System.IO.Directory.GetFiles(PluginsPath, "*.dll");
-            List<IHardwareManifest> manifests = new();
+            List<IHardwareManifestPlugin> manifests = new();
             List<Tuple<string, string>> namesWithArgs = new();
             foreach(string dllPath in pluginDlls) {
                 Assembly pluginAssembly = LoadAssemblyFromDll(dllPath);
-                IHardwareManifest? manifest = GatherManifestIfNameSelected(pluginAssembly, names);
+                IHardwareManifestPlugin? manifest = GatherManifestIfNameSelected(pluginAssembly, names);
                 if (manifest != null) {
                     bool trustManifest = !sbomExpected;
                     if (sbomExpected) {
@@ -44,10 +44,10 @@ namespace HardwareManifestPluginManager {
             return loadContext.LoadFromAssemblyName(new AssemblyName(Path.GetFileNameWithoutExtension(fullPath)));
         }
 
-        private static IHardwareManifest? GatherManifestIfNameSelected(Assembly assembly, List<string> names) {
+        private static IHardwareManifestPlugin? GatherManifestIfNameSelected(Assembly assembly, List<string> names) {
             foreach (Type type in assembly.GetTypes()) {
-                if (typeof(IHardwareManifest).IsAssignableFrom(type)) {
-                    if (Activator.CreateInstance(type) is IHardwareManifest result && names.Remove(result.Name)) {
+                if (typeof(IHardwareManifestPlugin).IsAssignableFrom(type)) {
+                    if (Activator.CreateInstance(type) is IHardwareManifestPlugin result && names.Remove(result.Name)) {
                         Log.Debug("Found " + result.Name + ".");
                         return result;
                     }
