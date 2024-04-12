@@ -49,13 +49,14 @@
       <protoc Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' And '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)'=='X64'">$(protoc_windows64)</protoc>
       <protoc Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))' And '$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture)'=='X86'">$(protoc_windows86)</protoc>
     </PropertyGroup>
+    <ItemGroup>
+      <Compile Condition="!Exists('$(FOLDER_OUT)')" Include="generated/HardwareManifest.cs" />
+    </ItemGroup>
     <Exec Condition="!Exists('$(FOLDER_OUT)')" Command="mkdir $(FOLDER_OUT)" />
     <Exec Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))'" Command="for /f %%i in ('dir /s /b $(FOLDER_PROTO)\*.proto') do (  $(protoc) --proto_path=$(protoc_tools) --proto_path=$(PlatformCertificateProtoFilesDir) -I=$(FOLDER_PROTO) --csharp_out=$(FOLDER_OUT) %%i )" />
     <Exec Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))'" Command="for file in `ls -1R $(FOLDER_PROTO)/*.proto` ; do $(protoc) --proto_path=$(protoc_tools) --proto_path=$(PlatformCertificateProtoFilesDir) -I=$(FOLDER_PROTO) --csharp_out=$(FOLDER_OUT) $file; done " />
 
-    <ItemGroup>
-      <Compile Condition="Exists('$(FOLDER_OUT)')" Include="$(FOLDER_OUT)/*.cs" />
-    </ItemGroup>
+    
     <ItemGroup>
       <GeneratedFiles Include="$(FOLDER_OUT)/*.cs;" />
     </ItemGroup>

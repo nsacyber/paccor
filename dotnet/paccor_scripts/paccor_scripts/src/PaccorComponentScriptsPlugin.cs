@@ -1,9 +1,8 @@
 ﻿using HardwareManifestProto;
-using HardwareManifestPlugin;
 using System.Runtime.InteropServices;
 
 namespace paccor_scripts {
-    public sealed class PaccorComponentScriptsPlugin : HardwareManifest {
+    public sealed class PaccorComponentScriptsPlugin : HardwareManifestPlugin.HardwareManifestPlugin {
         public static readonly string Scripts = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(PaccorComponentScriptsPlugin).Assembly.Location)!, "scripts"));
         public static readonly string LinuxComponents = Path.GetFullPath(Path.Combine(Scripts, "allcomponents.sh"));
         public static readonly string WinPath = Path.GetFullPath(Path.Combine(Scripts, "windows"));
