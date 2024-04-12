@@ -51,7 +51,7 @@
     </PropertyGroup>
     <Exec Condition="!Exists('$(FOLDER_OUT)')" Command="mkdir $(FOLDER_OUT)" />
     <Exec Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Windows)))'" Command="for /f %%i in ('dir /s /b $(FOLDER_PROTO)\*.proto') do (  $(protoc) --proto_path=$(protoc_tools) --proto_path=$(PlatformCertificateProtoFilesDir) -I=$(FOLDER_PROTO) --csharp_out=$(FOLDER_OUT) %%i )" />
-    <Exec Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))'" Command="for file in `ls -1R $(FOLDER_PROTO)/*.proto` ; do $(protoc) --proto_path=$(protoc_tools) -I=$(FOLDER_PROTO) --csharp_out=$(FOLDER_OUT) $file; done " />
+    <Exec Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))'" Command="for file in `ls -1R $(FOLDER_PROTO)/*.proto` ; do $(protoc) --proto_path=$(protoc_tools) --proto_path=$(PlatformCertificateProtoFilesDir) -I=$(FOLDER_PROTO) --csharp_out=$(FOLDER_OUT) $file; done " />
 
     <ItemGroup>
       <GeneratedFiles Include="$(FOLDER_OUT)/*.cs;" />

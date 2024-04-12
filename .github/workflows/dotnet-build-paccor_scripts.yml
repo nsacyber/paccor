@@ -25,8 +25,8 @@ jobs:
     - name: Pack
       working-directory: dotnet/paccor_scripts
       run: dotnet pack
-      working-directory: dotnet/paccor_scripts/paccor_scripts
     - name: Publish
+      working-directory: dotnet/paccor_scripts/paccor_scripts
       run: |
         dotnet -r linux-x64 -c Release
         dotnet -r win-x64 -c Release
