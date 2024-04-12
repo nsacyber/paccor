@@ -5,7 +5,12 @@ VisualStudioVersion = 17.1.32421.90
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HardwareManifestPlugin", "HardwareManifestPlugin\HardwareManifestPlugin.csproj", "{53C81C44-E5AC-4A0E-B345-C1B7B29F4B6D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HardwareManifestPluginManager", "HardwareManifestPluginManager\HardwareManifestPluginManager.csproj", "{502E153C-EE54-4472-8241-41F43687FA96}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HardwareManifestPluginManager", "HardwareManifestPluginManager\HardwareManifestPluginManager.csproj", "{502E153C-EE54-4472-8241-41F43687FA96}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HardwareManifestPluginTests", "HardwareManifestPluginTests\HardwareManifestPluginTests.csproj", "{B7427D0D-A770-4EB0-BDD8-47E412C95740}"
+	ProjectSection(ProjectDependencies) = postProject
+		{53C81C44-E5AC-4A0E-B345-C1B7B29F4B6D} = {53C81C44-E5AC-4A0E-B345-C1B7B29F4B6D}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +26,10 @@ Global
 		{502E153C-EE54-4472-8241-41F43687FA96}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{502E153C-EE54-4472-8241-41F43687FA96}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{502E153C-EE54-4472-8241-41F43687FA96}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7427D0D-A770-4EB0-BDD8-47E412C95740}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7427D0D-A770-4EB0-BDD8-47E412C95740}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7427D0D-A770-4EB0-BDD8-47E412C95740}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7427D0D-A770-4EB0-BDD8-47E412C95740}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

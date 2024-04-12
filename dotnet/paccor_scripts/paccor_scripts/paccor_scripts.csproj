@@ -7,7 +7,7 @@
     <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageId>paccor.paccor_scripts</PackageId>
-    <PackageVersion>1.0.1</PackageVersion>
+    <PackageVersion>2.0.0</PackageVersion>
     <PackageTags>paccor;platform;certificate;hardware;manifest;scripts;component;class;registry;evidence;collection</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -21,8 +21,8 @@
 
   <Target Name="CopyFiles" BeforeTargets="PreBuildEvent">
     <ItemGroup>
-      <PaccorScriptsLinux Include="..\..\..\scripts\*.*" />
-	  <PaccorScriptsWindows Include="..\..\..\scripts\windows\*.*" />
+      <PaccorScriptsLinux Include="..\..\..\scripts\allcomponents.sh;..\..\..\scripts\enterprise-numbers;..\..\..\scripts\hw.sh;..\..\..\scripts\nvme.sh;..\..\..\scripts\smbios.sh" />
+	  <PaccorScriptsWindows Include="..\..\..\scripts\windows\allcomponents.ps1;..\..\..\scripts\windows\hw.ps1;..\..\..\scripts\windows\nvme.ps1;..\..\..\scripts\windows\SMBios.ps1" />
     </ItemGroup>
     <Copy SourceFiles="@(PaccorScriptsLinux)" DestinationFolder="$(ProjectDir)scripts" />
 	<Copy SourceFiles="@(PaccorScriptsWindows)" DestinationFolder="$(ProjectDir)scripts/windows" />
@@ -46,7 +46,9 @@
 
   <ItemGroup>
     <!--Source Link -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All"/>
+    <PackageReference Include="Google.Protobuf" Version="3.20.1" /><!-- Google.Protobuf reference required for MessageParser -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="All" />
+    <PackageReference Include="PlatformCertificate.Proto" Version="2.0.3" />
   </ItemGroup>
   <ItemGroup>
     <!--Package resources -->

@@ -1,5 +1,4 @@
-﻿using PlatformCertificateFromProto;
-using org.iso.standards.swid;
+﻿using HardwareManifestProto;
 
 namespace HardwareManifestPlugin {
     public interface IHardwareManifest {
@@ -9,53 +8,45 @@ namespace HardwareManifestPlugin {
         string Description {
             get;
         }
-        PlatformConfiguration PlatformConfiguration {
-            get;
-        }
-        PlatformConfigurationV2 PlatformConfigurationV2 {
-            get;
-        }
-        
-        NameAttributes NameAttributes {
-            get;
-        }
 
-        SoftwareIdentity? SWID {
-            get;
-        }
+        public const int PluginMajorVersion = 2;
+        public const int PluginMinorVersion = 0;
+        public const int PluginRevision = 1;
 
-        /// <summary>
-        /// Pass arguments to the Hardware Manifest Plugin, if needed.
-        /// </summary>
-        /// <param name="args">Command-line style arguments to be given to the plugin prior to hardware identifier collection.</param>
-        void Configure(string[] args);
-        /// <summary>
-        /// Will this plugin collect hardware information into structures defined under tcg-at-platformConfiguration-v1?
-        /// </summary>
-        /// <returns>If true, the PlatformConfiguration property is expected to contain hardware information after GatherHardwareInformation is run. If false, the PlatformConfiguration property is expected to be null.</returns>
-        bool WillContainPlatformConfigurationV1();
         /// <summary>
         /// Will this plugin collect hardware information into structures defined under tcg-at-platformConfiguration-v2?
         /// </summary>
-        /// <returns>If true, the PlatformConfigurationV2 property is expected to contain hardware information after GatherHardwareInformation is run. If false, the PlatformConfigurationV2 property is expected to be null.</returns>
-        bool WillContainPlatformConfigurationV2();
+        /// <returns>If true, the ManifestV2 property is expected to contain hardware information after GatherHardwareInformation is run. If false, the ManifestV2 property is not expected to be initialized.</returns>
+        bool CollectsV2HardwareInformation {
+            get; 
+        }
         /// <summary>
-        /// Will this plugin collect hardware information into structures intended for the subject alternative name?
+        /// Will this plugin collect hardware information into structures defined under tcg-at-platformConfiguration-v3?
         /// </summary>
-        /// <returns>If true, the NameAttributes property is expected to contain at least one hardware identifier intended for the subject alternative name after GatherHardwareInformation is run. Individually check each of the sub-properties of NameAttributes. If false, the NameAttributes property is expected to be null.</returns>
-        bool WillContainNameAttributes();
-        /// <summary>
-        /// Was this plugin distributed with a SWID file?
-        /// </summary>
-        /// <returns>If true, the SWID property is expected to contain a complete SoftwareIdentity structure. The swidtag must provide integrity over That structure may contain a Signature. If false, the SWID property is expected to be empty.</returns>
-        bool ContainsSWID() {
-            return SWID != null;
+        /// <returns>If true, the ManifestV3 property is expected to contain hardware information after GatherHardwareInformation is run. If false, the ManifestV3 property is not expected to be initialized.</returns>
+        bool CollectsV3HardwareInformation {
+            get;
+        }
+
+        ManifestV2 ManifestV2 {
+            get;
+        }
+
+        ManifestV3 ManifestV3 {
+            get;
         }
 
         /// <summary>
         /// Kick off the hardware collection procedure within the Hardware Manifest Plugin.
         /// </summary>
-        /// <returns>The full manifest as a JSON string.</returns>
-        string GatherHardwareManifestAsJsonString();        
+        /// <returns>True if collection completed successfully. False otherwise.</returns>
+        bool GatherHardwareIdentifiers();
+
+        /// <summary>
+        /// Kick off the hardware collection procedure within the Hardware Manifest Plugin.
+        /// </summary>
+        /// <param name="args">Arguments can be passed to the function.</param>
+        /// <returns>True if collection completed successfully. False otherwise.</returns>
+        bool GatherHardwareIdentifiers(string[] args);
     }
 }

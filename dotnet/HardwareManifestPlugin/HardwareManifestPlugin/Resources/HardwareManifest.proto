@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+import "PlatformCertificateIM.proto";
+
+package HardwareManifestProto;
+
+message ManifestV3 {
+  PlatformCertificateProto.PlatformIdentifierOtherName platformIdentifier = 1;
+  PlatformCertificateProto.PlatformConfiguration platformConfiguration = 2;
+}
+
+message ManifestV2 {
+  SanPlatformFields PLATFORM = 1;                          // Subject Alt Name Platform Fields
+  repeated ComponentIdentifier COMPONENTS = 2;
+  repeated Property PROPERTIES = 3;
+  UriReference COMPONENTSURI = 4;
+  UriReference PROPERTIESURI = 5;
+}
+
+message SanPlatformFields {
+  string PLATFORMMANUFACTURERSTR = 1;
+  string PLATFORMMODEL = 2;
+  string PLATFORMVERSION = 3;
+  string PLATFORMSERIAL = 4;
+  string PLATFORMMANUFACTURERID = 5;
+}
+
+message ComponentIdentifier {
+  ComponentClass COMPONENTCLASS = 1;
+  string MANUFACTURER = 2;
+  string MODEL = 3;
+  string SERIAL = 4;
+  string REVISION = 5;
+  string MANUFACTURERID = 6;
+  string FIELDREPLACEABLE = 7;                             // true or false
+  repeated Address ADDRESSES = 8;
+  string STATUS = 9;                                       // ADDED, MODIFIED, or REMOVED
+  CertificateIdentifier PLATFORMCERT = 10;
+  UriReference COMPONENTPLATFORMCERTURI = 11;
+  CertificateIdentifier CERTIFICATEIDENTIFIER = 12;
+}
+
+message Property {
+  string PROPERTYNAME = 1;
+  string PROPERTYVALUE = 2;
+  string STATUS = 3;
+}
+
+message ComponentClass {
+  string COMPONENTCLASSREGISTRY = 1;                       // OID
+  string COMPONENTCLASSVALUE = 2;                          // Hex String
+}
+
+message Address {
+  oneof ADDRESSES_oneof {
+    string BLUETOOTHMAC = 1;
+    string ETHERNETMAC = 2;
+    string WLANMAC = 3;
+  }
+}
+
+message HashedCertificateIdentifier {
+  string HASHALG = 1;                                      // OID
+  string HASHVALUE = 2;                                    // base64 encode the binary value
+}
+
+message GenericCertificateIdentifier {
+  string ISSUER = 1;
+  string SERIAL = 2;
+}
+
+message CertificateIdentifier {
+  HashedCertificateIdentifier ATTRIBUTECERTIDENTIFIER = 1;
+  GenericCertificateIdentifier GENERICCERTIDENTIFIER = 2;
+  HashedCertificateIdentifier HASHEDCERTIDENTIFIER = 3;
+}
+
+message UriReference {
+  string UNIFORMRESOURCEIDENTIFIER = 1;
+  string HASHALG = 2;                                      // OID
+  string HASHVALUE = 3;                                    // base64 encode the binary value
+}
+
