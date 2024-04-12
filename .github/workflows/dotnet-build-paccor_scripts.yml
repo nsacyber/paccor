@@ -13,16 +13,19 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 6.0.x
-    - name: Go to paccor_scripts directory
-      run: cd dotnet/paccor_scripts
     - name: Restore dependencies
+      working-directory: dotnet/paccor_scripts
       run: dotnet restore
     - name: Build
+      working-directory: dotnet/paccor_scripts
       run: dotnet build
     - name: Test
+      working-directory: dotnet/paccor_scripts
       run: dotnet test
     - name: Pack
+      working-directory: dotnet/paccor_scripts
       run: dotnet pack
+      working-directory: dotnet/paccor_scripts/paccor_scripts
     - name: Publish
       run: |
         dotnet -r linux-x64 -c Release
