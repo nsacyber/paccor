@@ -1,4 +1,4 @@
-name: .NET
+name: .NET build paccor_scripts
 
 on:
   push:
