@@ -1,0 +1,34 @@
+name: .NET build paccor_scripts
+
+on:
+  push:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 6.0.x
+    - name: Restore dependencies
+      working-directory: dotnet/paccor_scripts
+      run: dotnet restore
+    - name: Build
+      working-directory: dotnet/paccor_scripts
+      run: dotnet build
+    - name: Test
+      working-directory: dotnet/paccor_scripts
+      run: dotnet test
+    - name: Pack
+      working-directory: dotnet/paccor_scripts
+      run: dotnet pack
+    - name: Publish
+      working-directory: dotnet/paccor_scripts/paccor_scripts
+      run: |
+        dotnet publish -r linux-x64 -c Release
+        dotnet publish -r win-x64 -c Release

@@ -1,0 +1,10 @@
+paccor_scripts.dll
+scripts/allcomponents.sh
+scripts/enterprise-numbers
+scripts/hw.sh
+scripts/nvme.sh
+scripts/smbios.sh
+scripts/windows/allcomponents.ps1
+scripts/windows/hw.ps1
+scripts/windows/nvme.ps1
+scripts/windows/SMBios.ps1

@@ -74,8 +74,13 @@ JSON_URI="UNIFORMRESOURCEIDENTIFIER"
 JSON_HASHALG="HASHALGORITHM"
 JSON_HASHVALUE="HASHVALUE"
 #### JSON Properties Keywords
-JSON_NAME="NAME"
-JSON_VALUE="VALUE"
+JSON_NAME="PROPERTYNAME"
+JSON_VALUE="PROPERTYVALUE"
+JSON_PROP_STATUS="PROPERTYSTATUS"
+#### JSON Status Keywords
+JSON_STATUS_ADDED="ADDED"
+JSON_STATUS_MODIFIED="MODIFIED"
+JSON_STATUS_REMOVED="REMOVED"
 NOT_SPECIFIED="Not Specified"
 
 
@@ -109,6 +114,13 @@ JSON_PROPERTY_TEMPLATE='
         {
             \"'"$JSON_NAME"'\": \"%s\",
             \"'"$JSON_VALUE"'\": \"%s\"
+        }
+'
+JSON_PROPERTY_TEMPLATE_OPT='
+        {
+            \"'"$JSON_NAME"'\": \"%s\",
+            \"'"$JSON_VALUE"'\": \"%s\",
+            \"'"$JSON_PROP_STATUS"'\": \"%s\"
         }
 '
 JSON_ADDRESSES_TEMPLATE=' \"'"$JSON_ADDRESSES"'\": [%s]'
@@ -208,7 +220,7 @@ queryForPen () {
 jsonProperty () {
     if [ -n "${1}" ] && [ -n "${2}" ]; then
         if [ -n "${3}" ]; then
-            printf "$JSON_PROPERTY_TEMPLATE" "${1}" "${2}" "${3}"
+            printf "$JSON_PROPERTY_TEMPLATE_OPT" "${1}" "${2}" "${3}"
         else
             printf "$JSON_PROPERTY_TEMPLATE" "${1}" "${2}"
         fi
@@ -796,7 +808,7 @@ parseGfxData () {
 
 ### Gather property details
 property1=$(jsonProperty "uname -r" "$(uname -r)")  ## Example1
-property2=$(jsonProperty "OS Release" "$(grep 'PRETTY_NAME=' /etc/os-release | sed 's/[^=]*=//' | sed -e 's/^[[:space:]\"]*//' | sed -e 's/[[:space:]\"]*$//')") ## Example2
+property2=$(jsonProperty "OS Release" "$(grep 'PRETTY_NAME=' /etc/os-release | sed 's/[^=]*=//' | sed -e 's/^[[:space:]\"]*//' | sed -e 's/[[:space:]\"]*$//')") # "$JSON_STATUS_ADDED") ## Example2 with optional third status argument
 
 ### Collate the component details
 componentsCPU=$(parseCpuData)

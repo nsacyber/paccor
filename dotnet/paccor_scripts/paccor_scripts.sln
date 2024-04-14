@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.32421.90
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "paccor_scripts", "paccor_scripts\paccor_scripts.csproj", "{295D1CD3-9DA7-429F-B986-81656BCA6969}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "paccor_scripts", "paccor_scripts\paccor_scripts.csproj", "{295D1CD3-9DA7-429F-B986-81656BCA6969}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HardwareManifestPlugin", "..\HardwareManifestPlugin\HardwareManifestPlugin\HardwareManifestPlugin.csproj", "{E984C721-499B-44AA-A635-080DB8774591}"
 EndProject

@@ -1,42 +1,26 @@
-﻿using HardwareManifestPlugin;
-using org.iso.standards.swid;
-using PlatformCertificateFromProto;
-using System.Reflection;
+﻿using HardwareManifestProto;
 using System.Runtime.InteropServices;
 
 namespace paccor_scripts {
-    public class PaccorComponentScriptsPlugin : IHardwareManifest {
-        public static readonly string scripts = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(PaccorComponentScriptsPlugin).Assembly.Location)!, "scripts"));
-        public static readonly string linux_components = Path.GetFullPath(Path.Combine(scripts, "allcomponents.sh"));
-        public static readonly string win_path = Path.GetFullPath(Path.Combine(scripts, "windows"));
-        public static readonly string win_temp_output = Path.GetFullPath(Path.Combine(win_path, "out.json"));
-        public static readonly string win_components = Path.GetFullPath(Path.Combine(win_path, "allcomponents.ps1"));
-        public string Name {
-            get; private set;
-        }
+    public sealed class PaccorComponentScriptsPlugin : HardwareManifestPlugin.HardwareManifestPlugin {
+        public static readonly string Scripts = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(PaccorComponentScriptsPlugin).Assembly.Location)!, "scripts"));
+        public static readonly string LinuxComponents = Path.GetFullPath(Path.Combine(Scripts, "allcomponents.sh"));
+        public static readonly string WinPath = Path.GetFullPath(Path.Combine(Scripts, "windows"));
+        public static readonly string WinTempOutput = Path.GetFullPath(Path.Combine(WinPath, "out.json"));
+        public static readonly string WinComponents = Path.GetFullPath(Path.Combine(WinPath, "allcomponents.ps1"));
 
-        public string Description {
-            get; private set;
-        }
-        public SoftwareIdentity? SWID {
-            get; private set;
-        }
-
-        PlatformConfiguration IHardwareManifest.PlatformConfiguration => throw new NotImplementedException();
-
-        PlatformConfigurationV2 IHardwareManifest.PlatformConfigurationV2 => throw new NotImplementedException();
-
-        NameAttributes IHardwareManifest.NameAttributes => throw new NotImplementedException();
-
+        public static readonly string TraitDescription = "paccor component gathering scripts";
+        public static readonly string TraitDescriptionUri = "https://github.com/nsacyber/paccor/scripts";
 
         public PaccorComponentScriptsPlugin() {
             Name = "paccor_scripts";
-            Description = "paccor 1.1.4r6 component gathering scripts";
-            SWID = null;
+            Description = "paccor component gathering scripts";
+            CollectsV2HardwareInformation = true;
+            CollectsV2HardwareInformation = false;
         }
 
-        string IHardwareManifest.GatherHardwareManifestAsJsonString() {
-            string json = "";
+        public override bool GatherHardwareIdentifiers() {
+            bool result = false;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 Task<Tuple<int, string, string>> task = Task.Run(RunWindows);
                 Tuple<int, string, string> results = task.Result;
@@ -45,44 +29,30 @@ namespace paccor_scripts {
                 }
                 // The allcomponents powershell script writes output to a file to preserve binary data
                 // that can get corrupted during redirection
-                if (System.IO.File.Exists(win_temp_output)) {
-                    json = System.IO.File.ReadAllText(win_temp_output);
-                    //System.IO.File.Delete(win_temp_output);
+                if (System.IO.File.Exists(WinTempOutput)) {
+                    string json = System.IO.File.ReadAllText(WinTempOutput);
+                    ManifestV2 = ManifestV2.Parser.WithDiscardUnknownFields(true).ParseJson(json);
+                    result = true;
                 }
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-                //await $"scripts/00magic.sh --param {arg}".Bash(this.logger);
                 Task<Tuple<int, string, string>> task = Task.Run(RunLinux);
                 Tuple<int, string, string> results = task.Result;
                 if (task.Exception != null) {
                     throw task.Exception;
                 }
-                json = results.Item3;
+                string json = results.Item3;
+                ManifestV2 = ManifestV2.Parser.WithDiscardUnknownFields(true).ParseJson(json);
+                result = true;
             }
-            return json;
+            return result;
         }
 
         private async Task<Tuple<int, string, string>> RunWindows() {
-            return await Path.GetFullPath(win_components).ToString().Powershell(win_temp_output);
+            return await Path.GetFullPath(WinComponents).ToString().Powershell(WinComponents);
         }
 
         private async Task<Tuple<int, string, string>> RunLinux() {
-            return await Path.GetFullPath(linux_components).ToString().Bash();
-        }
-
-        void IHardwareManifest.Configure(string[] args) {
-            // does nothing
-        }
-
-        bool IHardwareManifest.WillContainPlatformConfigurationV1() {
-            return false;
-        }
-
-        bool IHardwareManifest.WillContainPlatformConfigurationV2() {
-            return false;
-        }
-
-        bool IHardwareManifest.WillContainNameAttributes() {
-            return false;
+            return await Path.GetFullPath(LinuxComponents).ToString().Bash();
         }
     }
 }

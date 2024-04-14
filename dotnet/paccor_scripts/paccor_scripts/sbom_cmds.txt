@@ -1,0 +1,3 @@
+dotnet tool install --global Microsoft.Sbom.DotNetTool
+sbom-tool generate -b . -bl sbom_buildlist_file.txt -pn paccor_scripts -pv 1.0.0 -ps NSA -nsb https://github.com/nsacyber/paccor
+sbom-tool validate -b . -o ./output.json -mi SPDX:2.2

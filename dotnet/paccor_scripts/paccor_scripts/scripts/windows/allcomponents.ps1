@@ -83,8 +83,13 @@ $JSON_URI="UNIFORMRESOURCEIDENTIFIER"
 $JSON_HASHALG="HASHALGORITHM"
 $JSON_HASHVALUE="HASHVALUE"
 #### JSON Properties Keywords
-$JSON_NAME="NAME"
-$JSON_VALUE="VALUE"
+$JSON_NAME="PROPERTYNAME"
+$JSON_VALUE="PROPERTYVALUE"
+$JSON_PROP_STATUS="PROPERTYSTATUS"
+#### JSON Status Keywords
+$JSON_STATUS_ADDED="ADDED"
+$JSON_STATUS_MODIFIED="MODIFIED"
+$JSON_STATUS_REMOVED="REMOVED"
 $NOT_SPECIFIED="Not Specified"
 
 
@@ -120,6 +125,13 @@ $JSON_PROPERTY_TEMPLATE="
             `"$JSON_VALUE`": `"{1}`"
         }}
 "
+$JSON_PROPERTY_TEMPLATE_OPT="
+        {{
+            `"$JSON_NAME`": `"{0}`",
+            `"$JSON_VALUE`": `"{1}`",
+            `"$JSON_PROP_STATUS`": `"{2}`"
+        }}
+"
 $JSON_ADDRESSES_TEMPLATE=" `"$JSON_ADDRESSES`": [{0}]"
 $JSON_ETHERNETMAC_TEMPLATE=" {{
                 `"$JSON_ETHERNETMAC`": `"{0}`" }} "
@@ -149,7 +161,6 @@ $JSON_COMPONENTPLATFORMCERTURI_TEMPLATE='
     }}'
 $JSON_STATUS_TEMPLATE="
     `"$JSON_STATUS`": {{
-
     }}"
 
 ### JSON Constructor Aides
@@ -242,6 +253,8 @@ function queryForPen () {
 function jsonProperty () {
     if ($args.Length -eq 2) {
         echo ("$JSON_PROPERTY_TEMPLATE" -f "$($args[0])","$($args[1])")
+    } elseif ($args.Length -eq 3) {
+        echo ("$JSON_PROPERTY_TEMPLATE_OPT" -f "$($args[0])","$($args[1])","$($args[2])")
     }
 }
 function jsonUri () {
@@ -853,10 +866,10 @@ $componentArray=(jsonComponentArray "$componentChassis" "$componentBaseboard" "$
 Write-Progress -Id 1 -Activity "Gathering properties" -PercentComplete 80
 $osCaption=((wmic os get caption /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
 $property1=(jsonProperty "caption" "$osCaption")  ## Example1
-$property2= ## Example2
+$property2=(jsonProperty "caption" "$osCaption") # "$JSON_STATUS_ADDED") ## Example2 with optional third status argument
 
 ### Collate the property details
-$propertyArray=(jsonPropertyArray "$property1")
+$propertyArray=(jsonPropertyArray "$property1" "$property2")
 
 ### Collate the URI details, if parameters above are blank, the fields will be excluded from the final JSON structure
 $componentsUri=""
@@ -874,4 +887,3 @@ $FINAL_JSON_OBJECT=(jsonIntermediateFile "$platform" "$componentArray" "$compone
 
 Write-Progress -Id 1 -Activity "Done" -PercentComplete 100
 [IO.File]::WriteAllText($filename, "$FINAL_JSON_OBJECT")
-
