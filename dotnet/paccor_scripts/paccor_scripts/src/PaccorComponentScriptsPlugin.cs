@@ -1,4 +1,5 @@
-﻿using HardwareManifestProto;
+﻿using HardwareManifestPlugin;
+using HardwareManifestProto;
 using System.Runtime.InteropServices;
 
 namespace paccor_scripts {
@@ -16,11 +17,12 @@ namespace paccor_scripts {
             Name = "paccor_scripts";
             Description = "paccor component gathering scripts";
             CollectsV2HardwareInformation = true;
-            CollectsV2HardwareInformation = false;
+            CollectsV3HardwareInformation = false;
         }
 
         public override bool GatherHardwareIdentifiers() {
             bool result = false;
+            string json = "";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 Task<Tuple<int, string, string>> task = Task.Run(RunWindows);
                 Tuple<int, string, string> results = task.Result;
@@ -30,9 +32,7 @@ namespace paccor_scripts {
                 // The allcomponents powershell script writes output to a file to preserve binary data
                 // that can get corrupted during redirection
                 if (System.IO.File.Exists(WinTempOutput)) {
-                    string json = System.IO.File.ReadAllText(WinTempOutput);
-                    ManifestV2 = ManifestV2.Parser.WithDiscardUnknownFields(true).ParseJson(json);
-                    result = true;
+                    json = System.IO.File.ReadAllText(WinTempOutput);
                 }
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
                 Task<Tuple<int, string, string>> task = Task.Run(RunLinux);
@@ -40,8 +40,12 @@ namespace paccor_scripts {
                 if (task.Exception != null) {
                     throw task.Exception;
                 }
-                string json = results.Item3;
+                json = results.Item3;
+            }
+
+            if (!string.IsNullOrWhiteSpace(json)) {
                 ManifestV2 = ManifestV2.Parser.WithDiscardUnknownFields(true).ParseJson(json);
+                ManifestV3 = HardwareManifestConverter.FromManifestV2(ManifestV2, TraitDescription, TraitDescriptionUri);
                 result = true;
             }
             return result;
