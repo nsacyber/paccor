@@ -7,7 +7,7 @@
     <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageId>paccor.paccor_scripts</PackageId>
-    <PackageVersion>2.0.3</PackageVersion>
+    <PackageVersion>2.0.5</PackageVersion>
     <PackageTags>paccor;platform;certificate;hardware;manifest;scripts;component;class;registry;evidence;collection</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>

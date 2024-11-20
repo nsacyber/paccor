@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageId>paccor.HardwareManifestPlugin</PackageId>
-    <PackageVersion>2.0.3</PackageVersion>
+    <PackageVersion>2.0.5</PackageVersion>
     <PackageTags>paccor;platform;certificate;hardware;manifest;interface</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
