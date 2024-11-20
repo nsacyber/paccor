@@ -4,7 +4,7 @@ using OidsProto;
 using PlatformCertificateProto;
 
 namespace HardwareManifestPlugin {
-    public class Convert {
+    public class HardwareManifestConverter {
         public static ManifestV3 FromManifestV2(ManifestV2 v2, string traitDescription, string traitDescriptionUri) {
             // Wrap V2 Manifest with Trait details and return a V3 Manifest
             ManifestV3 v3 = new();

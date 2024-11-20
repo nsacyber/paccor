@@ -15,7 +15,7 @@ namespace HardwareManifestPluginTests {
             const string traitDescriptionUri = "https://github.com/nsacyber/paccor/scripts";
             var settings = Google.Protobuf.JsonParser.Settings.Default.WithIgnoreUnknownFields(true);
             ManifestV2 v2 = new Google.Protobuf.JsonParser(settings).Parse<ManifestV2>(V2ManifestJsonStr);
-            ManifestV3 v3 = HardwareManifestPlugin.Convert.FromManifestV2(v2, traitDescription, traitDescriptionUri);
+            ManifestV3 v3 = HardwareManifestPlugin.HardwareManifestConverter.FromManifestV2(v2, traitDescription, traitDescriptionUri);
             Assert.That(V3ManifestJsonStr, Is.EqualTo(v3.ToString()));
         }
     }
