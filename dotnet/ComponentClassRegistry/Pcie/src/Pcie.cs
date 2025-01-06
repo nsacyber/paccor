@@ -141,9 +141,11 @@ public class Pcie {
     private static bool ParseMacAddressFromResults(out string mac, Task<Tuple<int, string, string>> task) {
         mac = "";
         bool result = false;
-        
-        Tuple<int, string, string> results = task.Result;
-        if (task.Exception == null) {
+
+        task.Wait(5000);
+
+        if (task.IsCompletedSuccessfully) {
+            Tuple<int, string, string> results = task.Result;
             mac = results.Item3;
             // Parse results of  output
             if (!string.IsNullOrWhiteSpace(mac)) {
