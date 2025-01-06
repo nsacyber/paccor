@@ -56,6 +56,7 @@ public class Pcie {
                 case "0D11":
                     // Ask NetAdapter for the permanent address.
                     Task<Tuple<int, string, string>> task = Task.Run(() => PowershellMAC(pciDeviceInstanceId));
+                    task.Wait(5000);
                     bool foundMac = ParseMacAddressFromResults(out string mac, task);
                     if (foundMac) {
                         device.NetworkMac = Convert.FromHexString(mac);
@@ -120,6 +121,7 @@ public class Pcie {
                         case "0D11":
                             // Ask ethtool for the permanent address.
                             Task<Tuple<int, string, string>> task = Task.Run(() => EthtoolP(interfaceName));
+                            task.Wait(5000);
                             bool foundMac = ParseMacAddressFromResults(out string mac, task);
                             if (foundMac) {
                                 device.NetworkMac = Convert.FromHexString(mac);
@@ -141,8 +143,6 @@ public class Pcie {
     private static bool ParseMacAddressFromResults(out string mac, Task<Tuple<int, string, string>> task) {
         mac = "";
         bool result = false;
-
-        task.Wait(5000);
 
         if (task.IsCompletedSuccessfully) {
             Tuple<int, string, string> results = task.Result;
