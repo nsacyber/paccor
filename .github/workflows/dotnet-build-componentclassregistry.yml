@@ -79,11 +79,11 @@ jobs:
           dotnet/ComponentClassRegistry/StorageCli/**/*.deb
           dotnet/ComponentClassRegistry/StorageCli/**/*.rpm
           dotnet/ComponentClassRegistry/StorageCli/**/*.zip
-     - name: Setup tmate session on error
-        if: ${{ failure() }}
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 5 # The ssh session will be available for 5 minutes.
-        with:
-          limit-access-to-actor: true # Only the person who pushed can access- with a github-registered key.
+    - name: Setup tmate session on error
+      if: ${{ failure() }}
+      uses: mxschmitt/action-tmate@v3
+      timeout-minutes: 5 # The ssh session will be available for 5 minutes.
+      with:
+        limit-access-to-actor: true # Only the person who pushed can access- with a github-registered key.
       
       
