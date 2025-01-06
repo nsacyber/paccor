@@ -4,8 +4,8 @@ namespace Pcie;
 public static class ShellHelper {
     public static Task<Tuple<int, string, string>> Ethtool(string arguments) {
         ProcessStartInfo info = new() {
-            FileName = "ethtool",
-            Arguments = "-P " + arguments,
+            FileName = "bash",
+            Arguments = $"-c \"ethtool {arguments}\"",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
