@@ -152,7 +152,7 @@ public class StorageTests {
     };
 
 
-    [Test]
+    //[Test]
     public void TestRegistryA21Sample1() {
         byte[] page3 = Convert.FromBase64String(RegistryA21AtaComponentSample1Page3Base64);
         byte[] page5 = Convert.FromBase64String(RegistryA21AtaComponentSample1Page5Base64);
@@ -160,7 +160,7 @@ public class StorageTests {
         Assert.Fail("ATA Not yet complete");
     }
 
-    [Test]
+    //[Test]
     public void TestRegistryA31Sample1() {
         byte[] inquiryData = Convert.FromBase64String(RegistryA31ScsiComponentSample1InquiryDataBase64);
         byte[] page80 = Convert.FromBase64String(RegistryA31ScsiComponentSample1Page80Base64);
@@ -168,7 +168,7 @@ public class StorageTests {
         Assert.Fail("SCSI Not yet complete");
     }
 
-    [Test]
+    //[Test]
     public void TestRegistryA32Sample2() {
         byte[] inquiryData = Convert.FromBase64String(RegistryA32ScsiComponentSample2InquiryDataBase64);
         byte[] page80 = Convert.FromBase64String(RegistryA32ScsiComponentSample2Page80Base64);

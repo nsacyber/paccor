@@ -1,4 +1,4 @@
-name: .NET build HardwareManifest
+name: .NET build ComponentClassRegistry
 
 on:
   push:
@@ -27,3 +27,45 @@ jobs:
     - name: Pack
       working-directory: dotnet/ComponentClassRegistry
       run: dotnet pack
+    - name: Install Package Tools
+      working-directory: dotnet/ComponentClassRegistry
+      run: |
+      dotnet tool install dotnet-deb
+      dotnet tool install dotnet-rpm
+      dotnet tool install dotnet-zip
+    - name: SMBIOS Cli
+      working-directory: dotnet/ComponentClassRegistry/SmbiosCli
+      run: |
+      dotnet deb -r linux-x64 -c Release
+      dotnet rpm -r linux-x64 -c Release
+      dotnet zip -r win-x64 -c Release
+    - name: PCIe Cli
+      working-directory: dotnet/ComponentClassRegistry/PcieCli
+      run: |
+      dotnet deb -r linux-x64 -c Release
+      dotnet rpm -r linux-x64 -c Release
+      dotnet zip -r win-x64 -c Release
+    - name: Storage Cli
+      working-directory: dotnet/ComponentClassRegistry/StorageCli
+      run: |
+      dotnet deb -r linux-x64 -c Release
+      dotnet rpm -r linux-x64 -c Release
+      dotnet zip -r win-x64 -c Release
+    - name: Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: testArtifacts
+        retention-days: 1
+        if-no-files-found: error
+        path: |
+        dotnet/ComponentClassRegistry/SmbiosCli/**/*.deb
+        dotnet/ComponentClassRegistry/SmbiosCli/**/*.rpm
+        dotnet/ComponentClassRegistry/SmbiosCli/**/*.zip
+        dotnet/ComponentClassRegistry/PcieCli/**/*.deb
+        dotnet/ComponentClassRegistry/PcieCli/**/*.rpm
+        dotnet/ComponentClassRegistry/PcieCli/**/*.zip
+        dotnet/ComponentClassRegistry/StorageCli/**/*.deb
+        dotnet/ComponentClassRegistry/StorageCli/**/*.rpm
+        dotnet/ComponentClassRegistry/StorageCli/**/*.zip
+      
+      
