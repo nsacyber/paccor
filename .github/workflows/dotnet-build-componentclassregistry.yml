@@ -1,0 +1,29 @@
+name: .NET build HardwareManifest
+
+on:
+  push:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies
+      working-directory: dotnet/ComponentClassRegistry
+      run: dotnet restore
+    - name: Build
+      working-directory: dotnet/ComponentClassRegistry
+      run: dotnet build
+    - name: Test
+      working-directory: dotnet/ComponentClassRegistry
+      run: dotnet test
+    - name: Pack
+      working-directory: dotnet/ComponentClassRegistry
+      run: dotnet pack

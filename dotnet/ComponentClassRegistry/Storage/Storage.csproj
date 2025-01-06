@@ -1,0 +1,31 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="src\StorageLinux.cs" />
+    <Compile Remove="src\StorageLinuxConstants.cs" />
+    <Compile Remove="src\StorageLinuxImports.cs" />
+    <Compile Remove="src\StorageLinuxStructs.cs" />
+    <Compile Remove="src\StorageWin.cs" />
+    <Compile Remove="src\StorageWinConstants.cs" />
+    <Compile Remove="src\StorageWinHelpers.cs" />
+    <Compile Remove="src\StorageWinImports.cs" />
+    <Compile Remove="src\StorageWinStructs.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="paccor.HardwareManifestPlugin" Version="2.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PcieWin\PcieWinCfgMgr.csproj" />
+    <ProjectReference Include="..\StorageLib\StorageLib.csproj" />
+    <ProjectReference Include="..\StorageNvme\StorageNvme.csproj" />
+  </ItemGroup>
+
+</Project>

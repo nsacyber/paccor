@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PcieLib\PcieLib.csproj" />
+    <ProjectReference Include="..\PcieWin\PcieWinCfgMgr.csproj" />
+    <ProjectReference Include="..\StorageLib\StorageLib.csproj" />
+  </ItemGroup>
+
+</Project>
