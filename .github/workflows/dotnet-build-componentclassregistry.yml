@@ -30,26 +30,38 @@ jobs:
     - name: Install Package Tools
       working-directory: dotnet/ComponentClassRegistry
       run: |
-        dotnet tool install dotnet-deb
-        dotnet tool install dotnet-rpm
-        dotnet tool install dotnet-zip
+        dotnet tool install --global dotnet-deb
+        dotnet tool install --global dotnet-rpm
+        dotnet tool install --global dotnet-zip
     - name: SMBIOS Cli
       working-directory: dotnet/ComponentClassRegistry/SmbiosCli
       run: |
+        dotnet deb install
+        dotnet rpm install
+        dotnet zip install
         dotnet deb -r linux-x64 -c Release
         dotnet rpm -r linux-x64 -c Release
+        dotnet zip -r linux-x64 -c Release
         dotnet zip -r win-x64 -c Release
     - name: PCIe Cli
       working-directory: dotnet/ComponentClassRegistry/PcieCli
       run: |
+        dotnet deb install
+        dotnet rpm install
+        dotnet zip install
         dotnet deb -r linux-x64 -c Release
         dotnet rpm -r linux-x64 -c Release
+        dotnet zip -r linux-x64 -c Release
         dotnet zip -r win-x64 -c Release
     - name: Storage Cli
       working-directory: dotnet/ComponentClassRegistry/StorageCli
       run: |
+        dotnet deb install
+        dotnet rpm install
+        dotnet zip install
         dotnet deb -r linux-x64 -c Release
         dotnet rpm -r linux-x64 -c Release
+        dotnet zip -r linux-x64 -c Release
         dotnet zip -r win-x64 -c Release
     - name: Artifacts
       uses: actions/upload-artifact@v4
@@ -67,5 +79,11 @@ jobs:
           dotnet/ComponentClassRegistry/StorageCli/**/*.deb
           dotnet/ComponentClassRegistry/StorageCli/**/*.rpm
           dotnet/ComponentClassRegistry/StorageCli/**/*.zip
+     - name: Setup tmate session on error
+        if: ${{ failure() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 5 # The ssh session will be available for 5 minutes.
+        with:
+          limit-access-to-actor: true # Only the person who pushed can access- with a github-registered key.
       
       
