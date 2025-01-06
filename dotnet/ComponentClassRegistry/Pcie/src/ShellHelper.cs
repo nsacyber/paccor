@@ -5,8 +5,7 @@ public static class ShellHelper {
     public static Task<Tuple<int, string, string>> Ethtool(string arguments) {
         ProcessStartInfo info = new() {
             FileName = "ethtool",
-            Arguments = "-P '" + arguments + "'",
-            WorkingDirectory = Path.GetDirectoryName("ethtool")?.Replace("\\", "/"),
+            Arguments = "-P " + arguments,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
