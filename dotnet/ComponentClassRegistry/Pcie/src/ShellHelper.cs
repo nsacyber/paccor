@@ -3,6 +3,8 @@
 namespace Pcie;
 public static class ShellHelper {
     public static Task<Tuple<int, string, string>> Ethtool(string arguments) {
+        Console.WriteLine("Run Ethtool");
+        Console.WriteLine($"-c \"ethtool {arguments}\"");
         ProcessStartInfo info = new() {
             FileName = "bash",
             Arguments = $"-c \"ethtool {arguments}\"",
@@ -43,8 +45,11 @@ public static class ShellHelper {
         };
 
         try {
+            Console.WriteLine("Before start");
             process.Start();
+            Console.WriteLine("Before Wait");
             process.WaitForExit();
+            Console.WriteLine("After Wait");
         } catch (Exception e) {
             source.SetException(e);
         } finally {

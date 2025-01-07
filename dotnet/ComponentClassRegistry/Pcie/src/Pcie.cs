@@ -144,13 +144,19 @@ public class Pcie {
         mac = "";
         bool result = false;
 
-        if (task.IsCompletedSuccessfully) {
-            Tuple<int, string, string> results = task.Result;
-            mac = results.Item3;
-            // Parse results of  output
-            if (!string.IsNullOrWhiteSpace(mac)) {
-                mac = CleanMacAddress(mac);
-                result = true;
+        Console.WriteLine("Task Status: " + task.Status);
+        if (task.IsCompleted) {
+            if (task.IsCompletedSuccessfully) {
+                Console.WriteLine("Before result");
+                Tuple<int, string, string> results = task.Result;
+                Console.WriteLine("Before Item");
+                mac = results.Item3;
+                Console.WriteLine("After Item");
+                // Parse results of  output
+                if (!string.IsNullOrWhiteSpace(mac)) {
+                    mac = CleanMacAddress(mac);
+                    result = true;
+                }
             }
         }
 

@@ -85,11 +85,7 @@ public class StorageNvmeWin : IStorageNvme {
         Task<Tuple<int, string, string>> task = Task.Run(() => PowershellNumPhysicalDisks());
         Tuple<int, string, string> results = task.Result;
         if (task.Exception == null) {
-            try {
-                num = int.Parse(results.Item3);
-            } catch (Exception e) {
-                // go with default
-            }
+            num = int.Parse(results.Item3);
         }
 
         return num;
