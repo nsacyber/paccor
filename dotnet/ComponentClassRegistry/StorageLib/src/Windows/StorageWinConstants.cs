@@ -1,7 +1,8 @@
-﻿using StorageLib;
+﻿using System.Runtime.Versioning;
 
 namespace StorageLib.Windows;
 
+[SupportedOSPlatform("windows")]
 public class StorageWinConstants {// Windows Constants
     public static readonly string DISK_HANDLE_PD = @"\\.\PhysicalDrive{0}"; // PD
     public static readonly string DISK_HANDLE_SCSI = @"\\.\Scsi{0}:"; // SCSI

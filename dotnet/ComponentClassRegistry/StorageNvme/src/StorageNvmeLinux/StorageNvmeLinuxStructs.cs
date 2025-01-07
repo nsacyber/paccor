@@ -1,6 +1,9 @@
 ﻿using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace StorageNvme.Linux;
+
+[SupportedOSPlatform("linux")]
 public class StorageNvmeLinuxStructs {
 
     [StructLayout(LayoutKind.Sequential)]

@@ -1,7 +1,10 @@
 ﻿using StorageLib.Windows;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace StorageNvme.Windows;
+
+[SupportedOSPlatform("windows")]
 public class StorageNvmeWinStructs {
     [StructLayout(LayoutKind.Sequential)]
     public struct IntelNvmePassthroughParameters {

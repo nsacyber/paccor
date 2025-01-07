@@ -1,8 +1,10 @@
 ﻿using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace StorageLib.Linux;
 
+[SupportedOSPlatform("linux")]
 public class StorageLinuxImports {
     public const string libName = "libc";
 

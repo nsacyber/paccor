@@ -45,11 +45,8 @@ public static class ShellHelper {
         };
 
         try {
-            Console.WriteLine("Before start");
             process.Start();
-            Console.WriteLine("Before Wait");
             process.WaitForExit();
-            Console.WriteLine("After Wait");
         } catch (Exception e) {
             source.SetException(e);
         } finally {

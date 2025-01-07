@@ -1,11 +1,11 @@
-﻿
-
-using Microsoft.Win32.SafeHandles;
+﻿using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace StorageLib.Windows;
 
+[SupportedOSPlatform("windows")]
 public class StorageWinImports {
     public const string kernelDll = "kernel32.dll";
 

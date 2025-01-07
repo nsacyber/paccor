@@ -3,9 +3,12 @@ using PcieLib;
 using StorageLib;
 using StorageLib.Linux;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 
 namespace StorageNvme.Linux;
+
+[SupportedOSPlatform("linux")]
 public class StorageNvmeLinux : IStorageNvme {
     public bool CollectNvmeData(out List<StorageNvmeData> list) {
         list = new();

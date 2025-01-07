@@ -67,7 +67,7 @@ public class StorageCommonHelpers {
         SafeFileHandle handle = new();
         try {
             handle = File.OpenHandle(devicePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-        } catch (FileNotFoundException e) { // Any error should result in the handle being set to invalid
+        } catch (FileNotFoundException) { // Any error should result in the handle being set to invalid
             handle.SetHandleAsInvalid();
         }
 

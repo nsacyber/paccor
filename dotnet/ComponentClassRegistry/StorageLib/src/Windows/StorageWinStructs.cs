@@ -1,7 +1,9 @@
-﻿using StorageLib;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace StorageLib.Windows;
+
+[SupportedOSPlatform("windows")]
 public class StorageWinStructs {
     [StructLayout(LayoutKind.Sequential)]
     public struct SrbIoControl {

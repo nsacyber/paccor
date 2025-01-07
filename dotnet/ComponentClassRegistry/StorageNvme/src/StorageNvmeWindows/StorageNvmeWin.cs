@@ -6,9 +6,12 @@ using StorageLib.Windows;
 using StorageNvme;
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace StorageNvme.Windows;
+
+[SupportedOSPlatform("windows")]
 public class StorageNvmeWin : IStorageNvme {
     public bool CollectNvmeData(out List<StorageNvmeData> list) {
         list = new();

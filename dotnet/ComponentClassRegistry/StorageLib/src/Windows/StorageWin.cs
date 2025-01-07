@@ -1,8 +1,10 @@
 ﻿using Microsoft.Win32.SafeHandles;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace StorageLib.Windows;
 
+[SupportedOSPlatform("windows")]
 public class StorageWin {
     public static uint CTL_CODE(uint deviceType, uint function, uint method, uint access) {
         return ((deviceType << 16) | (access << 14) | (function << 2) | method);

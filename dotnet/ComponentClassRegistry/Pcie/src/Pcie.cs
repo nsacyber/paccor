@@ -56,7 +56,6 @@ public class Pcie {
                 case "0D11":
                     // Ask NetAdapter for the permanent address.
                     Task<Tuple<int, string, string>> task = Task.Run(() => PowershellMAC(pciDeviceInstanceId));
-                    task.Wait(5000);
                     bool foundMac = ParseMacAddressFromResults(out string mac, task);
                     if (foundMac) {
                         device.NetworkMac = Convert.FromHexString(mac);
@@ -121,7 +120,6 @@ public class Pcie {
                         case "0D11":
                             // Ask ethtool for the permanent address.
                             Task<Tuple<int, string, string>> task = Task.Run(() => EthtoolP(interfaceName));
-                            task.Wait(5000);
                             bool foundMac = ParseMacAddressFromResults(out string mac, task);
                             if (foundMac) {
                                 device.NetworkMac = Convert.FromHexString(mac);
@@ -144,21 +142,17 @@ public class Pcie {
         mac = "";
         bool result = false;
 
-        Console.WriteLine("Task Status: " + task.Status);
-        if (task.IsCompleted) {
-            if (task.IsCompletedSuccessfully) {
-                Console.WriteLine("Before result");
-                Tuple<int, string, string> results = task.Result;
-                Console.WriteLine("Before Item");
-                mac = results.Item3;
-                Console.WriteLine("After Item");
-                // Parse results of  output
-                if (!string.IsNullOrWhiteSpace(mac)) {
-                    mac = CleanMacAddress(mac);
-                    result = true;
-                }
-            }
+        task.Wait(5000);
+
+        if (!task.IsCompleted || !task.IsCompletedSuccessfully) {
+            return result;
         }
+
+        Tuple<int, string, string> results = task.Result;
+        mac = results.Item3;
+        // Parse results of  output
+        mac = CleanMacAddress(mac);
+        result = !string.IsNullOrWhiteSpace(mac);
 
         return result;
     }
