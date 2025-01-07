@@ -1,6 +1,9 @@
 ﻿using StorageLib.Windows;
+using System.Runtime.Versioning;
 
 namespace StorageNvme.Windows;
+
+[SupportedOSPlatform("windows")]
 public class StorageNvmeWinConstants {
     // Intel RST Constants
     public static readonly string INTELNVM_SIGNATURE = "IntelNvm";
