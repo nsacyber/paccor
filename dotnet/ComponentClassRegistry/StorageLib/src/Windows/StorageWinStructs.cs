@@ -95,5 +95,15 @@ public class StorageWinStructs {
         public static bool operator !=(StorageDeviceNumber c1, StorageDeviceNumber c2) {
             return !c1.Equals(c2);
         }
+
+        public override bool Equals(object? obj) {
+            if (obj is not StorageDeviceNumber other) { // is not performs null check
+                return false;
+            }
+
+            return DeviceType == other.DeviceType && DeviceNumber == other.DeviceNumber && PartitionNumber == other.PartitionNumber;
+        }
+
+        public override int GetHashCode() => (DeviceType, DeviceNumber, PartitionNumber).GetHashCode();
     }
 }
