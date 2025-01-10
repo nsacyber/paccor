@@ -7,7 +7,7 @@ namespace Smbios;
 public sealed class SmbiosHardwareManifestPlugin : HardwareManifestPluginBase {
     public static readonly string TraitDescription = "SMBIOS-based Component Class Registry";
     public static readonly string TraitDescriptionUri = "https://trustedcomputinggroup.org/wp-content/uploads/SMBIOS-Component-Class-Registry_v1.01_finalpublication.pdf";
-    public static readonly string PluginName = "paccor.componentclassregistry.smbios";
+    public static readonly string PluginName = "paccor.smbios";
     public static readonly string PluginDescription = "Collect hardware identifiers according to the SMBIOS Component Class Registry.";
 
     public SmbiosHardwareManifestPlugin() {

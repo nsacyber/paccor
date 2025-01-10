@@ -10,7 +10,7 @@ namespace Storage;
 public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
     public static readonly string TraitDescription = "Storage Component Class Registry";
     public static readonly string TraitDescriptionUri = "https://trustedcomputinggroup.org/wp-content/uploads/Storage-Component-Class-Registry-Version-1.0-Revision-22_pub.pdf";
-    public static readonly string PluginName = "paccor.componentclassregistry.storage";
+    public static readonly string PluginName = "paccor.storage";
     public static readonly string PluginDescription = "Collect hardware identifiers according to the Storage Component Class Registry.";
 
     public StorageHardwareManifestPlugin() {

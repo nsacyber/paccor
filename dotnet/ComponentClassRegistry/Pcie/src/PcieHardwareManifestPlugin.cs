@@ -8,7 +8,7 @@ namespace Pcie;
 public sealed class PcieHardwareManifestPlugin : HardwareManifestPluginBase {
     public static readonly string TraitDescription = "PCIe-based Component Class Registry";
     public static readonly string TraitDescriptionUri = "https://trustedcomputinggroup.org/wp-content/uploads/TCG_PCIe_Component_Class_Registry_v1_r18_pub10272021.pdf";
-    public static readonly string PluginName = "paccor.componentclassregistry.pcie";
+    public static readonly string PluginName = "paccor.pcie";
     public static readonly string PluginDescription = "Collect hardware identifiers according to the PCIe Component Class Registry.";
 
     public PcieHardwareManifestPlugin() {

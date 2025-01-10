@@ -1,22 +1,25 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="Storage.Shared.props" />
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
+    <Authors>NSA Cybersecurity Directorate</Authors>
+    <PackageId>paccor.storage</PackageId>
+    <PackageVersion>$(Version)</PackageVersion><!--Defined in shared props file-->
+    <PackageTags>paccor;platform;certificate;hardware;manifest;component;class;registry;storage;ata;scsi;nvme;evidence;collection</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageIcon>icon.png</PackageIcon>
+    <!--Source Link github.com/dotnet/sourcelink -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Compile Remove="src\StorageLinux.cs" />
-    <Compile Remove="src\StorageLinuxConstants.cs" />
-    <Compile Remove="src\StorageLinuxImports.cs" />
-    <Compile Remove="src\StorageLinuxStructs.cs" />
-    <Compile Remove="src\StorageWin.cs" />
-    <Compile Remove="src\StorageWinConstants.cs" />
-    <Compile Remove="src\StorageWinHelpers.cs" />
-    <Compile Remove="src\StorageWinImports.cs" />
-    <Compile Remove="src\StorageWinStructs.cs" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="paccor.HardwareManifestPlugin" Version="2.0.5" />
@@ -28,4 +31,10 @@
     <ProjectReference Include="..\StorageNvme\StorageNvme.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--Package resources -->
+    <None Include="..\..\..\LICENSE.md" Pack="true" PackagePath="LICENSE.md" />
+    <None Include="..\..\..\images\paccorpluginslogoicon.png" Pack="true" PackagePath="icon.png" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 </Project>

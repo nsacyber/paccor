@@ -1,13 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="Pcie.Shared.props" />
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
     <Authors>NSA Cybersecurity Directorate</Authors>
-    <PackageId>paccor.ComponentClassRegistry.Pcie</PackageId>
-    <PackageVersion>1.0.0</PackageVersion>
+    <PackageId>paccor.pcie</PackageId>
+    <PackageVersion>$(Version)</PackageVersion><!--Defined in shared props file-->
     <PackageTags>paccor;platform;certificate;hardware;manifest;component;class;registry;pci;pcie;evidence;collection</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -34,5 +36,4 @@
     <None Include="..\..\..\images\paccorpluginslogoicon.png" Pack="true" PackagePath="icon.png" />
     <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
-
 </Project>

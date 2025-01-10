@@ -1,9 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\Storage\Storage.Shared.props" />
+
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
+    <PackageVersion>$(Version)</PackageVersion><!--Defined in shared props file-->
     <StartupObject>StorageCli.StorageCli</StartupObject>
     <PublishSingleFile>true</PublishSingleFile>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -14,5 +17,4 @@
     <ProjectReference Include="..\CliLib\CliLib.csproj" />
     <ProjectReference Include="..\Storage\Storage.csproj" />
   </ItemGroup>
-
 </Project>

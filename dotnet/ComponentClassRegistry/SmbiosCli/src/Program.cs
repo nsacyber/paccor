@@ -1,11 +1,14 @@
 ﻿using CliLib;
 using Smbios;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace SmbiosCli;
 public class SmbiosCli {
     public static int Main(string[] args) {
         int returnCode = (int)ClientExitCodes.SUCCESS;
+
+        Version? version = Assembly.GetExecutingAssembly().GetName().Version;
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
             // Linux requires sudo
