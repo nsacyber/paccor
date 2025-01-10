@@ -8,10 +8,10 @@
     <Nullable>enable</Nullable>
     <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
     <Authors>NSA Cybersecurity Directorate</Authors>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageId>paccor.storage</PackageId>
     <PackageVersion>$(Version)</PackageVersion><!--Defined in shared props file-->
     <PackageTags>paccor;platform;certificate;hardware;manifest;component;class;registry;storage;ata;scsi;nvme;evidence;collection</PackageTags>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageIcon>icon.png</PackageIcon>
     <!--Source Link github.com/dotnet/sourcelink -->
