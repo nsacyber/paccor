@@ -6,10 +6,6 @@ using System.Runtime.InteropServices;
 namespace SmbiosCli;
 public class SmbiosCli {
     public static int Main(string[] args) {
-        int returnCode = (int)ClientExitCodes.SUCCESS;
-
-        Version? version = Assembly.GetExecutingAssembly().GetName().Version;
-
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
             // Linux requires sudo
             int result = CliOptions.IsUserPrivileged();
@@ -39,6 +35,6 @@ public class SmbiosCli {
             Console.WriteLine(plugin.ManifestV3.ToString());
         }
 
-        return returnCode;
+        return (int)ClientExitCodes.SUCCESS;
     }
 }

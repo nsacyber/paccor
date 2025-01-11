@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Smbios {
     public class Smbios {
-        public static readonly string WindowsQueryScope = @"root\\WMI";
+        public static readonly string WindowsQueryScope = $"root\\WMI";
         public static readonly string WindowsQueryString = "SELECT * FROM MSSMBios_RawSMBiosTables";
         public static readonly string LinuxPathEntryTable = "/sys/firmware/dmi/tables/smbios_entry_point";
         public static readonly string LinuxPathStructures = "/sys/firmware/dmi/tables/DMI";
@@ -167,8 +167,7 @@ namespace Smbios {
             }
 
             ManagementObjectCollection collection;
-            using (ManagementObjectSearcher searcher = new ManagementObjectSearcher("root\\WMI", "SELECT * FROM MSSMBios_RawSMBiosTables")) {
-                //using (ManagementObjectSearcher searcher = new(WindowsQueryScope, WindowsQueryString)) {
+            using (ManagementObjectSearcher searcher = new(WindowsQueryScope, WindowsQueryString)) {
                 collection = searcher.Get();
             }
 
