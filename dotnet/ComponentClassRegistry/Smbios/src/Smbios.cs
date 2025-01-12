@@ -103,8 +103,7 @@ namespace Smbios {
                 return structs;
             }
 
-            int pos = 0;
-            List<string> strings = new();
+            int pos = 0; // start pos at 0
 
             // Change pos if entry point information is included.
             if (smbiosData.Length > 4 && Encoding.ASCII.GetString(smbiosData[0..4]).Equals("_SM_")) {
@@ -114,14 +113,18 @@ namespace Smbios {
                 pos = 0x18;
             }
             
-            while (pos < smbiosData.Length) {
+            while (pos+1 < smbiosData.Length) {
                 int structureStart = pos;
                 int structureLength = smbiosData[structureStart + 1];
-                int structureEnd = structureStart + structureLength;
-                pos = structureEnd;
+                pos += structureLength;
+                int structureEnd = pos - 1;
 
                 // Parse through strings section
-                while (smbiosData[pos] != 0) {
+                if (pos < smbiosData.Length && smbiosData[pos] == 0) { // no strings section
+                    pos++;
+                }
+                List<string> strings = new();
+                while (pos < smbiosData.Length && smbiosData[pos] != 0) {
                     string newString = "";
 
                     while (smbiosData[pos] != 0) {
@@ -131,20 +134,19 @@ namespace Smbios {
                     strings.Add(newString);
                     pos++;
                 }
+                pos++;
 
                 // Save table to dictionary
-                SmbiosTable table = new(smbiosData[structureStart..structureEnd], strings.ToArray());
+                byte[] tableData = smbiosData[structureStart..(structureEnd+1)]; // this range is open-ended
+                string[] tableStrings = [.. strings];
+                SmbiosTable table = new(tableData, tableStrings);
                 if (!structs.ContainsKey(table.Type)) {
-                    structs.Add(table.Type, new List<SmbiosTable>());
+                    structs.Add(table.Type, []);
                 }
                 structs[table.Type].Add(table);
 
-                // new structure
-                strings = new List<string>();
-                pos++;
-
-                if (smbiosData[pos] == 0) {
-                    pos++;
+                if (table.Type == 127) { // End-of-Table Structure
+                    break;
                 }
             }
 
