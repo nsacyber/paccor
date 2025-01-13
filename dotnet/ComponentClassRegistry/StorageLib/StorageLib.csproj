@@ -1,9 +1,32 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\Storage\Storage.Shared.props" /><!--supplies version-->
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
+    <Authors>NSA Cybersecurity Directorate</Authors>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageId>paccor.storage.storagelib</PackageId>
+    <PackageVersion>$(Version)</PackageVersion>
+    <!--Defined in shared props file-->
+    <PackageTags>paccor;storage;ata;scsi;nvme</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageIcon>icon.png</PackageIcon>
+    <!--Source Link github.com/dotnet/sourcelink -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!--Package resources -->
+    <None Include="..\..\..\LICENSE.md" Pack="true" PackagePath="LICENSE.md" />
+    <None Include="..\..\..\images\paccorpluginslogoicon.png" Pack="true" PackagePath="icon.png" />
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 </Project>

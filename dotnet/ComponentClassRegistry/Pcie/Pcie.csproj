@@ -19,6 +19,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,7 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PcieLib\PcieLib.csproj" />
-    <ProjectReference Include="..\PcieWin\PcieWinCfgMgr.csproj" />
+    <ProjectReference Include="..\PcieWinCfgMgr\PcieWinCfgMgr.csproj" />
   </ItemGroup>
 
   <ItemGroup>

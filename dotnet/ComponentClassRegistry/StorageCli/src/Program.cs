@@ -7,11 +7,11 @@ public class StorageCli {
     public static int Main(string[] args) {
         int returnCode = (int)ClientExitCodes.SUCCESS;
 
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            // Linux requires sudo
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+            // Both Linux and Windows require sudo
             int result = CliOptions.IsUserPrivileged();
             if (result != (int)ClientExitCodes.SUCCESS) {
-                Console.WriteLine("Storage data retrieval on Linux requires admin privileges. Please run as root.");
+                Console.WriteLine("Storage data retrieval requires admin privileges. Please run as root.");
                 return result;
             }
         }

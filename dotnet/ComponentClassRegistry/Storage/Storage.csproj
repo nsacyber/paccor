@@ -19,6 +19,7 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,7 +27,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PcieWin\PcieWinCfgMgr.csproj" />
     <ProjectReference Include="..\StorageLib\StorageLib.csproj" />
     <ProjectReference Include="..\StorageNvme\StorageNvme.csproj" />
   </ItemGroup>
