@@ -24,9 +24,6 @@ jobs:
     - name: Test
       working-directory: dotnet/ComponentClassRegistry
       run: dotnet test
-    - name: Pack
-      working-directory: dotnet/ComponentClassRegistry
-      run: dotnet pack
     - name: Install Package Tools
       working-directory: dotnet/ComponentClassRegistry
       run: |
