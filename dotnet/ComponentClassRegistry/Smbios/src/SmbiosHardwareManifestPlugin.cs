@@ -134,6 +134,9 @@ public sealed class SmbiosHardwareManifestPlugin : HardwareManifestPluginBase {
     }
 
     public static string Strref(SmbiosTable table, int offset) {
+        if (offset >= table.Data.Length) {
+            return "";
+        }
         int index = table.Data[offset];
         return index > 0 ? table.Strings[table.Data[offset]-1] : "";
     }
