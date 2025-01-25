@@ -80,4 +80,10 @@ public class StorageCommonHelpers {
     public static bool IsDeviceHandleReady(SafeFileHandle handle) {
         return handle is { IsInvalid: false, IsClosed: false };
     }
+
+    public static byte[] Reverse(byte[] data) {
+        byte[] clone = (byte[])data.Clone();
+        Array.Reverse(clone);
+        return clone;
+    }
 }

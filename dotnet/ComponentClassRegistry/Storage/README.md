@@ -9,6 +9,3 @@ A command line program is available for this library on [paccor's GitHub page](h
 This library is also a hardware manifest plugin that allows paccor's hardware evidence collection methods to be integrated into any .NET program that can [manage](https://www.nuget.org/packages/paccor.HardwareManifestPluginManager) the [IHardwareManifestPlugin interface](https://www.nuget.org/packages/paccor.HardwareManifestPlugin).
 
 See the [HIRS .NET Provisioner](https://github.com/nsacyber/hirs/) code on github for an example usage of this as a plugin.
-
-
-

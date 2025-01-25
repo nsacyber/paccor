@@ -26,6 +26,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\StorageAta\StorageAta.csproj" />
     <ProjectReference Include="..\StorageLib\StorageLib.csproj" />
     <ProjectReference Include="..\StorageNvme\StorageNvme.csproj" />
     <ProjectReference Include="..\Storage\Storage.csproj" />

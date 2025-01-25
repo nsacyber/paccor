@@ -17,7 +17,7 @@ public class StorageNvmeWin : IStorageNvme {
         list = new();
         bool noProblems = true;
 
-        int numPhysicalDisks = GetNumPhysicalDisks();
+        int numPhysicalDisks = StorageWin.GetNumPhysicalDisks();
         for (int i = 0; i < numPhysicalDisks; i++) { 
             string pdHandle = string.Format(StorageWinConstants.DISK_HANDLE_PD, i);
 
@@ -81,21 +81,6 @@ public class StorageNvmeWin : IStorageNvme {
         }
 
         return noProblems;
-    }
-
-    public static int GetNumPhysicalDisks() {
-        int num = 2048; 
-        Task<Tuple<int, string, string>> task = Task.Run(() => PowershellNumPhysicalDisks());
-        Tuple<int, string, string> results = task.Result;
-        if (task.Exception == null) {
-            num = int.Parse(results.Item3);
-        }
-
-        return num;
-    }
-
-    private static async Task<Tuple<int, string, string>> PowershellNumPhysicalDisks() {
-        return await StorageWinImports.Powershell("((Get-PhysicalDisk).DeviceId).Count");
     }
 
     public static bool GetPciConfigFromCfgMgr(out byte[] config, int diskNumber) {

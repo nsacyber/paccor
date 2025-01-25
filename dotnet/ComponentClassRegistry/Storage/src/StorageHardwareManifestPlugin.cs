@@ -1,6 +1,7 @@
 ﻿using HardwareManifestPlugin;
 using HardwareManifestProto;
 using OidsProto;
+using StorageAta;
 using StorageLib;
 using StorageNvme;
 using System.Data.Common;
@@ -22,12 +23,12 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
 
     public override bool GatherHardwareIdentifiers() {
         bool nvmeValid = StorageNvmeHelpers.CollectNvmeData(out List<StorageNvmeData> nvmeData);
+        bool ataValid = StorageAtaHelpers.CollectAtaData(out List<StorageAtaData> ataData);
        
-        if (!nvmeValid) {
+        if (!nvmeValid || !ataValid) {
             return false;
         }
 
-        List<byte> ataData = new();
         List<byte> scsiData = new();
         AddComponentsToManifestV2(nvmeData, ataData, scsiData, ManifestV2);
         ManifestV3 = HardwareManifestConverter.FromManifestV2(ManifestV2, TraitDescription, TraitDescriptionUri);
@@ -35,8 +36,21 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         return true;
     }
 
-    public static void AddComponentsToManifestV2(List<StorageNvmeData> nvmeData, List<byte> ataData, List<byte> scsiData, ManifestV2 manifest) {
+    public static void AddComponentsToManifestV2(List<StorageNvmeData> nvmeData, List<StorageAtaData> ataData, List<byte> scsiData, ManifestV2 manifest) {
         string storageRegistryOid = OidsUtils.Find(TCG_REGISTRY_COMPONENTCLASS_NODE.TcgRegistryComponentclassDisk).Oid;
+        foreach (StorageAtaData data in ataData) {
+            ComponentIdentifier component = new() {
+                COMPONENTCLASS = new ComponentClass {
+                    COMPONENTCLASSREGISTRY = storageRegistryOid,
+                    COMPONENTCLASSVALUE = "000000" + ATA_FormFactor(data.Capabilities.FormFactor, true)
+                },
+                MANUFACTURER = ATA_AOI(data.Capabilities.WWN, true),
+                MODEL = ATA_String(data.Strings.MN),
+                SERIAL = ATA_String(data.Strings.SN) + ":" + ATA_UNIQUEID(data.Capabilities.WWN, true),
+                REVISION = ATA_String(data.Strings.FR)
+            };
+            manifest.COMPONENTS.Add(component);
+        }
         foreach (StorageNvmeData data in nvmeData) {
             ComponentIdentifier component = new() {
                 COMPONENTCLASS = new ComponentClass {
@@ -52,23 +66,91 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         }
     }
 
+    public static string ATA_FormFactor(byte[] val, bool littleEndianField) {
+        byte[] valClone = (byte[])val.Clone();
+
+        if (littleEndianField) {
+            Array.Reverse(valClone);
+        }
+
+        string ff = "";
+
+        if (valClone.Length == 8 && valClone[0] == 0x80) {
+            ff = NVMe_Val(valClone[7]);
+        }
+
+        return ff;
+    }
+
+    public static string ATA_AOI(byte[] wwn, bool littleEndianField) {
+        byte[] wwnClone = (byte[])wwn.Clone();
+
+        if (littleEndianField) {
+            Array.Reverse(wwnClone);
+        }
+
+        string result = "";
+        
+        if (wwnClone.Length == 16 && wwnClone[0] == 0x80) {
+            string hex = NVMe_Val(wwnClone, false);
+            result = hex[17..23]; // Word 108 bits 11:0 and word 109 bits 15:4 contain the OUI/AOI
+        }
+
+        return result;
+    }
+
+    public static string ATA_UNIQUEID(byte[] wwn, bool littleEndianField) {
+        byte[] wwnClone = (byte[])wwn.Clone();
+
+        if (littleEndianField) {
+            Array.Reverse(wwnClone);
+        }
+
+        string result = "";
+        
+        if (wwn.Length == 16 && wwnClone[0] == 0x80) {
+            string hex = NVMe_Val(wwnClone, false);
+            result = hex[23..32]; // Word 109 bits 3:0, word 110:111 contain the UNIQUE ID
+        }
+
+        return result;
+    }
+
+    public static string ATA_String(byte[] val) {
+        byte[] valClone = (byte[])val.Clone();
+
+        int len = valClone.Length - valClone.Length % 2;
+        for (int i = 0; i < len; i+=2) {
+            byte swap = valClone[i];
+            valClone[i] = valClone[i+1];
+            valClone[i+1] = swap;
+        }
+        return System.Text.Encoding.ASCII.GetString(valClone).Trim(' ', '\0');
+    }
+
     public static string NVMe_Val(byte val) {
-        return NVMe_Val([val], false);
+        byte valClone = val;
+        return NVMe_Val([valClone], false);
     }
 
     public static string NVMe_Val(byte[] val, bool littleEndianField) {
+        byte[] valClone = (byte[])val.Clone();
+
         if (littleEndianField) {
-            Array.Reverse(val);
+            Array.Reverse(valClone);
         }
-        return Convert.ToHexString(val).PadLeft(val.Length / 2 + val.Length % 2, '0');
+        return Convert.ToHexString(valClone).PadLeft(valClone.Length / 2 + valClone.Length % 2, '0');
     }
 
     public static string NVMe_OUI(byte[] val) {
+        byte[] valClone = (byte[])val.Clone();
+
         // These fields are specified to be little endian
-        return NVMe_Val(val, true);
+        return NVMe_Val(valClone, true);
     }
 
     public static string NVMe_String(byte[] val) {
-        return System.Text.Encoding.ASCII.GetString(val).TrimEnd(' ', '\0');
+        byte[] valClone = (byte[])val.Clone();
+        return System.Text.Encoding.ASCII.GetString(valClone).TrimEnd(' ', '\0');
     }
 }
