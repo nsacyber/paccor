@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace StorageLib;
 public class StorageCommonHelpers {
     // Expects unmanaged memory of given len to be allocated to ptr
-    internal static void ZeroMemory(IntPtr ptr, int len) {
+    public static void ZeroMemory(IntPtr ptr, int len) {
         for (int i = 0; i < len; i++) {
             Marshal.WriteByte(ptr, i, 0);
         }

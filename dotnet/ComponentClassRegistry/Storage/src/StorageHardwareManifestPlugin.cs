@@ -42,11 +42,11 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
             ComponentIdentifier component = new() {
                 COMPONENTCLASS = new ComponentClass {
                     COMPONENTCLASSREGISTRY = storageRegistryOid,
-                    COMPONENTCLASSVALUE = "000000" + ATA_FormFactor(data.Capabilities.FormFactor, true)
+                    COMPONENTCLASSVALUE = "000000" + ATA_FormFactor(data.Capabilities.FormFactor)
                 },
-                MANUFACTURER = ATA_AOI(data.Capabilities.WWN, true),
+                MANUFACTURER = ATA_AOI(data.Capabilities.WWN),
                 MODEL = ATA_String(data.Strings.MN),
-                SERIAL = ATA_String(data.Strings.SN) + ":" + ATA_UNIQUEID(data.Capabilities.WWN, true),
+                SERIAL = ATA_String(data.Strings.SN) + ":" + ATA_UNIQUEID(data.Capabilities.WWN),
                 REVISION = ATA_String(data.Strings.FR)
             };
             manifest.COMPONENTS.Add(component);
@@ -66,54 +66,75 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         }
     }
 
-    public static string ATA_FormFactor(byte[] val, bool littleEndianField) {
-        byte[] valClone = (byte[])val.Clone();
+    public static string ATA_FormFactor(byte[] ff) {
+        byte[] ffClone = (byte[])ff.Clone();
 
-        if (littleEndianField) {
-            Array.Reverse(valClone);
+        string hex = NVMe_Val(ffClone, false);
+
+        string ffStr = "";
+        
+        // Least significant 4 bits of the 8 byte Form Factor field
+        if (hex.Length == 16 && hex.StartsWith("80000000")) {
+            ffStr = "0" + hex[-1];
+        } else if (hex.Length == 16 && hex.EndsWith("00000080")) {
+            ffStr = "0" + hex[1];
         }
 
-        string ff = "";
-
-        if (valClone.Length == 8 && valClone[0] == 0x80) {
-            ff = NVMe_Val(valClone[7]);
-        }
-
-        return ff;
+        return ffStr;
     }
 
-    public static string ATA_AOI(byte[] wwn, bool littleEndianField) {
+    public static string ATA_AOI(byte[] wwn) {
         byte[] wwnClone = (byte[])wwn.Clone();
-
-        if (littleEndianField) {
-            Array.Reverse(wwnClone);
-        }
-
-        string result = "";
         
-        if (wwnClone.Length == 16 && wwnClone[0] == 0x80) {
-            string hex = NVMe_Val(wwnClone, false);
-            result = hex[17..23]; // Word 108 bits 11:0 and word 109 bits 15:4 contain the OUI/AOI
-        }
+        string hex = NVMe_Val(wwnClone, false);
 
-        return result;
+        string wwnStr = "";
+
+        // Word 108 bits 11:0 and word 109 bits 15:4 contain the OUI/AOI
+        if (hex.Length == 32 && hex.StartsWith("8000000000000000")) {
+            wwnStr = hex[17..23]; 
+        } else if (hex.Length == 32 && hex.EndsWith("0000000000000080")) {
+            wwnStr = hex[0..16];
+
+            char[] wwnChars = wwnStr.ToCharArray();
+            for (int i = 0; i < wwnChars.Length; i += 4) {
+                wwnChars[i] = wwnStr[i + 2];
+                wwnChars[i + 1] = wwnStr[i + 3];
+                wwnChars[i + 2] = wwnStr[i];
+                wwnChars[i + 3] = wwnStr[i + 1];
+            }
+            wwnStr = new string(wwnChars[1..7]);
+        }
+        Console.WriteLine("XYZ:" + hex);
+
+        return wwnStr;
     }
 
-    public static string ATA_UNIQUEID(byte[] wwn, bool littleEndianField) {
+    public static string ATA_UNIQUEID(byte[] wwn) {
         byte[] wwnClone = (byte[])wwn.Clone();
-
-        if (littleEndianField) {
-            Array.Reverse(wwnClone);
-        }
-
-        string result = "";
         
-        if (wwn.Length == 16 && wwnClone[0] == 0x80) {
-            string hex = NVMe_Val(wwnClone, false);
-            result = hex[23..32]; // Word 109 bits 3:0, word 110:111 contain the UNIQUE ID
-        }
+        string hex = NVMe_Val(wwnClone, false);
 
-        return result;
+        string wwnStr = "";
+
+        // Word 109 bits 3:0, word 110:111 contain the UNIQUE ID
+        if (hex.Length == 32 && hex.StartsWith("8000000000000000")) {
+            wwnStr = hex[23..32]; 
+        } else if (hex.Length == 32 && hex.EndsWith("0000000000000080")) {
+            wwnStr = hex[0..16];
+
+            char[] wwnChars = wwnStr.ToCharArray();
+            for (int i = 0; i < wwnChars.Length; i += 4) {
+                wwnChars[i] = wwnStr[i + 2];
+                wwnChars[i + 1] = wwnStr[i + 3];
+                wwnChars[i + 2] = wwnStr[i];
+                wwnChars[i + 3] = wwnStr[i + 1];
+            }
+            wwnStr = new string(wwnChars[7..16]);
+        }
+        Console.WriteLine("XYZ:" + hex);
+
+        return wwnStr;
     }
 
     public static string ATA_String(byte[] val) {

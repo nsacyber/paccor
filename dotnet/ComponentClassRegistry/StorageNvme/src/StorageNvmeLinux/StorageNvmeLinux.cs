@@ -11,10 +11,11 @@ namespace StorageNvme.Linux;
 [SupportedOSPlatform("linux")]
 public class StorageNvmeLinux : IStorageNvme {
     public bool CollectNvmeData(out List<StorageNvmeData> list) {
-        list = new();
+        list = [];
         bool noProblems = true;
-        Regex regex = new Regex(@"^(/dev/nvme[0-9A-Fa-f]+n[0-9A-Fa-f]+)p.*$");
-        string[] matches = Directory.EnumerateFileSystemEntries(@"/dev/").Where(f => regex.IsMatch(f)).Select(s => s.Split('p')[0]).Distinct().ToArray();
+        string[] matches = StorageLinux.GetPhysicalDevicePaths(
+            @"^(/dev/nvme[0-9A-Fa-f]+n[0-9A-Fa-f]+)p.*$",
+            [s => s.Split('p')[0]]);
 
         foreach (string devName in matches) {
             bool nvmeCtrlRead = QueryNvmeCns(out StorageNvmeStructs.NvmeIdentifyControllerData nvmeCtrl, devName);

@@ -9,7 +9,7 @@ public class StorageAtaHelpers {
         IStorageAta? ata = null;
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            //ata = new Linux.StorageAtaLinux();
+            ata = new Linux.StorageAtaLinux();
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
             ata = new Windows.StorageAtaWin();
         }
