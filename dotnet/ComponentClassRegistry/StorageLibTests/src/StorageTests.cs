@@ -4,6 +4,7 @@ using Storage;
 using StorageAta;
 using StorageLib;
 using StorageNvme;
+using StorageScsi;
 using System.Text;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -222,21 +223,103 @@ public class StorageTests {
         });
     }
 
-    //[Test]
+    [Test]
     public void TestRegistryA31Sample1() {
         byte[] inquiryData = Convert.FromBase64String(RegistryA31ScsiComponentSample1InquiryDataBase64);
         byte[] page80 = Convert.FromBase64String(RegistryA31ScsiComponentSample1Page80Base64);
 
-        Assert.Fail("SCSI Not yet complete");
+        bool build = StorageScsiData.Build(out StorageScsiData scsiData, inquiryData, page80, []);
+        Assert.That(build, Is.True);
+
+        List<StorageScsiData> scsiDataList = [scsiData];
+
+        ManifestV2 manifestV2 = new();
+        StorageHardwareManifestPlugin.AddComponentsToManifestV2([], [], scsiDataList, manifestV2);
+
+        string jsonManifestV2 = manifestV2.ToString();
+
+        Assert.That(RegistryA32ScsiComponentSample1IdentifiersInJson, Has.Length.GreaterThan(0));
+
+        foreach (string componentJson in RegistryA32ScsiComponentSample1IdentifiersInJson) {
+            Assert.That(jsonManifestV2, Contains.Substring(componentJson));
+        }
     }
 
-    //[Test]
+    [Test]
     public void TestRegistryA32Sample2() {
         byte[] inquiryData = Convert.FromBase64String(RegistryA32ScsiComponentSample2InquiryDataBase64);
         byte[] page80 = Convert.FromBase64String(RegistryA32ScsiComponentSample2Page80Base64);
         byte[] page83 = Convert.FromBase64String(RegistryA32ScsiComponentSample2Page83Base64);
 
-        Assert.Fail("SCSI Not yet complete");
+        bool build = StorageScsiData.Build(out StorageScsiData scsiData, inquiryData, page80, page83);
+        Assert.That(build, Is.True);
+
+        List<StorageScsiData> scsiDataList = [scsiData];
+
+        ManifestV2 manifestV2 = new();
+        StorageHardwareManifestPlugin.AddComponentsToManifestV2([], [], scsiDataList, manifestV2);
+
+        string jsonManifestV2 = manifestV2.ToString();
+
+        Assert.That(RegistryA32ScsiComponentSample2IdentifiersInJson, Has.Length.GreaterThan(0));
+
+        foreach (string componentJson in RegistryA32ScsiComponentSample2IdentifiersInJson) {
+            Assert.That(jsonManifestV2, Contains.Substring(componentJson));
+        }
+    }
+    
+    [Test]
+    public void TestScsiInquiryClass() {
+        byte[] inquiry1 = Convert.FromBase64String(RegistryA31ScsiComponentSample1InquiryDataBase64);
+        byte[] inquiry2 = Convert.FromBase64String(RegistryA32ScsiComponentSample2InquiryDataBase64);
+
+        StorageScsiStructs.ScsiInquiryDataNoVendorSpecific inquiryData1 = StorageCommonHelpers.CreateStruct<StorageScsiStructs.ScsiInquiryDataNoVendorSpecific>(inquiry1);
+        StorageScsiStructs.ScsiInquiryDataNoVendorSpecific inquiryData2 = StorageCommonHelpers.CreateStruct<StorageScsiStructs.ScsiInquiryDataNoVendorSpecific>(inquiry2);
+
+        Assert.Multiple(() => {
+            Assert.That(StorageHardwareManifestPlugin.SPC_INQUIRY_Class(inquiryData1.PeripheralQualifierAndDeviceType), Is.EqualTo(RegistryA31ScsiComponentSample1InquiryClass));
+            Assert.That(StorageHardwareManifestPlugin.SPC_INQUIRY_Class(inquiryData2.PeripheralQualifierAndDeviceType), Is.EqualTo(RegistryA32ScsiComponentSample2InquiryClass));
+        });
+    }
+    
+    [Test]
+    public void TestScsiInquiryString() {
+        byte[] inquiry1 = Convert.FromBase64String(RegistryA31ScsiComponentSample1InquiryDataBase64);
+        byte[] inquiry2 = Convert.FromBase64String(RegistryA32ScsiComponentSample2InquiryDataBase64);
+
+        StorageScsiStructs.ScsiInquiryDataNoVendorSpecific inquiryData1 = StorageCommonHelpers.CreateStruct<StorageScsiStructs.ScsiInquiryDataNoVendorSpecific>(inquiry1);
+        StorageScsiStructs.ScsiInquiryDataNoVendorSpecific inquiryData2 = StorageCommonHelpers.CreateStruct<StorageScsiStructs.ScsiInquiryDataNoVendorSpecific>(inquiry2);
+
+        Assert.Multiple(() => {
+            Assert.That(StorageHardwareManifestPlugin.SPC_INQUIRY_String(inquiryData1.T10VendorIdentification), Is.EqualTo(RegistryA31ScsiComponentSample1T10VendorIdentification));
+            Assert.That(StorageHardwareManifestPlugin.SPC_INQUIRY_String(inquiryData1.ProductIdentification), Is.EqualTo(RegistryA31ScsiComponentSample1ProductIdentification));
+            Assert.That(StorageHardwareManifestPlugin.SPC_INQUIRY_String(inquiryData1.ProductRevisionLevel), Is.EqualTo(RegistryA31ScsiComponentSample1RevisionLevel));
+            Assert.That(StorageHardwareManifestPlugin.SPC_INQUIRY_String(inquiryData2.T10VendorIdentification), Is.EqualTo(RegistryA32ScsiComponentSample2T10VendorIdentification));
+            Assert.That(StorageHardwareManifestPlugin.SPC_INQUIRY_String(inquiryData2.ProductIdentification), Is.EqualTo(RegistryA32ScsiComponentSample2ProductIdentification));
+            Assert.That(StorageHardwareManifestPlugin.SPC_INQUIRY_String(inquiryData2.ProductRevisionLevel), Is.EqualTo(RegistryA32ScsiComponentSample2RevisionLevel));
+        });
+    }
+    
+    [Test]
+    public void TestScsiVpdSnString() {
+        byte[] page801 = Convert.FromBase64String(RegistryA31ScsiComponentSample1Page80Base64);
+        byte[] page802 = Convert.FromBase64String(RegistryA32ScsiComponentSample2Page80Base64);
+
+        Assert.Multiple(() => {
+            Assert.That(StorageHardwareManifestPlugin.SPC_VPD_SN_String(page801), Is.EqualTo(RegistryA31ScsiComponentSample1VpdSn));
+            Assert.That(StorageHardwareManifestPlugin.SPC_VPD_SN_String(page802), Is.EqualTo(RegistryA32ScsiComponentSample2VpdSn));
+        });
+    }
+    
+    
+    
+    [Test]
+    public void TestScsiVpdDiUniqueIdString() {
+        byte[] page83 = Convert.FromBase64String(RegistryA32ScsiComponentSample2Page83Base64);
+
+        Assert.Multiple(() => {
+            Assert.That(StorageHardwareManifestPlugin.SPC_VPD_DI_UNIQUEID_String(page83), Is.EqualTo(RegistryA32ScsiComponentSample2VpdUniqueId));
+        });
     }
 
     [Test]

@@ -6,8 +6,9 @@ namespace StorageLib.Linux;
 
 [SupportedOSPlatform("linux")]
 public class StorageLinuxImports {
-    public const string libName = "libc";
+    public const string libcName = "libc";
+    public const string libudevName = "libudev";
 
-    [DllImport(libName, SetLastError = true)]
+    [DllImport(libcName, SetLastError = true)]
     public static extern int ioctl(SafeFileHandle fd, uint op, IntPtr data);
 }
