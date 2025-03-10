@@ -94,4 +94,18 @@ public class StorageLinuxConstants {
          */
         SG_INFO_MIXED_IO = 0x4
     }
+
+    public enum LinuxAllocatedDevices : uint {
+        SCSI = 8,
+        NVME = 259,
+        BLOCK_EXTENDED_MAJOR = 259
+    }
+
+    [Flags]
+    public enum BlockType : uint {
+        NOT_SUPPORTED,
+        ATA,
+        SCSI,
+        NVME
+    }
 }

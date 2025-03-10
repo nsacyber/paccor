@@ -11,7 +11,7 @@ public class StorageAtaLinux : IStorageAta {
     public bool CollectAtaData(out List<StorageAtaData> list) {
         list = new();
         bool noProblems = true;
-        string[] matches = StorageLinux.GetPhysicalDevicePaths(@"^(/dev/sd[A-Fa-f]+)$");
+        string[] matches = StorageLinux.GetPhysicalDevicePaths(StorageLinuxConstants.BlockType.ATA);
 
         foreach (string devName in matches) {
             using SafeFileHandle handle = StorageCommonHelpers.OpenDevice(devName);

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32.SafeHandles;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace StorageLib;
@@ -81,9 +82,31 @@ public class StorageCommonHelpers {
         return handle is { IsInvalid: false, IsClosed: false };
     }
 
-    public static byte[] Reverse(byte[] data) {
-        byte[] clone = (byte[])data.Clone();
-        Array.Reverse(clone);
-        return clone;
+    internal static Task<Tuple<int, string, string>> Execute(ProcessStartInfo info) {
+        TaskCompletionSource<Tuple<int, string, string>> source = new();
+        Process process = new() {
+            StartInfo = info,
+            EnableRaisingEvents = true
+        };
+        
+        process.Exited += (sender, args) => {
+            source.SetResult(new Tuple<int, string, string>(process.ExitCode, process.StandardError.ReadToEnd(), process.StandardOutput.ReadToEnd()));
+            if (process.ExitCode != 0) {
+                source.SetException(new Exception($"Command `{process.StartInfo.FileName} {process.StartInfo.Arguments}` failed with exit code `{process.ExitCode}`"));
+            }
+
+            process.Dispose();
+        };
+
+        try {
+            process.Start();
+            process.WaitForExit();
+        } catch (Exception e) {
+            source.SetException(e);
+        } finally {
+            process.Dispose();
+        }
+
+        return source.Task;
     }
 }

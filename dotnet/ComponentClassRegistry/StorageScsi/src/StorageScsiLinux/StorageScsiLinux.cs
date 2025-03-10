@@ -11,7 +11,7 @@ public class StorageScsiLinux : IStorageScsi {
     public bool CollectScsiData(out List<StorageScsiData> list) {
         list = new();
         bool noProblems = true;
-        string[] matches = StorageLinux.GetPhysicalDevicePaths(@"^(/dev/sd[A-Fa-f]+)$");
+        string[] matches = StorageLinux.GetPhysicalDevicePaths(StorageLinuxConstants.BlockType.SCSI);
 
         foreach (string devName in matches) {
             using SafeFileHandle handle = StorageCommonHelpers.OpenDevice(devName);

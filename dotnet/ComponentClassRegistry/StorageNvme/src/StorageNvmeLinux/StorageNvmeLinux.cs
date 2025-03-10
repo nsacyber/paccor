@@ -13,9 +13,7 @@ public class StorageNvmeLinux : IStorageNvme {
     public bool CollectNvmeData(out List<StorageNvmeData> list) {
         list = [];
         bool noProblems = true;
-        string[] matches = StorageLinux.GetPhysicalDevicePaths(
-            @"^(/dev/nvme[0-9A-Fa-f]+n[0-9A-Fa-f]+)p.*$",
-            [s => s.Split('p')[0]]);
+        string[] matches = StorageLinux.GetPhysicalDevicePaths(StorageLinuxConstants.BlockType.NVME);
 
         foreach (string devName in matches) {
             bool nvmeCtrlRead = QueryNvmeCns(out StorageNvmeStructs.NvmeIdentifyControllerData nvmeCtrl, devName);

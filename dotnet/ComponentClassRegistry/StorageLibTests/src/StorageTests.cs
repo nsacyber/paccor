@@ -3,6 +3,7 @@ using PcieLib;
 using Storage;
 using StorageAta;
 using StorageLib;
+using StorageLib.Linux;
 using StorageNvme;
 using StorageScsi;
 using System.Text;
@@ -377,5 +378,10 @@ public class StorageTests {
             Assert.That(StorageHardwareManifestPlugin.NVMe_String(nvmeCtrl.SUBNQN), Is.EqualTo(RegistryA41NvmeComponentSample1Subnqn));
             Assert.That(StorageHardwareManifestPlugin.NVMe_String(nvmeCtrl.FR), Is.EqualTo(RegistryA41NvmeComponentSample1Fr));
         });
+    }
+
+    [Test]
+    public void TestPDL() {
+        StorageLinux.GetPhysicalDevicePaths();
     }
 }
