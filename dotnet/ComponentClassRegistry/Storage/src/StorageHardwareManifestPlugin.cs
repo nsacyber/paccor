@@ -120,7 +120,6 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
             }
             wwnStr = new string(wwnChars[1..7]);
         }
-        Console.WriteLine("XYZ:" + hex);
 
         return wwnStr;
     }
@@ -147,7 +146,6 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
             }
             wwnStr = new string(wwnChars[7..16]);
         }
-        Console.WriteLine("XYZ:" + hex);
 
         return wwnStr;
     }
