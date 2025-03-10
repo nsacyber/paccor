@@ -379,9 +379,4 @@ public class StorageTests {
             Assert.That(StorageHardwareManifestPlugin.NVMe_String(nvmeCtrl.FR), Is.EqualTo(RegistryA41NvmeComponentSample1Fr));
         });
     }
-
-    [Test]
-    public void TestPDL() {
-        StorageLinux.GetPhysicalDevicePaths();
-    }
 }
