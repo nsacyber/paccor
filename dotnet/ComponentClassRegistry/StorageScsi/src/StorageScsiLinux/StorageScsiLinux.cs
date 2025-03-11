@@ -21,19 +21,19 @@ public class StorageScsiLinux : IStorageScsi {
             }
 
             bool readInquiry = Inquiry(out byte[] inquiryData, handle);
- 
+
             if (!readInquiry) {
                 noProblems = false;
                 continue;
             }
-            
+
             bool readVpd80 = Inquiry(out byte[] vpd80, handle, true, (byte)StorageScsiConstants.ScsiPageCode.UNIT_SERIAL_NUMBER);
-            
+
             if (!readVpd80) {
                 noProblems = false;
                 continue;
             }
-            
+
             bool readVpd83 = Inquiry(out byte[] vpd83, handle, true, (byte)StorageScsiConstants.ScsiPageCode.DEVICE_IDENTIFICATION);
 
             if (!readVpd83) {
@@ -60,7 +60,7 @@ public class StorageScsiLinux : IStorageScsi {
         if (!StorageCommonHelpers.IsDeviceHandleReady(handle)) {
             return false;
         }
-        
+
         StorageScsiStructs.ScsiCdb cdb = StorageCommonHelpers.CreateStruct<StorageScsiStructs.ScsiCdb>();
         StorageLinuxStructs.SgIoHdr sgIoHdr = StorageCommonHelpers.CreateStruct<StorageLinuxStructs.SgIoHdr>();
 
@@ -68,7 +68,7 @@ public class StorageScsiLinux : IStorageScsi {
         cdb.Byte1 = (byte)(vpd ? StorageScsiConstants.ScsiCdbByte1Flags.EVPD : StorageScsiConstants.ScsiCdbByte1Flags.NONE);
         cdb.PageCode = vpd ? vpdPage : (byte)0;
         cdb.AllocationLength = (ushort)data.Length;
-        
+
         sgIoHdr.interface_id    = StorageLinuxConstants.InterfaceId.SCSI_GENERIC;
         sgIoHdr.dxfer_direction = StorageLinuxConstants.SgDxfer.SG_DXFER_FROM_DEV;
         sgIoHdr.cmd_len         = (byte)Marshal.SizeOf(cdb);
@@ -88,17 +88,17 @@ public class StorageScsiLinux : IStorageScsi {
             sensePtr = Marshal.AllocHGlobal(sgIoHdr.mx_sb_len);
             cdbPtr = Marshal.AllocHGlobal(Marshal.SizeOf(cdb));
             sgIoHdrPtr = Marshal.AllocHGlobal(Marshal.SizeOf(sgIoHdr));
-            
+
             // Further set up
             Marshal.StructureToPtr(cdb, cdbPtr, true);
             StorageCommonHelpers.ZeroMemory(sensePtr, sgIoHdr.mx_sb_len);
             StorageCommonHelpers.ZeroMemory(dxferPtr, (int)sgIoHdr.dxfer_len);
-            
+
             // Connect ptrs
             sgIoHdr.dxferp = dxferPtr;
             sgIoHdr.cmdp = cdbPtr;
             sgIoHdr.sbp = sensePtr;
-            
+
             // Copy the data from the managed object to the buffer
             Marshal.StructureToPtr(sgIoHdr, sgIoHdrPtr, true);
 

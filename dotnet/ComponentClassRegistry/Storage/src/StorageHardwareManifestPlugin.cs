@@ -5,6 +5,7 @@ using StorageAta;
 using StorageLib;
 using StorageNvme;
 using StorageScsi;
+using System.Buffers.Binary;
 using System.Data.Common;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -23,10 +24,11 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
     }
 
     public override bool GatherHardwareIdentifiers() {
+
         bool nvmeValid = StorageNvmeHelpers.CollectNvmeData(out List<StorageNvmeData> nvmeData);
         bool ataValid = StorageAtaHelpers.CollectAtaData(out List<StorageAtaData> ataData);
         bool scsiValid = StorageScsiHelpers.CollectScsiData(out List<StorageScsiData> scsiData);
-       
+
         if (!nvmeValid || !ataValid || !scsiValid) {
             return false;
         }
@@ -87,7 +89,7 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         string hex = NVMe_Val(ffClone, false);
 
         string ffStr = "";
-        
+
         // Least significant 4 bits of the 8 byte Form Factor field
         if (hex.Length == 16 && hex.StartsWith("80000000")) {
             ffStr = "0" + hex[-1];
@@ -100,14 +102,14 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
 
     public static string ATA_AOI(byte[] wwn) {
         byte[] wwnClone = (byte[])wwn.Clone();
-        
+
         string hex = NVMe_Val(wwnClone, false);
 
         string wwnStr = "";
 
         // Word 108 bits 11:0 and word 109 bits 15:4 contain the OUI/AOI
         if (hex.Length == 32 && hex.StartsWith("8000000000000000")) {
-            wwnStr = hex[17..23]; 
+            wwnStr = hex[17..23];
         } else if (hex.Length == 32 && hex.EndsWith("0000000000000080")) {
             wwnStr = hex[0..16];
 
@@ -126,14 +128,14 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
 
     public static string ATA_UNIQUEID(byte[] wwn) {
         byte[] wwnClone = (byte[])wwn.Clone();
-        
+
         string hex = NVMe_Val(wwnClone, false);
 
         string wwnStr = "";
 
         // Word 109 bits 3:0, word 110:111 contain the UNIQUE ID
         if (hex.Length == 32 && hex.StartsWith("8000000000000000")) {
-            wwnStr = hex[23..32]; 
+            wwnStr = hex[23..32];
         } else if (hex.Length == 32 && hex.EndsWith("0000000000000080")) {
             wwnStr = hex[0..16];
 
@@ -205,7 +207,12 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
             return string.Empty;
         }
 
-        byte[] ddList = vpdPage83[4..];
+        int vpdPage83Len = BinaryPrimitives.ReadInt16BigEndian(vpdPage83[2..4]) + 4;
+        if (vpdPage83.Length < vpdPage83Len) {
+            return string.Empty;
+        }
+
+        byte[] ddList = vpdPage83[4..vpdPage83Len];
         int pos = 0;
         byte[] dd1List = [];
         byte[] dd2List = [];
@@ -261,13 +268,13 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
             if (naaTypes[0x06] >= 0 && dd3List.Count > naaTypes[0x06] && dd3List[naaTypes[0x06]].Length == 16) {
                 string result = NVMe_Val(dd3List[naaTypes[0x06]], false);
                 return result[7..32];
-            } else if (naaTypes[0x05] >= 0 && dd3List.Count >= naaTypes[0x05] && dd3List[naaTypes[0x05]].Length == 8) {
+            } else if (naaTypes[0x05] >= 0 && dd3List.Count > naaTypes[0x05] && dd3List[naaTypes[0x05]].Length == 8) {
                 string result = NVMe_Val(dd3List[naaTypes[0x05]], false);
                 return result[7..16];
-            } else if (naaTypes[0x02] >= 0 && dd3List.Count >= naaTypes[0x02] && dd3List[naaTypes[0x02]].Length == 8) {
+            } else if (naaTypes[0x02] >= 0 && dd3List.Count > naaTypes[0x02] && dd3List[naaTypes[0x02]].Length == 8) {
                 string result = NVMe_Val(dd3List[naaTypes[0x02]], false);
                 return result[1..4] + result[10..16];
-            } else if (naaTypes[0x03] >= 0 && dd3List.Count >= naaTypes[0x03] && dd3List[naaTypes[0x03]].Length == 8) {
+            } else if (naaTypes[0x03] >= 0 && dd3List.Count > naaTypes[0x03] && dd3List[naaTypes[0x03]].Length == 8) {
                 string result = NVMe_Val(dd3List[naaTypes[0x03]], false);
                 return result[1..];
             } else {
@@ -278,7 +285,7 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         } else if (dd1List.Length > 8) { // VENDOR SPECIFIC IDENTIFIER byte 8 to end
             return NVMe_String(dd1List[8..]);
         }
-        
+
         return string.Empty;
     }
 }
