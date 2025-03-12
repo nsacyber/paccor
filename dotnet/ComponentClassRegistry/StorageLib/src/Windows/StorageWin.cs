@@ -134,7 +134,6 @@ public class StorageWin {
             int returnedLength = 0;
             Marshal.SetLastSystemError(0);
 
-            uint blah = StorageWinConstants.IOCTL_STORAGE_QUERY_PROPERTY;
             bool validTransfer = StorageWinImports.DeviceIoControl(handle, StorageWinConstants.IOCTL_STORAGE_QUERY_PROPERTY, inPtr, querySize, outPtr, headerSize, ref returnedLength, ref overlapped);
 
             if (!validTransfer) {

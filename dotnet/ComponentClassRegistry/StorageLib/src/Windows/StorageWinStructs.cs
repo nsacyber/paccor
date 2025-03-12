@@ -108,4 +108,25 @@ public class StorageWinStructs {
 
         public override int GetHashCode() => (DeviceType, DeviceNumber, PartitionNumber).GetHashCode();
     }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct StorageProtocolSpecificData {
+        [MarshalAs(UnmanagedType.U4)] public StorageWinConstants.StorageProtocolType ProtocolType;
+        [MarshalAs(UnmanagedType.U4)] public uint DataType;
+        [MarshalAs(UnmanagedType.U4)] public uint ProtocolDataRequestValue;
+        [MarshalAs(UnmanagedType.U4)] public uint ProtocolDataRequestSubValue;
+        [MarshalAs(UnmanagedType.U4)] public uint ProtocolDataOffset;
+        [MarshalAs(UnmanagedType.U4)] public uint ProtocolDataLength;
+        [MarshalAs(UnmanagedType.U4)] public uint FixedProtocolReturnData;
+        [MarshalAs(UnmanagedType.U4)] public uint ProtocolDataRequestSubValue2;
+        [MarshalAs(UnmanagedType.U4)] public uint ProtocolDataRequestSubValue3;
+        [MarshalAs(UnmanagedType.U4)] public uint ProtocolDataRequestSubValue4;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct StorageProtocolDataDescriptor {
+        [MarshalAs(UnmanagedType.U4)] public uint Version;
+        [MarshalAs(UnmanagedType.U4)] public uint Size;
+        public StorageProtocolSpecificData ProtocolSpecificData;
+    }
 }

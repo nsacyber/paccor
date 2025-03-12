@@ -39,56 +39,75 @@ public class StorageAtaWin : IStorageAta {
                 continue;
             }
 
-            if (deviceDescriptor.BusType == StorageWinConstants.StorageBusType.BusTypeSata) {
+            bool acceptableDeviceBusType = false;
+            bool acceptableAdapterBusType = false;
 
-                if (adapterDescriptor.BusType == StorageWinConstants.StorageBusType.BusTypeSata) {
-                    bool readPage03 = StorageAtaWin.QueryAtaLogPage(
-                                        out byte[] page03Data, 
-                                        handle,
-                                        StorageAtaConstants.AtaLogAddress.IdentifyDeviceDataLog,
-                                        StorageAtaConstants.AtaIdentifyDeviceLogPage.SupportedCapabilities);
-                    bool useDma = true;
-                    if (!readPage03) { // Maybe DMA didn't work
-                        readPage03 = StorageAtaWin.QueryAtaLogPage(
-                                        out page03Data,
-                                        handle,
-                                        StorageAtaConstants.AtaLogAddress.IdentifyDeviceDataLog,
-                                        StorageAtaConstants.AtaIdentifyDeviceLogPage.SupportedCapabilities,
-                                        StorageAtaConstants.AtaCommand.ReadLogExt);
-                        useDma = false;
-                    }
-
-                    if (!readPage03) {
-                        noProblems = false;
-                        continue;
-                    }
-
-                    bool readPage05 = StorageAtaWin.QueryAtaLogPage(
-                                        out byte[] page05Data,
-                                        handle,
-                                        StorageAtaConstants.AtaLogAddress.IdentifyDeviceDataLog,
-                                        StorageAtaConstants.AtaIdentifyDeviceLogPage.AtaStrings,
-                                        useDma
-                                            ? StorageAtaConstants.AtaCommand.ReadLogDmaExt
-                                            : StorageAtaConstants.AtaCommand.ReadLogExt);
-
-                    if (!readPage05) {
-                        noProblems = false;
-                        continue;
-                    }
-
-                    bool build = StorageAtaData.Build(out StorageAtaData ataData, page03Data, page05Data);
-
-
-                    if (!build) {
-                        continue;
-                    }
-
-                    list.Add(ataData);
-                } else {
-                    
-                }
+            switch (adapterDescriptor.BusType) {
+                case StorageWinConstants.StorageBusType.BusTypeAta:
+                case StorageWinConstants.StorageBusType.BusTypeSata:
+                    acceptableAdapterBusType = true;
+                    break;
+                default:
+                    break;
             }
+
+            switch (deviceDescriptor.BusType) {
+                case StorageWinConstants.StorageBusType.BusTypeAta:
+                case StorageWinConstants.StorageBusType.BusTypeSata:
+                    acceptableDeviceBusType = true;
+                    break;
+                default:
+                    break;
+            }
+
+
+            if (!acceptableAdapterBusType || !acceptableDeviceBusType) {
+                continue;
+            }
+
+            bool readPage03 = StorageAtaWin.QueryAtaLogPage(
+                                out byte[] page03Data, 
+                                handle,
+                                StorageAtaConstants.AtaLogAddress.IdentifyDeviceDataLog,
+                                StorageAtaConstants.AtaIdentifyDeviceLogPage.SupportedCapabilities);
+            bool useDma = true;
+            if (!readPage03) { // Maybe DMA didn't work
+                readPage03 = StorageAtaWin.QueryAtaLogPage(
+                                out page03Data,
+                                handle,
+                                StorageAtaConstants.AtaLogAddress.IdentifyDeviceDataLog,
+                                StorageAtaConstants.AtaIdentifyDeviceLogPage.SupportedCapabilities,
+                                StorageAtaConstants.AtaCommand.ReadLogExt);
+                useDma = false;
+            }
+
+            if (!readPage03) {
+                noProblems = false;
+                continue;
+            }
+
+            bool readPage05 = StorageAtaWin.QueryAtaLogPage(
+                                out byte[] page05Data,
+                                handle,
+                                StorageAtaConstants.AtaLogAddress.IdentifyDeviceDataLog,
+                                StorageAtaConstants.AtaIdentifyDeviceLogPage.AtaStrings,
+                                useDma
+                                    ? StorageAtaConstants.AtaCommand.ReadLogDmaExt
+                                    : StorageAtaConstants.AtaCommand.ReadLogExt);
+
+            if (!readPage05) {
+                noProblems = false;
+                continue;
+            }
+
+            bool build = StorageAtaData.Build(out StorageAtaData ataData, page03Data, page05Data);
+
+
+            if (!build) {
+                continue;
+            }
+
+            list.Add(ataData);
         }
 
         return noProblems;

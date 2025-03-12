@@ -5,10 +5,11 @@ using StorageLib;
 using StorageLib.Windows;
 using StorageNvme;
 using System;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
-
+using static StorageLib.Windows.StorageWinStructs;
 namespace StorageNvme.Windows;
 
 [SupportedOSPlatform("windows")]
@@ -39,30 +40,58 @@ public class StorageNvmeWin : IStorageNvme {
                 continue;
             }
 
+            bool acceptableDeviceBusType = false;
+            bool acceptableAdapterBusType = false;
+
+            switch (adapterDescriptor.BusType) {
+                case StorageWinConstants.StorageBusType.BusTypeNvme:
+                    acceptableAdapterBusType = true;
+                    break;
+                default:
+                    break;
+            }
+
+            switch (deviceDescriptor.BusType) {
+                case StorageWinConstants.StorageBusType.BusTypeNvme:
+                case StorageWinConstants.StorageBusType.BusTypeRAID:
+                    acceptableDeviceBusType = true;
+                    break;
+                default:
+                    break;
+            }
+
+
+            if (!acceptableAdapterBusType || !acceptableDeviceBusType) {
+                continue;
+            }
+
             StorageNvmeStructs.NvmeIdentifyControllerData nvmeCtrl = new();
             bool nvmeCtrlRead = false;
 
-            if (deviceDescriptor.BusType == StorageWinConstants.StorageBusType.BusTypeNvme) {
+            if (adapterDescriptor.BusType == StorageWinConstants.StorageBusType.BusTypeRAID) {
+                bool scsiAddressSuccess = StorageWin.GetScsiAddress(out StorageWinStructs.ScsiAddress scsiAddress, handle);
 
-                if (adapterDescriptor.BusType == StorageWinConstants.StorageBusType.BusTypeRAID) {
-                    bool scsiAddressSuccess = StorageWin.GetScsiAddress(out StorageWinStructs.ScsiAddress scsiAddress, handle);
+                if (!scsiAddressSuccess) {
+                    continue;
+                }
 
-                    if (!scsiAddressSuccess) {
-                        continue;
-                    }
+                // Needed to collect identify namespace data
+                int nsid = scsiAddress.Lun + 1;
 
-                    // Needed to collect identify namespace data
-                    int nsid = scsiAddress.Lun + 1;
+                // Try to use Intel RST Passthrough
+                bool nvmePassthroughSuccess = QueryNvmeCnsThruIntelRstDriver(out StorageNvmeWinStructs.IntelNvmeIoctlPassthrough passThrough, i, scsiAddress, StorageNvmeConstants.NvmeCnsValue.IDENTIFY_CONTROLLER, 0);
 
-                    // Try to use Intel Passthrough
-                    bool nvmePassthroughSuccess = QueryNvmeCnsThruIntelRstDriver(out StorageNvmeWinStructs.IntelNvmeIoctlPassthrough passThrough, i, scsiAddress, StorageNvmeConstants.NvmeCnsValue.IDENTIFY_CONTROLLER, 0);
+                if (nvmePassthroughSuccess) {
+                    nvmeCtrl = StorageCommonHelpers.CreateStruct<StorageNvmeStructs.NvmeIdentifyControllerData>(passThrough.data);
+                    nvmeCtrlRead = true;
+                }
+            } else {
+                // Standard NVMe Query
+                bool gotCtrl = QueryNvmeCns(out byte[] data, handle, StorageNvmeConstants.NvmeCnsValue.IDENTIFY_CONTROLLER, 0);
 
-                    if (nvmePassthroughSuccess) {
-                        nvmeCtrl = StorageCommonHelpers.CreateStruct<StorageNvmeStructs.NvmeIdentifyControllerData>(passThrough.data);
-                        nvmeCtrlRead = true;
-                    }
-                } else {
-                    // Standard Query
+                if (gotCtrl) {
+                    nvmeCtrl = StorageCommonHelpers.CreateStruct<StorageNvmeStructs.NvmeIdentifyControllerData>(data);
+                    nvmeCtrlRead = true;
                 }
             }
 
@@ -137,8 +166,10 @@ public class StorageNvmeWin : IStorageNvme {
         return gotConfig;
     }
 
-    // To get Identify Controller Data use:QueryNvmeCnsThruIntelRstDriver(out StorageWinStructs.IntelNvmeIoctlPassthrough passThrough, deviceNumber, scsiAddr, StorageWinConstants.NvmeCnsValue.IDENTIFY_CONTROLLER, 0);
-    // To get Identify Namespace Data use: QueryNvmeCnsThruIntelRstDriver(out StorageWinStructs.IntelNvmeIoctlPassthrough passThrough, deviceNumber, scsiAddr, StorageWinConstants.NvmeCnsValue.IDENTIFY_NAMESPACE_FOR_NSID, 1);
+    /*
+     * To get Identify Controller Data use:QueryNvmeCnsThruIntelRstDriver(out StorageWinStructs.IntelNvmeIoctlPassthrough passThrough, deviceNumber, scsiAddr, StorageWinConstants.NvmeCnsValue.IDENTIFY_CONTROLLER, 0);
+     * To get Identify Namespace Data use: QueryNvmeCnsThruIntelRstDriver(out StorageWinStructs.IntelNvmeIoctlPassthrough passThrough, deviceNumber, scsiAddr, StorageWinConstants.NvmeCnsValue.IDENTIFY_NAMESPACE_FOR_NSID, 1);
+     */
     public static bool QueryNvmeCnsThruIntelRstDriver(out StorageNvmeWinStructs.IntelNvmeIoctlPassthrough passThrough, int deviceNumber, StorageWinStructs.ScsiAddress scsiAddr, StorageNvmeConstants.NvmeCnsValue cnsValue, uint nsid) {
         string deviceString = string.Format(StorageWinConstants.DISK_HANDLE_SCSI, deviceNumber);
 
@@ -202,6 +233,70 @@ public class StorageNvmeWin : IStorageNvme {
             } else {
                 passThrough = Marshal.PtrToStructure<StorageNvmeWinStructs.IntelNvmeIoctlPassthrough>(ptr);
                 endResult = true;
+            }
+        } finally {
+            Marshal.FreeHGlobal(ptr);
+        }
+
+        return endResult;
+    }
+
+    /*
+     * To get Identify Controller Data use:QueryNvmeCnsThruIntelRstDriver(out StorageWinStructs.IntelNvmeIoctlPassthrough passThrough, deviceNumber, scsiAddr, StorageWinConstants.NvmeCnsValue.IDENTIFY_CONTROLLER, 0);
+     * To get Identify Namespace Data use: QueryNvmeCnsThruIntelRstDriver(out StorageWinStructs.IntelNvmeIoctlPassthrough passThrough, deviceNumber, scsiAddr, StorageWinConstants.NvmeCnsValue.IDENTIFY_NAMESPACE_FOR_NSID, 1);
+     */
+    public static bool QueryNvmeCns(out byte[] data, SafeFileHandle handle, StorageNvmeConstants.NvmeCnsValue cnsValue, uint nsid) {
+        data = [];
+
+        if (cnsValue == StorageNvmeConstants.NvmeCnsValue.IDENTIFY_NAMESPACE_FOR_NSID && nsid == 0) {
+            return false;
+        }
+
+        if (!StorageCommonHelpers.IsDeviceHandleReady(handle)) {
+            return false;
+        }
+
+        bool endResult = false;
+        IntPtr ptr = IntPtr.Zero;
+
+        StorageWinStructs.StoragePropertyQuery query = StorageCommonHelpers.CreateStruct<StorageWinStructs.StoragePropertyQuery>();
+        StorageNvmeWinStructs.NvmeStorageProtocolSpecificData parameters = StorageCommonHelpers.CreateStruct<StorageNvmeWinStructs.NvmeStorageProtocolSpecificData>();
+
+        query.PropertyId = StorageWinConstants.StoragePropertyId.StorageAdapterProtocolSpecificProperty;
+        query.QueryType = StorageWinConstants.StorageQueryType.PropertyStandardQuery;
+
+        parameters.specs.ProtocolType = StorageWinConstants.StorageProtocolType.ProtocolTypeNvme;
+        parameters.specs.DataType = (uint)StorageNvmeWinConstants.StorageProtocolNvmeDataType.NVMeDataTypeIdentify;
+        parameters.specs.ProtocolDataRequestValue = (uint)cnsValue; // NVME_IDENTIFY_CNS_SPECIFIC_NAMESPACE or NVME_IDENTIFY_CNS_CONTROLLER
+        parameters.specs.ProtocolDataRequestSubValue = nsid; // >0 if NVME_IDENTIFY_CNS_SPECIFIC_NAMESPACE, 0 if NVME_IDENTIFY_CNS_CONTROLLER
+        parameters.specs.ProtocolDataOffset = (uint)Marshal.OffsetOf<StorageNvmeWinStructs.NvmeStorageProtocolSpecificData>("data").ToInt32();
+        parameters.specs.ProtocolDataLength = StorageNvmeConstants.NVME_IDENTIFY_DATA_BUFFER_SIZE;
+
+        query.AdditionalParameters = StorageCommonHelpers.CreateByteArray(parameters);
+
+        int allocationSize = Marshal.SizeOf(query);
+        try {
+            // Allocate memory for the buffer
+            ptr = Marshal.AllocHGlobal(allocationSize);
+
+            // Copy the data from the managed object to the pointer
+            Marshal.StructureToPtr(query, ptr, true);
+
+            // Prepare to talk to the device
+            NativeOverlapped overlapped = new();
+            int returnedLength = 0;
+            Marshal.SetLastSystemError(0);
+
+            bool validTransfer = StorageWinImports.DeviceIoControl(handle, StorageWinConstants.IOCTL_STORAGE_QUERY_PROPERTY, ptr, allocationSize, ptr, allocationSize, ref returnedLength, ref overlapped);
+
+            if (!validTransfer) {
+                int systemerror = Marshal.GetLastSystemError();
+                endResult = false;
+            } else {
+                byte[] buffer = StorageCommonHelpers.ConvertIntPtrToByteArray(ptr, allocationSize);
+                int offset = Marshal.SizeOf<StorageWinStructs.StoragePropertyQuery>() + Marshal.OffsetOf<StorageNvmeWinStructs.NvmeStorageProtocolSpecificData>("data").ToInt32();
+                data = buffer[offset..];
+                endResult = (data.Length == parameters.specs.ProtocolDataLength);
             }
         } finally {
             Marshal.FreeHGlobal(ptr);

@@ -40,4 +40,11 @@ public class StorageNvmeWinStructs {
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4096)]
         public byte[] data;
     }
+
+    public struct NvmeStorageProtocolSpecificData {
+        public StorageWinStructs.StorageProtocolSpecificData specs;
+        
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4096)]
+        public byte[] data;
+    }
 }

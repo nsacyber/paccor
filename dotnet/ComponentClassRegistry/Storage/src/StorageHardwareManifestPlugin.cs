@@ -195,11 +195,12 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
     }
 
     public static string SPC_INQUIRY_String(byte[] val) {
-        return NVMe_String(val);
+        byte[] valClone = (byte[])val.Clone();
+        return System.Text.Encoding.ASCII.GetString(valClone);
     }
 
     public static string SPC_VPD_SN_String(byte[] vpdPage80) {
-        return vpdPage80.Length < 5 ? string.Empty : NVMe_String(vpdPage80[4..]);
+        return vpdPage80.Length < 5 ? string.Empty : SPC_INQUIRY_String(vpdPage80[4..]);
     }
 
     public static string SPC_VPD_DI_UNIQUEID_String(byte[] vpdPage83) {
@@ -283,7 +284,7 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         } else if (dd2List.Length == 8) {
             return NVMe_Val(dd2List[3..8], false);
         } else if (dd1List.Length > 8) { // VENDOR SPECIFIC IDENTIFIER byte 8 to end
-            return NVMe_String(dd1List[8..]);
+            return SPC_INQUIRY_String(dd1List[8..]);
         }
 
         return string.Empty;

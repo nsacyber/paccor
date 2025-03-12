@@ -86,8 +86,8 @@ public class StorageTests {
 
     // Registry Appendix A.2 SCSI Sample 1
     public static readonly string RegistryA31ScsiComponentSample1InquiryClass = "7F";
-    public static readonly string RegistryA31ScsiComponentSample1T10VendorIdentification = "EXAMPLE";
-    public static readonly string RegistryA31ScsiComponentSample1ProductIdentification = "SCSI Model 1";
+    public static readonly string RegistryA31ScsiComponentSample1T10VendorIdentification = "EXAMPLE ";
+    public static readonly string RegistryA31ScsiComponentSample1ProductIdentification = "SCSI Model 1    ";
     public static readonly string RegistryA31ScsiComponentSample1VpdUniqueId = "";
     public static readonly string RegistryA31ScsiComponentSample1VpdSn = "Sample SCSI Serial Number 1";
     public static readonly string RegistryA31ScsiComponentSample1RevisionLevel = "SV A";
@@ -108,8 +108,8 @@ public class StorageTests {
 
     // Registry Appendix A.2 SCSI Sample 2
     public static readonly string RegistryA32ScsiComponentSample2InquiryClass = "7F";
-    public static readonly string RegistryA32ScsiComponentSample2T10VendorIdentification = "EXAMPLE";
-    public static readonly string RegistryA32ScsiComponentSample2ProductIdentification = "SCSI Model 2";
+    public static readonly string RegistryA32ScsiComponentSample2T10VendorIdentification = "EXAMPLE ";
+    public static readonly string RegistryA32ScsiComponentSample2ProductIdentification = "SCSI Model 2    ";
     public static readonly string RegistryA32ScsiComponentSample2VpdUniqueId = "123456789ABCDEF";
     public static readonly string RegistryA32ScsiComponentSample2VpdSn = "Sample SCSI Serial Number 2";
     public static readonly string RegistryA32ScsiComponentSample2RevisionLevel = "SV B";

@@ -11,7 +11,7 @@ public class StorageScsiHelpers {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
             scsi = new Linux.StorageScsiLinux();
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-            //scsi = new Windows.StorageScsiWin();
+            scsi = new Windows.StorageScsiWin();
         }
 
         if (scsi == null) {

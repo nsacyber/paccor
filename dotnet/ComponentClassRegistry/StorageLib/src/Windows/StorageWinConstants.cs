@@ -37,7 +37,44 @@ public class StorageWinConstants {// Windows Constants
     // Windows STORAGE_PROPERTY_ID: winioctl.h
     public enum StoragePropertyId : uint {
         StorageDeviceProperty = 0,
-        StorageAdapterProperty
+        StorageAdapterProperty,
+        StorageDeviceIdProperty,
+        StorageDeviceUniqueIdProperty,
+        StorageDeviceWriteCacheProperty,
+        StorageMiniportProperty,
+        StorageAccessAlignmentProperty,
+        StorageDeviceSeekPenaltyProperty,
+        StorageDeviceTrimProperty,
+        StorageDeviceWriteAggregationProperty,
+        StorageDeviceDeviceTelemetryProperty,
+        StorageDeviceLBProvisioningProperty,
+        StorageDevicePowerProperty,
+        StorageDeviceCopyOffloadProperty,
+        StorageDeviceResiliencyProperty,
+        StorageDeviceMediumProductType,
+        StorageAdapterRpmbProperty,
+        StorageAdapterCryptoProperty,
+        StorageDeviceIoCapabilityProperty = 48,
+        StorageAdapterProtocolSpecificProperty,
+        StorageDeviceProtocolSpecificProperty,
+        StorageAdapterTemperatureProperty,
+        StorageDeviceTemperatureProperty,
+        StorageAdapterPhysicalTopologyProperty,
+        StorageDevicePhysicalTopologyProperty,
+        StorageDeviceAttributesProperty,
+        StorageDeviceManagementStatus,
+        StorageAdapterSerialNumberProperty,
+        StorageDeviceLocationProperty,
+        StorageDeviceNumaProperty,
+        StorageDeviceZonedDeviceProperty,
+        StorageDeviceUnsafeShutdownCount,
+        StorageDeviceEnduranceProperty,
+        StorageDeviceLedStateProperty,
+        StorageDeviceSelfEncryptionProperty = 64,
+        StorageFruIdProperty,
+        StorageStackProperty,
+        StorageAdapterProtocolSpecificPropertyEx,
+        StorageDeviceProtocolSpecificPropertyEx
     }
 
     // Windows STORAGE_QUERY_TYPE: winioctl.h
@@ -73,5 +110,17 @@ public class StorageWinConstants {// Windows Constants
         BusTypeNvmeof,
         BusTypeMax,
         BusTypeMaxReserved = 0x7F
+    }
+
+    // Windows STORAGE_PROTOCOL_TYPE: winioctl.h
+    public enum StorageProtocolType : byte {
+        ProtocolTypeUnknown = 0x00,
+        ProtocolTypeScsi,
+        ProtocolTypeAta,
+        ProtocolTypeNvme,
+        ProtocolTypeSd,
+        ProtocolTypeUfs,
+        ProtocolTypeProprietary = 0x7E,
+        ProtocolTypeMaxReserved = 0x7F
     }
 }

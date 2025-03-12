@@ -1,8 +1,10 @@
 using Microsoft.Win32.SafeHandles;
 using StorageLib;
 using StorageLib.Linux;
+using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using static StorageLib.Windows.StorageWinStructs;
 
 namespace StorageScsi.Linux;
 
@@ -119,8 +121,11 @@ public class StorageScsiLinux : IStorageScsi {
             Marshal.FreeHGlobal(sgIoHdrPtr);
         }
 
-        if (endResult && data.Length > 4 && data[4] > dataLength) {
-            endResult = Inquiry(out data, handle, vpd, vpdPage, data[4]);
+        uint newDataLength = (uint)(vpd ? (BinaryPrimitives.ReadInt16BigEndian(data.AsSpan()[2..4]) + 4) : (data[4] + 5));
+        if (endResult && data.Length > 4 && newDataLength > dataLength) {
+            // In VPD, Page length is 2 bytes and PAGE LENGTH = (n-3), where n is 0 based
+            // In Inquiry data, using data[4]+5 because ADDITIONAL LENGTH = (n-4), where n is 0 based
+            endResult = Inquiry(out data, handle, vpd, vpdPage, newDataLength);
         }
 
         return endResult;
