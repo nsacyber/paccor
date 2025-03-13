@@ -12,35 +12,14 @@ namespace StorageScsi.Windows;
 [SupportedOSPlatform("windows")]
 public class StorageScsiWin : IStorageScsi {
     public bool CollectScsiData(out List<StorageScsiData> list) {
-        list = new();
+        list = [];
         bool noProblems = true;
 
-        int numPhysicalDisks = StorageWin.GetNumPhysicalDisks();
-        for (int i = 0; i < numPhysicalDisks; i++) {
-            string pdHandle = string.Format(StorageWinConstants.DISK_HANDLE_PD, i);
-
-            using SafeFileHandle handle = StorageCommonHelpers.OpenDevice(pdHandle);
-
-            if (!StorageCommonHelpers.IsDeviceHandleReady(handle)) {
-                continue;
-            }
-
-            bool adapterDescriptorSuccess = StorageWin.QueryStorageAdapterProperty(out StorageWinStructs.StorageAdapterDescriptor adapterDescriptor, handle);
-
-            if (!adapterDescriptorSuccess) {
-                continue;
-            }
-
-            bool deviceDescriptorSuccess = StorageWin.QueryStorageDeviceProperty(out StorageWinStructs.StorageDeviceDescriptor deviceDescriptor, handle);
-
-            if (!deviceDescriptorSuccess) {
-                continue;
-            }
-
+        foreach (StorageWinDiskDescriptor disk in StorageWin.Disks) {
             bool acceptableDeviceBusType = false;
             bool acceptableAdapterBusType = false;
 
-            switch (adapterDescriptor.BusType) {
+            switch (disk.AdapterBusType) {
                 case StorageWinConstants.StorageBusType.BusTypeiScsi:
                 case StorageWinConstants.StorageBusType.BusTypeSas:
                 case StorageWinConstants.StorageBusType.BusTypeScsi:
@@ -50,7 +29,7 @@ public class StorageScsiWin : IStorageScsi {
                     break;
             }
 
-            switch (deviceDescriptor.BusType) {
+            switch (disk.DeviceBusType) {
                 case StorageWinConstants.StorageBusType.BusTypeiScsi:
                 case StorageWinConstants.StorageBusType.BusTypeSas:
                 case StorageWinConstants.StorageBusType.BusTypeScsi:
@@ -62,6 +41,14 @@ public class StorageScsiWin : IStorageScsi {
 
 
             if (!acceptableAdapterBusType || !acceptableDeviceBusType) {
+                continue;
+            }
+
+            string pdHandle = string.Format(StorageWinConstants.DISK_HANDLE_PD, disk.DiskNumber);
+
+            using SafeFileHandle handle = StorageCommonHelpers.OpenDevice(pdHandle);
+
+            if (!StorageCommonHelpers.IsDeviceHandleReady(handle)) {
                 continue;
             }
 

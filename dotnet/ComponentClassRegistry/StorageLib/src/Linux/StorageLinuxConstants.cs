@@ -101,7 +101,6 @@ public class StorageLinuxConstants {
         BLOCK_EXTENDED_MAJOR = 259
     }
 
-    [Flags]
     public enum BlockType : uint {
         NOT_SUPPORTED,
         ATA,

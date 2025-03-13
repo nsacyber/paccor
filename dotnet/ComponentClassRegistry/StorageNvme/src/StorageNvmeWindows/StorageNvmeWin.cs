@@ -3,13 +3,10 @@ using PcieLib;
 using PcieWinCfgMgr;
 using StorageLib;
 using StorageLib.Windows;
-using StorageNvme;
-using System;
-using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
-using static StorageLib.Windows.StorageWinStructs;
+
 namespace StorageNvme.Windows;
 
 [SupportedOSPlatform("windows")]
@@ -18,40 +15,20 @@ public class StorageNvmeWin : IStorageNvme {
         list = new();
         bool noProblems = true;
 
-        int numPhysicalDisks = StorageWin.GetNumPhysicalDisks();
-        for (int i = 0; i < numPhysicalDisks; i++) { 
-            string pdHandle = string.Format(StorageWinConstants.DISK_HANDLE_PD, i);
-
-            using SafeFileHandle handle = StorageCommonHelpers.OpenDevice(pdHandle);
-
-            if (!StorageCommonHelpers.IsDeviceHandleReady(handle)) {
-                continue;
-            }
-
-            bool adapterDescriptorSuccess = StorageWin.QueryStorageAdapterProperty(out StorageWinStructs.StorageAdapterDescriptor adapterDescriptor, handle);
-
-            if (!adapterDescriptorSuccess) {
-                continue;
-            }
-
-            bool deviceDescriptorSuccess = StorageWin.QueryStorageDeviceProperty(out StorageWinStructs.StorageDeviceDescriptor deviceDescriptor, handle);
-
-            if (!deviceDescriptorSuccess) {
-                continue;
-            }
-
+        foreach (StorageWinDiskDescriptor disk in StorageWin.Disks) {
             bool acceptableDeviceBusType = false;
             bool acceptableAdapterBusType = false;
 
-            switch (adapterDescriptor.BusType) {
+            switch (disk.AdapterBusType) {
                 case StorageWinConstants.StorageBusType.BusTypeNvme:
+                case StorageWinConstants.StorageBusType.BusTypeRAID:
                     acceptableAdapterBusType = true;
                     break;
                 default:
                     break;
             }
 
-            switch (deviceDescriptor.BusType) {
+            switch (disk.DeviceBusType) {
                 case StorageWinConstants.StorageBusType.BusTypeNvme:
                 case StorageWinConstants.StorageBusType.BusTypeRAID:
                     acceptableDeviceBusType = true;
@@ -65,10 +42,18 @@ public class StorageNvmeWin : IStorageNvme {
                 continue;
             }
 
+            string pdHandle = string.Format(StorageWinConstants.DISK_HANDLE_PD, disk.DiskNumber);
+
+            using SafeFileHandle handle = StorageCommonHelpers.OpenDevice(pdHandle);
+
+            if (!StorageCommonHelpers.IsDeviceHandleReady(handle)) {
+                continue;
+            }
+
             StorageNvmeStructs.NvmeIdentifyControllerData nvmeCtrl = new();
             bool nvmeCtrlRead = false;
 
-            if (adapterDescriptor.BusType == StorageWinConstants.StorageBusType.BusTypeRAID) {
+            if (disk.AdapterBusType == StorageWinConstants.StorageBusType.BusTypeRAID) {
                 bool scsiAddressSuccess = StorageWin.GetScsiAddress(out StorageWinStructs.ScsiAddress scsiAddress, handle);
 
                 if (!scsiAddressSuccess) {
@@ -79,7 +64,7 @@ public class StorageNvmeWin : IStorageNvme {
                 int nsid = scsiAddress.Lun + 1;
 
                 // Try to use Intel RST Passthrough
-                bool nvmePassthroughSuccess = QueryNvmeCnsThruIntelRstDriver(out StorageNvmeWinStructs.IntelNvmeIoctlPassthrough passThrough, i, scsiAddress, StorageNvmeConstants.NvmeCnsValue.IDENTIFY_CONTROLLER, 0);
+                bool nvmePassthroughSuccess = QueryNvmeCnsThruIntelRstDriver(out StorageNvmeWinStructs.IntelNvmeIoctlPassthrough passThrough, disk.DiskNumber, scsiAddress, StorageNvmeConstants.NvmeCnsValue.IDENTIFY_CONTROLLER, 0);
 
                 if (nvmePassthroughSuccess) {
                     nvmeCtrl = StorageCommonHelpers.CreateStruct<StorageNvmeStructs.NvmeIdentifyControllerData>(passThrough.data);
@@ -99,7 +84,7 @@ public class StorageNvmeWin : IStorageNvme {
                 continue;
             }
 
-            bool pciRead = GetPciConfigFromCfgMgr(out byte[] config, i);
+            bool pciRead = GetPciConfigFromCfgMgr(out byte[] config, disk.DiskNumber);
 
             if (nvmeCtrlRead && pciRead) {
                 PcieDevice pciDev = new(config, Array.Empty<byte>());

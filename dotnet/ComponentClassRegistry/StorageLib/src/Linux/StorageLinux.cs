@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
@@ -6,17 +7,19 @@ namespace StorageLib.Linux;
 
 [SupportedOSPlatform("linux")]
 public class StorageLinux {
+    public static readonly ImmutableList<StorageLinuxDiskDescriptor> Disks = GetPhysicalDevicePaths();
+
     public static string[] GetPhysicalDevicePaths(StorageLinuxConstants.BlockType type) {
-        List<Tuple<StorageLinuxConstants.BlockType, string>> paths = GetPhysicalDevicePaths();
+        ImmutableList<StorageLinuxDiskDescriptor> paths = Disks;
         string[] matches = paths
-                            .Where(x => x.Item1 == type)
-                            .Select(x => x.Item2)
+                            .Where(x => x.BlockType == type)
+                            .Select(x => x.DiskPath)
                             .Distinct()
                             .ToArray();
         return matches;
     }
 
-    public static List<Tuple<StorageLinuxConstants.BlockType, string>> GetPhysicalDevicePaths() {
+    public static ImmutableList<StorageLinuxDiskDescriptor> GetPhysicalDevicePaths() {
         // Lsblk is asked to output columns NAME,MAJ:MIN with paths in place of NAME and without headers 
         Task<Tuple<int, string, string>> task = Task.Run(StorageLinuxImports.LsblkPhysicalDisks);
 
@@ -51,7 +54,7 @@ public class StorageLinux {
             parsingDisksById[line[0]] = value;
         }
         
-        List<Tuple<StorageLinuxConstants.BlockType, string>> matches = [];
+        List<StorageLinuxDiskDescriptor> matches = [];
         string[] devs = lsblkOutput.Split('\n'); // each device in devs should have the form: path maj:min 
         foreach (string dev in devs) {
             string[] devInfo = dev.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -77,10 +80,10 @@ public class StorageLinux {
                         }
                         break;
                 }
-                matches.Add(new Tuple<StorageLinuxConstants.BlockType, string>(type, devInfo[0]));
+                matches.Add(new (devInfo[0], type));
             }
         }
         
-        return matches;
+        return [.. matches]; // convert to ImmutableList
     }
 }

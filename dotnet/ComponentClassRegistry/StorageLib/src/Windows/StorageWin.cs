@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32.SafeHandles;
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -207,5 +208,39 @@ public class StorageWin {
         }
 
         return num;
+    }
+
+    public static readonly ImmutableList<StorageWinDiskDescriptor> Disks = DescribePhysicalDisks();
+
+    public static ImmutableList<StorageWinDiskDescriptor> DescribePhysicalDisks() {
+        List<StorageWinDiskDescriptor> list = [];
+
+        int numPhysicalDisks = GetNumPhysicalDisks();
+        for (int i = 0; i < numPhysicalDisks; i++) {
+            string pdHandle = string.Format(StorageWinConstants.DISK_HANDLE_PD, i);
+
+            using SafeFileHandle handle = StorageCommonHelpers.OpenDevice(pdHandle);
+
+            if (!StorageCommonHelpers.IsDeviceHandleReady(handle)) {
+                continue;
+            }
+
+            bool adapterDescriptorSuccess = StorageWin.QueryStorageAdapterProperty(out StorageWinStructs.StorageAdapterDescriptor adapterDescriptor, handle);
+
+            if (!adapterDescriptorSuccess) {
+                continue;
+            }
+
+            bool deviceDescriptorSuccess = StorageWin.QueryStorageDeviceProperty(out StorageWinStructs.StorageDeviceDescriptor deviceDescriptor, handle);
+
+            if (!deviceDescriptorSuccess) {
+                continue;
+            }
+
+            list.Add(new(i, adapterDescriptor.BusType, deviceDescriptor.BusType));
+        }
+
+
+        return [.. list]; // convert to ImmutableList
     }
 }

@@ -123,4 +123,12 @@ public class StorageWinConstants {// Windows Constants
         ProtocolTypeProprietary = 0x7E,
         ProtocolTypeMaxReserved = 0x7F
     }
+
+    public enum BlockType : uint {
+        NOT_SUPPORTED,
+        ATA,
+        SCSI,
+        NVME,
+        RAID
+    }
 }
