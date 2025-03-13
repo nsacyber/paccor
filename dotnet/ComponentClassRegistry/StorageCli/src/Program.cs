@@ -30,10 +30,10 @@ public class StorageCli {
 
         // All smbios data should be validated at this point.
         if (cli.PrintV2 || (!cli.PrintV2 && !cli.PrintV3)) { // V2 should be printed by default not matter what
-            Console.WriteLine(plugin.ManifestV2.ToString());
+            Console.WriteLine(plugin.ManifestV2.ToString().Trim());
         }
         if (cli.PrintV3) {
-            Console.WriteLine(plugin.ManifestV3.ToString());
+            Console.WriteLine(plugin.ManifestV3.ToString().Trim());
         }
 
         return returnCode;

@@ -1,8 +1,10 @@
+using StorageLib;
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 
 namespace StorageScsi;
 public class StorageScsiHelpers {
-    public static bool CollectScsiData(out List<StorageScsiData> list) {
+    public static bool CollectScsiData(out List<StorageScsiData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = new();
         bool result = false;
 
@@ -18,7 +20,7 @@ public class StorageScsiHelpers {
             return false;
         }
 
-        result = scsi.CollectScsiData(out list);
+        result = scsi.CollectScsiData(out list, disks);
 
         return result;
     }

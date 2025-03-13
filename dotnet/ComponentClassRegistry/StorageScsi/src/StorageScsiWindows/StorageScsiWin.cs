@@ -3,6 +3,7 @@ using StorageLib;
 using StorageLib.Windows;
 using StorageScsi;
 using System.Buffers.Binary;
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using static StorageLib.Windows.StorageWinStructs;
@@ -11,11 +12,11 @@ namespace StorageScsi.Windows;
 
 [SupportedOSPlatform("windows")]
 public class StorageScsiWin : IStorageScsi {
-    public bool CollectScsiData(out List<StorageScsiData> list) {
+    public bool CollectScsiData(out List<StorageScsiData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = [];
         bool noProblems = true;
 
-        foreach (StorageWinDiskDescriptor disk in StorageWin.Disks) {
+        foreach (StorageWinDiskDescriptor disk in disks) {
             bool acceptableDeviceBusType = false;
             bool acceptableAdapterBusType = false;
 

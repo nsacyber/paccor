@@ -1,8 +1,8 @@
 ﻿namespace StorageLib.Windows;
-public class StorageWinDiskDescriptor(int diskNumber, StorageWinConstants.StorageBusType adapterBusType, StorageWinConstants.StorageBusType deviceBusType) {
+public class StorageWinDiskDescriptor(int diskNumber, StorageWinConstants.StorageBusType adapterBusType, StorageWinConstants.StorageBusType deviceBusType) : StorageDiskDescriptor("" + diskNumber) {
     public int DiskNumber {
-        get;
-    } = diskNumber;
+        get; 
+    }
     public StorageWinConstants.StorageBusType AdapterBusType {
         get;
     } = adapterBusType;

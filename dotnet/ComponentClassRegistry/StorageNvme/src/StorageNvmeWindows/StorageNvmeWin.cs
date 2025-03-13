@@ -3,6 +3,7 @@ using PcieLib;
 using PcieWinCfgMgr;
 using StorageLib;
 using StorageLib.Windows;
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text;
@@ -11,11 +12,11 @@ namespace StorageNvme.Windows;
 
 [SupportedOSPlatform("windows")]
 public class StorageNvmeWin : IStorageNvme {
-    public bool CollectNvmeData(out List<StorageNvmeData> list) {
-        list = new();
+    public bool CollectNvmeData(out List<StorageNvmeData> list, ImmutableList<StorageDiskDescriptor> disks) {
+        list = [];
         bool noProblems = true;
 
-        foreach (StorageWinDiskDescriptor disk in StorageWin.Disks) {
+        foreach (StorageWinDiskDescriptor disk in disks) {
             bool acceptableDeviceBusType = false;
             bool acceptableAdapterBusType = false;
 

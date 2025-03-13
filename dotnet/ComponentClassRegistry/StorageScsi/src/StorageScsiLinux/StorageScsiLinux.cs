@@ -2,6 +2,7 @@ using Microsoft.Win32.SafeHandles;
 using StorageLib;
 using StorageLib.Linux;
 using System.Buffers.Binary;
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using static StorageLib.Windows.StorageWinStructs;
@@ -10,10 +11,10 @@ namespace StorageScsi.Linux;
 
 [SupportedOSPlatform("linux")]
 public class StorageScsiLinux : IStorageScsi {
-    public bool CollectScsiData(out List<StorageScsiData> list) {
+    public bool CollectScsiData(out List<StorageScsiData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = new();
         bool noProblems = true;
-        string[] matches = StorageLinux.GetPhysicalDevicePaths(StorageLinuxConstants.BlockType.SCSI);
+        string[] matches = StorageLinux.GetPhysicalDevicePaths(disks, StorageLinuxConstants.BlockType.SCSI);
 
         foreach (string devName in matches) {
             using SafeFileHandle handle = StorageCommonHelpers.OpenDevice(devName);

@@ -3,6 +3,7 @@ using StorageLib;
 using StorageLib.Windows;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -13,11 +14,11 @@ namespace StorageAta.Windows;
 
 [SupportedOSPlatform("windows")]
 public class StorageAtaWin : IStorageAta {
-    public bool CollectAtaData(out List<StorageAtaData> list) {
+    public bool CollectAtaData(out List<StorageAtaData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = [];
         bool noProblems = true;
 
-        foreach (StorageWinDiskDescriptor disk in StorageWin.Disks) {
+        foreach (StorageWinDiskDescriptor disk in disks) {
             bool acceptableDeviceBusType = false;
             bool acceptableAdapterBusType = false;
 

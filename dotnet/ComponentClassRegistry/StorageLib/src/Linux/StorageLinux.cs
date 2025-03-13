@@ -7,19 +7,16 @@ namespace StorageLib.Linux;
 
 [SupportedOSPlatform("linux")]
 public class StorageLinux {
-    public static readonly ImmutableList<StorageLinuxDiskDescriptor> Disks = GetPhysicalDevicePaths();
-
-    public static string[] GetPhysicalDevicePaths(StorageLinuxConstants.BlockType type) {
-        ImmutableList<StorageLinuxDiskDescriptor> paths = Disks;
+    public static string[] GetPhysicalDevicePaths(ImmutableList<StorageDiskDescriptor> paths, StorageLinuxConstants.BlockType type) {
         string[] matches = paths
-                            .Where(x => x.BlockType == type)
-                            .Select(x => x.DiskPath)
+                            .Where(x => (x is StorageLinuxDiskDescriptor) && ((StorageLinuxDiskDescriptor)x).BlockType == type)
+                            .Select(x => x.DiskId)
                             .Distinct()
                             .ToArray();
         return matches;
     }
 
-    public static ImmutableList<StorageLinuxDiskDescriptor> GetPhysicalDevicePaths() {
+    public static ImmutableList<StorageDiskDescriptor> GetPhysicalDevicePaths() {
         // Lsblk is asked to output columns NAME,MAJ:MIN with paths in place of NAME and without headers 
         Task<Tuple<int, string, string>> task = StorageLinuxImports.LsblkPhysicalDisks();
 

@@ -2,6 +2,7 @@
 using PcieLib;
 using StorageLib;
 using StorageLib.Linux;
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
@@ -10,10 +11,13 @@ namespace StorageNvme.Linux;
 
 [SupportedOSPlatform("linux")]
 public class StorageNvmeLinux : IStorageNvme {
-    public bool CollectNvmeData(out List<StorageNvmeData> list) {
+    public StorageNvmeLinux() {
+    }
+
+    public bool CollectNvmeData(out List<StorageNvmeData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = [];
         bool noProblems = true;
-        string[] matches = StorageLinux.GetPhysicalDevicePaths(StorageLinuxConstants.BlockType.NVME);
+        string[] matches = StorageLinux.GetPhysicalDevicePaths(disks, StorageLinuxConstants.BlockType.NVME);
 
         foreach (string devName in matches) {
             bool nvmeCtrlRead = QueryNvmeCns(out StorageNvmeStructs.NvmeIdentifyControllerData nvmeCtrl, devName);

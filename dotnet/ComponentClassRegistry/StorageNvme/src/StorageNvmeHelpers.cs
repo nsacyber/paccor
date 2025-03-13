@@ -1,8 +1,10 @@
-﻿using System.Runtime.InteropServices;
+﻿using StorageLib;
+using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 
 namespace StorageNvme;
 public class StorageNvmeHelpers {
-    public static bool CollectNvmeData(out List<StorageNvmeData> list) {
+    public static bool CollectNvmeData(out List<StorageNvmeData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = new();
         bool result = false;
 
@@ -18,7 +20,7 @@ public class StorageNvmeHelpers {
             return false;
         }
 
-        result = nvme.CollectNvmeData(out list);
+        result = nvme.CollectNvmeData(out list, disks);
 
         return result;
     }

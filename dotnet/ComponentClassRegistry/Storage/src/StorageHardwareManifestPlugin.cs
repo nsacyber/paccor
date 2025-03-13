@@ -6,8 +6,8 @@ using StorageLib;
 using StorageNvme;
 using StorageScsi;
 using System.Buffers.Binary;
-using System.Data.Common;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 
 namespace Storage;
 public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
@@ -24,10 +24,16 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
     }
 
     public override bool GatherHardwareIdentifiers() {
+        ImmutableList<StorageDiskDescriptor> disks = [];
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+            disks = StorageLib.Linux.StorageLinux.GetPhysicalDevicePaths();
+        } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
+            disks = StorageLib.Windows.StorageWin.DescribePhysicalDisks();
+        }
 
-        bool nvmeValid = StorageNvmeHelpers.CollectNvmeData(out List<StorageNvmeData> nvmeData);
-        bool ataValid = StorageAtaHelpers.CollectAtaData(out List<StorageAtaData> ataData);
-        bool scsiValid = StorageScsiHelpers.CollectScsiData(out List<StorageScsiData> scsiData);
+        bool nvmeValid = StorageNvmeHelpers.CollectNvmeData(out List<StorageNvmeData> nvmeData, disks);
+        bool ataValid = StorageAtaHelpers.CollectAtaData(out List<StorageAtaData> ataData, disks);
+        bool scsiValid = StorageScsiHelpers.CollectScsiData(out List<StorageScsiData> scsiData, disks);
 
         if (!nvmeValid || !ataValid || !scsiValid) {
             return false;

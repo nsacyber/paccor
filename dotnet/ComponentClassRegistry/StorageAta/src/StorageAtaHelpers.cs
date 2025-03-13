@@ -1,8 +1,10 @@
-﻿using System.Runtime.InteropServices;
+﻿using StorageLib;
+using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 
 namespace StorageAta;
 public class StorageAtaHelpers {
-    public static bool CollectAtaData(out List<StorageAtaData> list) {
+    public static bool CollectAtaData(out List<StorageAtaData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = new();
         bool result = false;
 
@@ -18,7 +20,7 @@ public class StorageAtaHelpers {
             return false;
         }
 
-        result = ata.CollectAtaData(out list);
+        result = ata.CollectAtaData(out list, disks);
 
         return result;
     }

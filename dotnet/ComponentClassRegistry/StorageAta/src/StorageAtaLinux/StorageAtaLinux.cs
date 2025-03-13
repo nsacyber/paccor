@@ -1,6 +1,7 @@
 using Microsoft.Win32.SafeHandles;
 using StorageLib;
 using StorageLib.Linux;
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -8,10 +9,10 @@ namespace StorageAta.Linux;
 
 [SupportedOSPlatform("linux")]
 public class StorageAtaLinux : IStorageAta {
-    public bool CollectAtaData(out List<StorageAtaData> list) {
+    public bool CollectAtaData(out List<StorageAtaData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = new();
         bool noProblems = true;
-        string[] matches = StorageLinux.GetPhysicalDevicePaths(StorageLinuxConstants.BlockType.ATA);
+        string[] matches = StorageLinux.GetPhysicalDevicePaths(disks, StorageLinuxConstants.BlockType.ATA);
 
         foreach (string devName in matches) {
             using SafeFileHandle handle = StorageCommonHelpers.OpenDevice(devName);
