@@ -201,7 +201,7 @@ public class StorageWin {
 
     public static int GetNumPhysicalDisks() {
         int num = 2048;
-        Task<Tuple<int, string, string>> task = Task.Run(StorageWinImports.PowershellNumPhysicalDisks);
+        Task<Tuple<int, string, string>> task = StorageWinImports.PowershellNumPhysicalDisks();
         Tuple<int, string, string> results = task.Result;
         if (task.Exception == null) {
             num = int.Parse(results.Item3);

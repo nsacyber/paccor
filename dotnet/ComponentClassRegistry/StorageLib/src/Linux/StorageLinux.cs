@@ -21,7 +21,7 @@ public class StorageLinux {
 
     public static ImmutableList<StorageLinuxDiskDescriptor> GetPhysicalDevicePaths() {
         // Lsblk is asked to output columns NAME,MAJ:MIN with paths in place of NAME and without headers 
-        Task<Tuple<int, string, string>> task = Task.Run(StorageLinuxImports.LsblkPhysicalDisks);
+        Task<Tuple<int, string, string>> task = StorageLinuxImports.LsblkPhysicalDisks();
 
         Tuple<int, string, string> results = task.Result;
         if (task.Exception != null) {
@@ -30,7 +30,7 @@ public class StorageLinux {
 
         string lsblkOutput = results.Item3; // lsblkOutput should have each PD on separate line with form: path maj:min
 
-        task = Task.Run(StorageLinuxImports.ListDisksById);
+        task = StorageLinuxImports.ListDisksById();
         results = task.Result;
         if (task.Exception != null) {
             return [];
