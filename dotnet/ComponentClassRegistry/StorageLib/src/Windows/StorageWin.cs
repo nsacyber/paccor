@@ -199,30 +199,19 @@ public class StorageWin {
         return endResult;
     }
 
-    public static int GetNumPhysicalDisks() {
-        int num = 2048;
-        Task<Tuple<int, string, string>> task = StorageWinImports.PowershellNumPhysicalDisks();
-        Tuple<int, string, string> results = task.Result;
-        if (task.Exception == null) {
-            num = int.Parse(results.Item3);
-        }
-
-        return num;
-    }
-
     public static readonly ImmutableList<StorageWinDiskDescriptor> Disks = DescribePhysicalDisks();
 
     public static ImmutableList<StorageWinDiskDescriptor> DescribePhysicalDisks() {
         List<StorageWinDiskDescriptor> list = [];
 
-        int numPhysicalDisks = GetNumPhysicalDisks();
+        int numPhysicalDisks = 2048;
         for (int i = 0; i < numPhysicalDisks; i++) {
             string pdHandle = string.Format(StorageWinConstants.DISK_HANDLE_PD, i);
 
             using SafeFileHandle handle = StorageCommonHelpers.OpenDevice(pdHandle);
 
             if (!StorageCommonHelpers.IsDeviceHandleReady(handle)) {
-                continue;
+                break;
             }
 
             bool adapterDescriptorSuccess = StorageWin.QueryStorageAdapterProperty(out StorageWinStructs.StorageAdapterDescriptor adapterDescriptor, handle);
