@@ -113,7 +113,7 @@ public class StorageWinConstants {// Windows Constants
     }
 
     // Windows STORAGE_PROTOCOL_TYPE: winioctl.h
-    public enum StorageProtocolType : byte {
+    public enum StorageProtocolType : uint {
         ProtocolTypeUnknown = 0x00,
         ProtocolTypeScsi,
         ProtocolTypeAta,

@@ -43,9 +43,33 @@ public class StorageNvmeWinStructs {
 
     [StructLayout(LayoutKind.Sequential)]
     public struct NvmeStorageProtocolSpecificData {
-        public StorageWinStructs.StorageProtocolSpecificData specs;
+        // STORAGE_PROPERTY_QUERY: winioctl.h
+        [MarshalAs(UnmanagedType.U4)] public StorageWinConstants.StorageProtocolType ProtocolType;
+        [MarshalAs(UnmanagedType.U4)] public uint DataType;
+        [MarshalAs(UnmanagedType.U4)] public uint ProtocolDataRequestValue;
+        [MarshalAs(UnmanagedType.U4)] public uint ProtocolDataRequestSubValue;
+        [MarshalAs(UnmanagedType.U4)] public uint ProtocolDataOffset;
+        [MarshalAs(UnmanagedType.U4)] public uint ProtocolDataLength;
+        [MarshalAs(UnmanagedType.U4)] public uint FixedProtocolReturnData;
+        [MarshalAs(UnmanagedType.U4)] public uint ProtocolDataRequestSubValue2;
+        [MarshalAs(UnmanagedType.U4)] public uint ProtocolDataRequestSubValue3;
+        [MarshalAs(UnmanagedType.U4)] public uint ProtocolDataRequestSubValue4;
         
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 4096)]
         public byte[] data;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct NvmeStoragePropertyQuery {
+        [MarshalAs(UnmanagedType.U4)] public StorageWinConstants.StoragePropertyId PropertyId;
+        [MarshalAs(UnmanagedType.U4)] public StorageWinConstants.StorageQueryType QueryType;
+        public NvmeStorageProtocolSpecificData ProtocolSpecificData;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct NvmeStorageDataDescriptor {
+        [MarshalAs(UnmanagedType.U4)] public uint Version;
+        [MarshalAs(UnmanagedType.U4)] public uint Size;
+        public NvmeStorageProtocolSpecificData ProtocolSpecificData;
     }
 }

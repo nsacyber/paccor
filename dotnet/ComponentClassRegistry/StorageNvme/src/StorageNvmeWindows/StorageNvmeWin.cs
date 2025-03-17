@@ -245,22 +245,20 @@ public class StorageNvmeWin : IStorageNvme {
         bool endResult = false;
         IntPtr ptr = IntPtr.Zero;
 
-        StorageWinStructs.StoragePropertyQuery query = StorageCommonHelpers.CreateStruct<StorageWinStructs.StoragePropertyQuery>();
-        StorageNvmeWinStructs.NvmeStorageProtocolSpecificData parameters = StorageCommonHelpers.CreateStruct<StorageNvmeWinStructs.NvmeStorageProtocolSpecificData>();
+        int allocationSize = Marshal.SizeOf<StorageNvmeWinStructs.NvmeStoragePropertyQuery>();
+        int dataOffset = Marshal.OffsetOf<StorageNvmeWinStructs.NvmeStorageProtocolSpecificData>("data").ToInt32();
+        StorageNvmeWinStructs.NvmeStoragePropertyQuery query = StorageCommonHelpers.CreateStruct<StorageNvmeWinStructs.NvmeStoragePropertyQuery>();
 
         query.PropertyId = StorageWinConstants.StoragePropertyId.StorageAdapterProtocolSpecificProperty;
         query.QueryType = StorageWinConstants.StorageQueryType.PropertyStandardQuery;
 
-        parameters.specs.ProtocolType = StorageWinConstants.StorageProtocolType.ProtocolTypeNvme;
-        parameters.specs.DataType = (uint)StorageNvmeWinConstants.StorageProtocolNvmeDataType.NVMeDataTypeIdentify;
-        parameters.specs.ProtocolDataRequestValue = (uint)cnsValue; // NVME_IDENTIFY_CNS_SPECIFIC_NAMESPACE or NVME_IDENTIFY_CNS_CONTROLLER
-        parameters.specs.ProtocolDataRequestSubValue = nsid; // >0 if NVME_IDENTIFY_CNS_SPECIFIC_NAMESPACE, 0 if NVME_IDENTIFY_CNS_CONTROLLER
-        parameters.specs.ProtocolDataOffset = (uint)Marshal.OffsetOf<StorageNvmeWinStructs.NvmeStorageProtocolSpecificData>("data").ToInt32();
-        parameters.specs.ProtocolDataLength = StorageNvmeConstants.NVME_IDENTIFY_DATA_BUFFER_SIZE;
+        query.ProtocolSpecificData.ProtocolType = StorageWinConstants.StorageProtocolType.ProtocolTypeNvme;
+        query.ProtocolSpecificData.DataType = (uint)StorageNvmeWinConstants.StorageProtocolNvmeDataType.NVMeDataTypeIdentify;
+        query.ProtocolSpecificData.ProtocolDataRequestValue = (uint)cnsValue; // NVME_IDENTIFY_CNS_SPECIFIC_NAMESPACE or NVME_IDENTIFY_CNS_CONTROLLER
+        query.ProtocolSpecificData.ProtocolDataRequestSubValue = nsid; // >0 if NVME_IDENTIFY_CNS_SPECIFIC_NAMESPACE, 0 if NVME_IDENTIFY_CNS_CONTROLLER
+        query.ProtocolSpecificData.ProtocolDataOffset = (uint)dataOffset;
+        query.ProtocolSpecificData.ProtocolDataLength = StorageNvmeConstants.NVME_IDENTIFY_DATA_BUFFER_SIZE;
 
-        query.AdditionalParameters = StorageCommonHelpers.CreateByteArray(parameters);
-
-        int allocationSize = Marshal.SizeOf(query);
         try {
             // Allocate memory for the buffer
             ptr = Marshal.AllocHGlobal(allocationSize);
@@ -279,10 +277,10 @@ public class StorageNvmeWin : IStorageNvme {
                 int systemerror = Marshal.GetLastSystemError();
                 endResult = false;
             } else {
+                StorageNvmeWinStructs.NvmeStorageDataDescriptor dataOut = Marshal.PtrToStructure<StorageNvmeWinStructs.NvmeStorageDataDescriptor>(ptr);
                 byte[] buffer = StorageCommonHelpers.ConvertIntPtrToByteArray(ptr, allocationSize);
-                int offset = Marshal.SizeOf<StorageWinStructs.StoragePropertyQuery>() + Marshal.OffsetOf<StorageNvmeWinStructs.NvmeStorageProtocolSpecificData>("data").ToInt32();
-                data = buffer[offset..];
-                endResult = (data.Length == parameters.specs.ProtocolDataLength);
+                data = dataOut.ProtocolSpecificData.data;
+                endResult = (dataOut.ProtocolSpecificData.data.Length == StorageNvmeConstants.NVME_IDENTIFY_DATA_BUFFER_SIZE);
             }
         } finally {
             Marshal.FreeHGlobal(ptr);
