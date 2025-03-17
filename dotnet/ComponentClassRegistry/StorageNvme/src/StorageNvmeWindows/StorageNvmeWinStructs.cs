@@ -41,6 +41,7 @@ public class StorageNvmeWinStructs {
         public byte[] data;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
     public struct NvmeStorageProtocolSpecificData {
         public StorageWinStructs.StorageProtocolSpecificData specs;
         
