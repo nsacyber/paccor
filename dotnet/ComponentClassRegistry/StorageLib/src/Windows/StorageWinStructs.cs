@@ -31,7 +31,7 @@ public class StorageWinStructs {
         public byte AdapterScansDown;
         public byte CommandQueueing;
         public byte AcceleratedTransfer;
-        [MarshalAs(UnmanagedType.U1)] public StorageWinConstants.StorageBusType BusType;
+        [MarshalAs(UnmanagedType.U1)] public byte BusType; // StorageBusType is an enum (4 bytes), first 3 bytes should be truncated here
         [MarshalAs(UnmanagedType.U2)] public ushort BusMajorVersion;
         [MarshalAs(UnmanagedType.U2)] public ushort BusMinorVersion;
         public byte SrbType;
@@ -51,7 +51,7 @@ public class StorageWinStructs {
         [MarshalAs(UnmanagedType.U4)] public uint ProductIdOffset;
         [MarshalAs(UnmanagedType.U4)] public uint ProductRevisionOffset;
         [MarshalAs(UnmanagedType.U4)] public uint SerialNumberOffset;
-        [MarshalAs(UnmanagedType.U1)] public StorageWinConstants.StorageBusType BusType;
+        [MarshalAs(UnmanagedType.U4)] public StorageWinConstants.StorageBusType BusType;
         [MarshalAs(UnmanagedType.U4)] public uint RawPropertiesLength;
 
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 1)]

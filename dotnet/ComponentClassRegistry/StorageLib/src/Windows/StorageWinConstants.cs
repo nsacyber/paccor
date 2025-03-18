@@ -86,7 +86,7 @@ public class StorageWinConstants {// Windows Constants
     }
 
     // Windows STORAGE_BUS_TYPE: winioctl.h
-    public enum StorageBusType : byte {
+    public enum StorageBusType : uint {
         BusTypeUnknown = 0x00,
         BusTypeScsi,
         BusTypeAtapi,
