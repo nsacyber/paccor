@@ -88,7 +88,7 @@ public class StorageNvmeWin : IStorageNvme {
             bool pciRead = GetPciConfigFromCfgMgr(out byte[] config, disk.DiskNumber);
 
             if (nvmeCtrlRead && pciRead) {
-                PcieDevice pciDev = new(config, Array.Empty<byte>());
+                PcieDevice pciDev = new(config, []);
                 StorageNvmeData nvmeData = new(nvmeCtrl, pciDev.ClassCode);
                 list.Add(nvmeData);
             }
@@ -99,20 +99,20 @@ public class StorageNvmeWin : IStorageNvme {
     }
 
     public static bool GetPciConfigFromCfgMgr(out byte[] config, int diskNumber) {
-        config = Array.Empty<byte>();
-
+        config = [];
+        
         bool sdnFound = StorageWin.GetStorageDeviceNumber(out StorageWinStructs.StorageDeviceNumber sdn, diskNumber);
 
         if (!sdnFound) {
             return false;
         }
-
+        
         bool pciListFound = PciWinCfgMgr.GetDiskDevInterfaces(out List<string> diskDeviceInterfaceIdsW);
 
         if (!pciListFound) {
             return false;
         }
-
+        
         bool foundDeviceInterfaceId = false;
         string instanceId = string.Empty;
         // Find the device instance id that matches the storage device number

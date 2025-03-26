@@ -50,22 +50,22 @@ public class PciWinCfgMgr {
 
     // Public so other libraries can use these ids as handles
     public static bool GetDevInterfaces(out List<string> deviceInterfaceIdsW, Guid guid) {
-        deviceInterfaceIdsW = Array.Empty<string>().ToList();
+        deviceInterfaceIdsW = [];
         
         IntPtr pDeviceId = IntPtr.Zero; // List all Interfaces
         uint flags = CfgConstants.CM_GET_DEVICE_INTERFACE_LIST_ALL_DEVICES;
 
         // Get the buffer size required to store all the device interface IDs
         CfgConstants.ConfigRet response = CfgImports.CM_Get_Device_Interface_List_SizeW(out uint dataLength, ref guid, pDeviceId, flags);
-
+        
         if (response != CfgConstants.ConfigRet.CR_SUCCESS) {
             return false;
         }
-
+        
         IntPtr dataPtr = IntPtr.Zero;
         try {
             // Allocate memory for the device interface IDs given the previous dataLength response
-            dataPtr = Marshal.AllocHGlobal((int)dataLength);
+            dataPtr = Marshal.AllocHGlobal((int)dataLength*2); // double because of wide strings
 
             // Query the system for the device interface IDs
             response = CfgImports.CM_Get_Device_Interface_ListW(ref guid, pDeviceId, dataPtr, dataLength, flags);
@@ -73,7 +73,7 @@ public class PciWinCfgMgr {
             if (response != CfgConstants.ConfigRet.CR_SUCCESS) {
                 return false;
             }
-
+           
             // Response was successful
             string dataString = Marshal.PtrToStringUni(dataPtr, (int)dataLength);
             string[] split = dataString.Split('\0');
@@ -89,7 +89,7 @@ public class PciWinCfgMgr {
 
     // Both lists should be the same size
     public static bool GetDeviceInterfaceInstanceIds(out List<string> deviceInterfaceInstanceIds, List<string> deviceInterfaceIdsW) {
-        deviceInterfaceInstanceIds = Array.Empty<string>().ToList();
+        deviceInterfaceInstanceIds = [];
 
         foreach (string deviceInterfaceIdW in deviceInterfaceIdsW) {
             if (!GetDeviceInterfaceInstanceId(out string deviceInterfaceInstanceId, deviceInterfaceIdW)) {
@@ -103,7 +103,6 @@ public class PciWinCfgMgr {
     }
 
     public static bool GetDeviceInterfaceInstanceId(out string deviceInterfaceInstanceId, string deviceInterfaceIdW) {
-
         deviceInterfaceInstanceId = "";
 
         CfgStructs.DevPropKey instanceIdKey = CfgConstants.DEVPKEY_Device_InstanceId;
@@ -130,7 +129,7 @@ public class PciWinCfgMgr {
     }
 
     public static bool CreateMockConfigBufferFromPciDeviceInstanceId(out byte[] config, out bool isLittleEndian, string deviceInstanceId) {
-        config = Array.Empty<byte>();
+        config = [];
         isLittleEndian = BitConverter.IsLittleEndian;
 
         CfgConstants.ConfigRet response = CfgImports.CM_Locate_DevNode(out IntPtr devNodePtr, deviceInstanceId,
@@ -145,7 +144,7 @@ public class PciWinCfgMgr {
 
     // The dev node is expected to be for a PCI device
     public static bool CreateMockConfigBufferFromPciDevNode(out byte[] config, out bool isLittleEndian, IntPtr devNodePtr) {
-        config = Array.Empty<byte>();
+        config = [];
         isLittleEndian = BitConverter.IsLittleEndian;
 
         bool gotIds = ParseHardwareIdsFromDevNode(out ushort VendorId, out ushort DeviceId, out ushort SubsystemVendorId, out ushort SubsystemId, out byte Revision, out byte Class, out byte SubClass, out byte ProgrammingInterface, devNodePtr);
@@ -160,12 +159,9 @@ public class PciWinCfgMgr {
             GetPciClassCodeFromDevNode(out Class, out SubClass, out ProgrammingInterface, devNodePtr);
         }
 
-        byte[] ccBytes = new byte[3];
-        ccBytes[0] = Class;
-        ccBytes[1] = SubClass;
-        ccBytes[2] = ProgrammingInterface;
+        byte[] ccBytes = [Class, SubClass, ProgrammingInterface];
         if (isLittleEndian) {
-            Array.Reverse<byte>(ccBytes);
+            Array.Reverse(ccBytes);
         }
 
         config = new byte[gotDsn ? CfgConstants.PCIE_CONFIG_SIZE : CfgConstants.PCI_CONFIG_SIZE];
@@ -183,7 +179,7 @@ public class PciWinCfgMgr {
             config[0x102] = 0x00;
             config[0x103] = 0x00;
             if (isLittleEndian) {
-                Array.Reverse<byte>(dsnBytes);
+                Array.Reverse(dsnBytes);
             }
             Array.Copy(dsnBytes, 0, config, 0x104, dsnBytes.Length);
         }
@@ -235,7 +231,7 @@ public class PciWinCfgMgr {
     }
 
     private static bool GetByteArrayFromDevNodeProperty(out byte[] propertyValue, CfgStructs.DevPropKey devpkey, CfgConstants.DevpropTypeFixed expectedPropertyType, IntPtr devNodePtr) {
-        propertyValue = Array.Empty<byte>();
+        propertyValue = [];
 
         uint expectedBufferLength = 0;
         uint bufferLength = CfgConstants.DEVPROP_BUFFER_SIZE;
@@ -263,7 +259,7 @@ public class PciWinCfgMgr {
     }
 
     public static bool GetStringListFromDevNodeProperty(out List<string> propertyValue, CfgStructs.DevPropKey devpkey, IntPtr devNodePtr) {
-        propertyValue = new List<string>();
+        propertyValue = [];
 
         uint expectedPropertyType = CfgConstants.DEVPROP_TYPE_STRING_LIST;
         uint bufferLength = CfgConstants.DEVPROP_BUFFER_SIZE;
@@ -356,13 +352,11 @@ public class PciWinCfgMgr {
                 }
             }
         }
-
-        Console.WriteLine();
         return result;
     }
 
     public static bool GetPciDeviceSerialNumberFromDevNode(out byte[] dsnBytes, IntPtr devNodePtr) {
-        dsnBytes = Array.Empty<byte>();
+        dsnBytes = [];
 
         bool result = GetByteArrayFromDevNodeProperty(out dsnBytes, CfgConstants.DEVPKEY_PciDevice_SerialNumber, CfgConstants.DevpropTypeFixed.DEVPROP_TYPE_UINT64, devNodePtr);
 
