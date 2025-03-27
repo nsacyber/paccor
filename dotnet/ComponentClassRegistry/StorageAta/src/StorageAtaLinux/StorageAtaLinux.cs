@@ -42,6 +42,20 @@ public class StorageAtaLinux : IStorageAta {
                 continue;
             }
 
+            bool readPage01 = StorageAtaLinux.QueryAtaLogPage(
+                                out byte[] page01Data,
+                                handle,
+                                StorageAtaConstants.AtaLogAddress.IdentifyDeviceDataLog,
+                                StorageAtaConstants.AtaIdentifyDeviceLogPage.IdentifyDeviceData,
+                                useDma
+                                    ? StorageAtaConstants.AtaCommand.ReadLogDmaExt
+                                    : StorageAtaConstants.AtaCommand.ReadLogExt);
+
+            if (!readPage01) {
+                noProblems = false;
+                continue;
+            }
+
             bool readPage05 = StorageAtaLinux.QueryAtaLogPage(
                                 out byte[] page05Data,
                                 handle,
@@ -56,7 +70,7 @@ public class StorageAtaLinux : IStorageAta {
                 continue;
             }
 
-            bool build = StorageAtaData.Build(out StorageAtaData ataData, page03Data, page05Data);
+            bool build = StorageAtaData.Build(out StorageAtaData ataData, page01Data, page03Data, page05Data);
 
 
             if (!build) {

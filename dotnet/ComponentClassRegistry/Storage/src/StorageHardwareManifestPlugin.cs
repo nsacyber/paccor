@@ -5,6 +5,7 @@ using StorageAta;
 using StorageLib;
 using StorageNvme;
 using StorageScsi;
+using System;
 using System.Buffers.Binary;
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
@@ -53,9 +54,9 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
                     COMPONENTCLASSREGISTRY = storageRegistryOid,
                     COMPONENTCLASSVALUE = "000000" + ATA_FormFactor(data.Capabilities.FormFactor)
                 },
-                MANUFACTURER = ATA_AOI(data.Capabilities.WWN),
+                MANUFACTURER = ATA_AOI(data.Identify.WWN),
                 MODEL = ATA_String(data.Strings.MN),
-                SERIAL = ATA_String(data.Strings.SN) + ":" + ATA_UNIQUEID(data.Capabilities.WWN),
+                SERIAL = ATA_String(data.Strings.SN) + ":" + ATA_UNIQUEID(data.Identify.WWN),
                 REVISION = ATA_String(data.Strings.FR)
             };
             manifest.COMPONENTS.Add(component);
@@ -107,66 +108,48 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
     }
 
     public static string ATA_AOI(byte[] wwn) {
-        byte[] wwnClone = (byte[])wwn.Clone();
+        byte[] wwnClone = ATA_Rotate(wwn);
 
         string hex = NVMe_Val(wwnClone, false);
 
         string wwnStr = "";
 
         // Word 108 bits 11:0 and word 109 bits 15:4 contain the OUI/AOI
-        if (hex.Length == 32 && hex.StartsWith("8000000000000000")) {
-            wwnStr = hex[17..23];
-        } else if (hex.Length == 32 && hex.EndsWith("0000000000000080")) {
-            wwnStr = hex[0..16];
-
-            char[] wwnChars = wwnStr.ToCharArray();
-            for (int i = 0; i < wwnChars.Length; i += 4) {
-                wwnChars[i] = wwnStr[i + 2];
-                wwnChars[i + 1] = wwnStr[i + 3];
-                wwnChars[i + 2] = wwnStr[i];
-                wwnChars[i + 3] = wwnStr[i + 1];
-            }
-            wwnStr = new string(wwnChars[1..7]);
+        if (hex.Length == 16) {
+            wwnStr = hex[1..7];
         }
 
         return wwnStr;
     }
 
     public static string ATA_UNIQUEID(byte[] wwn) {
-        byte[] wwnClone = (byte[])wwn.Clone();
+        byte[] wwnClone = ATA_Rotate(wwn);
 
         string hex = NVMe_Val(wwnClone, false);
 
         string wwnStr = "";
 
         // Word 109 bits 3:0, word 110:111 contain the UNIQUE ID
-        if (hex.Length == 32 && hex.StartsWith("8000000000000000")) {
-            wwnStr = hex[23..32];
-        } else if (hex.Length == 32 && hex.EndsWith("0000000000000080")) {
-            wwnStr = hex[0..16];
-
-            char[] wwnChars = wwnStr.ToCharArray();
-            for (int i = 0; i < wwnChars.Length; i += 4) {
-                wwnChars[i] = wwnStr[i + 2];
-                wwnChars[i + 1] = wwnStr[i + 3];
-                wwnChars[i + 2] = wwnStr[i];
-                wwnChars[i + 3] = wwnStr[i + 1];
-            }
-            wwnStr = new string(wwnChars[7..16]);
+        if (hex.Length == 16) {
+            wwnStr = hex[7..16];
         }
 
         return wwnStr;
     }
 
-    public static string ATA_String(byte[] val) {
+    public static byte[] ATA_Rotate(byte[] val) {
         byte[] valClone = (byte[])val.Clone();
-
         int len = valClone.Length - valClone.Length % 2;
-        for (int i = 0; i < len; i+=2) {
+        for (int i = 0; i < len; i += 2) {
             byte swap = valClone[i];
-            valClone[i] = valClone[i+1];
-            valClone[i+1] = swap;
+            valClone[i] = valClone[i + 1];
+            valClone[i + 1] = swap;
         }
+        return valClone;
+    }
+
+    public static string ATA_String(byte[] val) {
+        byte[] valClone = ATA_Rotate(val);
         return System.Text.Encoding.ASCII.GetString(valClone).Trim(' ', '\0');
     }
 

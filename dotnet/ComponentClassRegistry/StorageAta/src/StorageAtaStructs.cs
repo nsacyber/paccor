@@ -263,6 +263,19 @@ public class StorageAtaStructs {
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public struct AtaIdentifyData {
+        // Overall size must be 512 bytes (256 x 2 bytes = 512 bytes)
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 216)]
+        internal byte[] DontCare1; // 0:215 Just need this page for WWN. May fill the rest in another time.
+
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]
+        public byte[] WWN; // byte 216:223 World Wide Name
+
+        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 288)]
+        internal byte[] DontCare2; // 224:511 Just need this page for WWN. May fill the rest in another time.
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public struct AtaCapabilitiesData {
         // Overall size must be 512 bytes (256 x 2 bytes = 512 bytes)
         [MarshalAs(UnmanagedType.ByValArray, SizeConst = 8)]

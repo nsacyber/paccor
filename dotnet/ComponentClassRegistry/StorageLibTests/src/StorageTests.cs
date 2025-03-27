@@ -154,13 +154,26 @@ public class StorageTests {
         "\" }"
     };
 
+    // Test data for internal functions
+    public static readonly byte[] AtaRotateTestInput1 = [0x00, 0x50, 0x00, 0xc5, 0x03, 0xdc, 0x3a, 0xa9];
+
+    public static readonly byte[] AtaRotateTestOutput1 = [0x50, 0x00, 0xc5, 0x00, 0xdc, 0x03, 0xa9, 0x3a];
+
+    [Test]
+    public void TestAtaRotateFunction() {
+        Assert.That(StorageHardwareManifestPlugin.ATA_Rotate(AtaRotateTestInput1), Is.EqualTo(AtaRotateTestOutput1));
+    }
+
 
     [Test]
     public void TestRegistryA21Sample1() {
+        byte[] page1 = new byte[512];
+        byte[] value = [0xBC, 0x5A, 0xF1, 0xDE, 0x23, 0x12, 0x45, 0x34];
+        Array.Copy(value, 0, page1, 216, 8);
         byte[] page3 = Convert.FromBase64String(RegistryA21AtaComponentSample1Page3Base64);
         byte[] page5 = Convert.FromBase64String(RegistryA21AtaComponentSample1Page5Base64);
 
-        bool build = StorageAtaData.Build(out StorageAtaData ataData, page3, page5);
+        bool build = StorageAtaData.Build(out StorageAtaData ataData, page1, page3, page5);
         Assert.That(build, Is.True);
 
         List<StorageAtaData> ataDataList = [ataData];
@@ -188,13 +201,15 @@ public class StorageTests {
 
     [Test]
     public void TestAtaUniqueId() {
-        byte[] page3 = Convert.FromBase64String(RegistryA21AtaComponentSample1Page3Base64);
+        byte[] page1 = new byte[512];
+        byte[] value = [0xBC, 0x5A, 0xF1, 0xDE, 0x23, 0x12, 0x45, 0x34];
+        Array.Copy(value, 0, page1, 216, 8);
 
-        StorageAtaStructs.AtaCapabilitiesData capsData = StorageCommonHelpers.CreateStruct<StorageAtaStructs.AtaCapabilitiesData>(page3);
+        StorageAtaStructs.AtaIdentifyData identData = StorageCommonHelpers.CreateStruct<StorageAtaStructs.AtaIdentifyData>(page1);
 
         Assert.Multiple(() => {
-            Assert.That(StorageHardwareManifestPlugin.ATA_UNIQUEID(capsData.WWN), Is.EqualTo(RegistryA21AtaComponentSample1UniqueId));
-            Assert.That(StorageHardwareManifestPlugin.ATA_UNIQUEID(capsData.WWN[0..2]), Is.Not.EqualTo(RegistryA21AtaComponentSample1UniqueId));
+            Assert.That(StorageHardwareManifestPlugin.ATA_UNIQUEID(identData.WWN), Is.EqualTo(RegistryA21AtaComponentSample1UniqueId));
+            Assert.That(StorageHardwareManifestPlugin.ATA_UNIQUEID(identData.WWN[0..2]), Is.Not.EqualTo(RegistryA21AtaComponentSample1UniqueId));
         });
     }
 
@@ -214,13 +229,15 @@ public class StorageTests {
 
     [Test]
     public void TestAtaAoi() {
-        byte[] page3 = Convert.FromBase64String(RegistryA21AtaComponentSample1Page3Base64);
+        byte[] page1 = new byte[512];
+        byte[] value = [0xBC, 0x5A, 0xF1, 0xDE, 0x23, 0x12, 0x45, 0x34];
+        Array.Copy(value, 0, page1, 216, 8);
 
-        StorageAtaStructs.AtaCapabilitiesData capsData = StorageCommonHelpers.CreateStruct<StorageAtaStructs.AtaCapabilitiesData>(page3);
+        StorageAtaStructs.AtaIdentifyData identData = StorageCommonHelpers.CreateStruct<StorageAtaStructs.AtaIdentifyData>(page1);
 
         Assert.Multiple(() => {
-            Assert.That(StorageHardwareManifestPlugin.ATA_AOI(capsData.WWN), Is.EqualTo(RegistryA21AtaComponentSample1Aoi));
-            Assert.That(StorageHardwareManifestPlugin.ATA_AOI(capsData.WWN[0..2]), Is.Not.EqualTo(RegistryA21AtaComponentSample1Aoi));
+            Assert.That(StorageHardwareManifestPlugin.ATA_AOI(identData.WWN), Is.EqualTo(RegistryA21AtaComponentSample1Aoi));
+            Assert.That(StorageHardwareManifestPlugin.ATA_AOI(identData.WWN[0..2]), Is.Not.EqualTo(RegistryA21AtaComponentSample1Aoi));
         });
     }
 
