@@ -141,19 +141,23 @@ public sealed class SmbiosHardwareManifestPlugin : HardwareManifestPluginBase {
         return index > 0 ? table.Strings[table.Data[offset]-1] : "";
     }
 
-    public static string Value(SmbiosTable table, int offset) {
-        return Value(table, offset, 1);
-    }
-
-    public static string Value(SmbiosTable table, int offset, int length) {
-        return Convert.ToHexString(table.Data[offset..(offset+length)]);
+    public static string Value(SmbiosTable table, int offset, int length = 1) {
+        int end = offset + length;
+        byte[] data;
+        if (end <= table.Data.Length) {
+            data = table.Data[offset..end];
+        } else {
+            data = new byte[length];
+            Array.Fill<byte>(data, 0x00);
+        }
+        return Convert.ToHexString(data);
     }
 
     public static bool BitField(SmbiosTable table, int offset, int testValue) {
-        return table.Data[offset] != testValue;
+        return offset < table.Data.Length && table.Data[offset] != testValue;
     }
 
     public static bool BitField(SmbiosTable table, int offset, int mask, int testValue) {
-        return (table.Data[offset] & mask) != testValue;
+        return offset < table.Data.Length && (table.Data[offset] & mask) != testValue;
     }
 }
