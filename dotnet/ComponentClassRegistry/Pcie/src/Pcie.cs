@@ -90,8 +90,8 @@ public class Pcie {
             string configFile = Path.GetFullPath(Path.Combine(folderPath, "config"));
             string vpdFile = Path.GetFullPath(Path.Combine(folderPath, "vpd"));
             string netFolder = Path.GetFullPath(Path.Combine(folderPath, "net"));
-            byte[] configBytes = Array.Empty<byte>();
-            byte[] vpdBytes = Array.Empty<byte>();
+            byte[] configBytes = [];
+            byte[] vpdBytes = [];
 
             // Read bytes from these files. If there's no config header, don't collect vpd.
             if (File.Exists(configFile)) {

@@ -69,7 +69,7 @@ public class PcieDevice {
     }
 
     public PcieDevice(byte[] inConfig, byte[] inVpd, bool littleEndian) {
-        Config = inConfig.Length > 0 ? inConfig : Array.Empty<byte>();
+        Config = inConfig.Length > 0 ? inConfig :[];
 
         ConfigType = (Config.Length > 0xD) ? Config[0xE] & 0x7 : 0;
 
@@ -79,10 +79,10 @@ public class PcieDevice {
         ClassCode = (Config.Length > 10) ? new ClassCode(inConfig[0x9..0xC], littleEndian) : new ClassCode();
         SubsystemVendorId = (ConfigType == 0 && Config.Length > 0x2C) ? new PcieId(inConfig[0x2C..0x2E], littleEndian) : new PcieId();
         SubsystemId = (ConfigType == 0 && Config.Length > 0x2E) ? new PcieId(inConfig[0x2E..0x30], littleEndian) : new PcieId();
-        DeviceSerialNumber = (Config.Length > 0x100) ? SeekDsn(inConfig[0x100..], littleEndian) : Array.Empty<byte>();
+        DeviceSerialNumber = (Config.Length > 0x100) ? SeekDsn(inConfig[0x100..], littleEndian) : [];
 
         if (inVpd.Length <= 0) {
-            Vpd = Array.Empty<byte>();
+            Vpd = [];
             return;
         }
 
@@ -93,7 +93,7 @@ public class PcieDevice {
         VpdSn = sn;
     }
     public static byte[] SeekDsn(byte[] inData, bool littleEndian = true) {
-        byte[] dsn = Array.Empty<byte>();
+        byte[] dsn = [];
         int pos = 0;
         while((pos+12) < inData.Length) {
             byte[] capIdBytes = inData[pos..(pos + 2)];
@@ -106,6 +106,7 @@ public class PcieDevice {
                 if (littleEndian) {
                     Array.Reverse(dsn);
                 }
+
                 break;
             } else {
                 byte[] nextCapBytes = inData[(pos + 2)..(pos + 4)];
@@ -113,7 +114,11 @@ public class PcieDevice {
                     Array.Reverse(nextCapBytes);
                 }
                 ushort nextCap = BinaryPrimitives.ReadUInt16BigEndian(nextCapBytes);
-                pos = nextCap - 0x100;
+                nextCap >>= 4;
+                if (nextCap == 0) {
+                    break;
+                }
+                pos = nextCap - 0x100; // inData is not given the initial 256 bytes of the config space
             }
         }
         return dsn;
