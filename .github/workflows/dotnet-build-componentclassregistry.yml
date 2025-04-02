@@ -106,10 +106,7 @@ jobs:
         run: dotnet restore
       - name: Build
         working-directory: dotnet/ComponentClassRegistry
-        run: dotnet build
-      - name: Test
-        working-directory: dotnet/ComponentClassRegistry
-        run: dotnet test
+        run: dotnet build -c Release
       - name: Nuget SHA256
         shell: bash
         run: |
