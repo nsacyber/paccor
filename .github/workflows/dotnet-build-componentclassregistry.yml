@@ -88,5 +88,23 @@ jobs:
           dotnet/ComponentClassRegistry/StorageCli/**/*.deb
           dotnet/ComponentClassRegistry/StorageCli/**/*.rpm
           dotnet/ComponentClassRegistry/StorageCli/**/*.zip
+    - name: Nuget SHA256
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          sha256sum dotnet/ComponentClassRegistry/**/bin/Release/*nupkg
+        elif [ "$RUNNER_OS" == "Windows" ]; then
+          Get-FileHash -Algorithm SHA256 -Path (Get-ChildItem dotnet/ComponentClassRegistry/**/bin/Release/*nupkg)
+        else
+          echo "$RUNNER_OS not supported"
+          exit 1
+        fi
+    - name: Nuget Packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget.pkgs
+        retention-days: 1
+        if-no-files-found: error
+        path: |
+          dotnet/ComponentClassRegistry/**/bin/Release/*nupkg
       
       
