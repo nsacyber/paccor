@@ -83,7 +83,15 @@ jobs:
         retention-days: 1
         if-no-files-found: error
         path: |
-          dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/**/**/**/*.{deb,rpm,zip}
+          dotnet/ComponentClassRegistry/SmbiosCli/**/*.deb
+          dotnet/ComponentClassRegistry/SmbiosCli/**/*.rpm
+          dotnet/ComponentClassRegistry/SmbiosCli/**/*.zip
+          dotnet/ComponentClassRegistry/PcieCli/**/*.deb
+          dotnet/ComponentClassRegistry/PcieCli/**/*.rpm
+          dotnet/ComponentClassRegistry/PcieCli/**/*.zip
+          dotnet/ComponentClassRegistry/StorageCli/**/*.deb
+          dotnet/ComponentClassRegistry/StorageCli/**/*.rpm
+          dotnet/ComponentClassRegistry/StorageCli/**/*.zip
   nuget:
     runs-on: ubuntu-latest
     needs: build
