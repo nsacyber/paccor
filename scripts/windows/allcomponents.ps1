@@ -864,7 +864,10 @@ $componentArray=(jsonComponentArray "$componentChassis" "$componentBaseboard" "$
 
 ### Gather property details
 Write-Progress -Id 1 -Activity "Gathering properties" -PercentComplete 80
-$osCaption=((wmic os get caption /value | Select-String -Pattern "^.*=(.*)$").Matches.Groups[1].ToString().Trim())
+$osCaption=(Get-WmiObject -Class Win32_OperatingSystem).caption
+if ($osCaption -ne $null) {
+    $osCaption = $osCaption.Trim()
+}
 $property1=(jsonProperty "caption" "$osCaption")  ## Example1
 $property2=(jsonProperty "caption" "$osCaption") # "$JSON_STATUS_ADDED") ## Example2 with optional third status argument
 
