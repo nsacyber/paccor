@@ -322,7 +322,7 @@ public class ComponentIdentifierV2Factory {
                             ComponentIdentifierV2Factory.ComponentAddressType type = ComponentIdentifierV2Factory.ComponentAddressType.valueOf(addressNode.getKey());
                             String rawAddress = addressNode.getValue().asText().trim();
                             
-                            if(rawAddress != null && !rawAddress.isEmpty()) {
+                            if(serial != null && rawAddress != null && !rawAddress.isEmpty()) {
                                 String filtered = standardizeMAC(rawAddress);
                                 component.addComponentAddress(type, filtered);
                                 if(rawAddress.equalsIgnoreCase(serial.asText())) {
