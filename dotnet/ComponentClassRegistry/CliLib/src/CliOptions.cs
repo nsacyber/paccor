@@ -13,6 +13,10 @@ public class CliOptions {
     public bool PrintV3 {
         get; set;
     }
+    [Option("components-only", Default = false, HelpText = "Only output the JSON elements within the COMPONENTS array.")]
+    public bool ComponentsOnly {
+        get; set;
+    }
 
     private static void HandleParseError(IEnumerable<Error> errs) {
         //handle errors
