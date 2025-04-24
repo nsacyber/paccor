@@ -147,6 +147,10 @@ ethtoolPermAddr () {
     str=$(ethtool -P "$iface" 2> /dev/null | grep -e "^Perm.*$" | sed 's/^Permanent address: \([0-9a-f:]\+\)$/\1/')
     printf "$str"
 }
+standardizeMACAddr () {
+    mac=$(printf "${1}" | tr -d "[[:space:]]:-" | awk '{ print toupper($0) }')
+    printf "$mac"
+}
 #lshwParse "disk"
 #lshwNetwork
 #echo ${items[0]}
