@@ -59,9 +59,10 @@ public class PlatformPropertiesV2 extends ASN1Object {
 			throw new IllegalArgumentException("Expected DEROctetString, received " + elements[0].getClass().getName());
 		}
 		int pos = 2;
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 0)) {
-            if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof AttributeStatus) {
-                status = (AttributeStatus)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 0)) {
+			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+            if (elementObject instanceof AttributeStatus as) {
+                status = as;
             } else {
                 throw new IllegalArgumentException("Expected AttributeStatus object, but received " + elements[pos].getClass().getName());
             }

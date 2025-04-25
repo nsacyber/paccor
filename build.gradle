@@ -1,64 +1,35 @@
-wrapper {
-    gradleVersion = '4.5.1'
+plugins {
+    id 'application'
+    id 'com.netflix.nebula.ospackage' version '11.11.2'
+    id 'java'
+    id 'maven-publish'
+    id 'signing'
 }
-import org.gradle.util.VersionNumber
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
 
 allprojects {
     repositories {
         mavenCentral();
     }
 
-    tasks.withType(Test) {
-        afterSuite { desc, result ->
-            if (desc.parent == null) {
-                logger.lifecycle("${result.successfulTestCount}/${result.testCount} tests passed")
-            }
-        }
-    }
-
     // Version definitions of all of the libraries we're using.  They're defined
     // here to ensure that all projects are using the same versions of common
     // dependencies:
     ext.libs = [
-      bouncycastle:  ['org.bouncycastle:bcpkix-jdk15on:1.67', // Bouncy Castle license
-                      'org.bouncycastle:bcprov-ext-jdk15on:1.67'],
-      jackson:       ['com.fasterxml.jackson.core:jackson-core:2.15.2', // Apache 2.0
-                      'com.fasterxml.jackson.core:jackson-annotations:2.15.2',
-                      'com.fasterxml.jackson.core:jackson-databind:2.15.2'],
-      jcommander:    'com.beust:jcommander:1.72', // Apache 2.0
-      junit:         'junit:junit:4.13.2', // EPL 1.0
-      powermock:     ['org.powermock:powermock-module-junit4:1.6.5', // Apache 2.0
-                      'org.powermock:powermock-api-mockito:1.6.5']
+      bouncycastle:  ['org.bouncycastle:bcpkix-jdk18on:1.80', // Bouncy Castle license
+                      'org.bouncycastle:bcprov-jdk18on:1.80'],
+      jackson:       ['com.fasterxml.jackson.core:jackson-core:2.18.3', // Apache 2.0
+                      'com.fasterxml.jackson.core:jackson-annotations:2.18.3',
+                      'com.fasterxml.jackson.core:jackson-databind:2.18.3'],
+      jcommander:     'org.jcommander:jcommander:2.0', // Apache 2.0
+      junit:          'org.junit.jupiter:junit-jupiter:5.12.2', // EPL 2.0
+      mockito:       'org.mockito:mockito-junit-jupiter:5.17.0' // MIT
     ]
 }
-
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {
-        // The ospackage plugin has breaking differences based on gradle version
-        // paccor must support gradle 4.5.1 for the forseeable future
-        String ospackage_version = "4.9.3" // verified to work with gradle 4.5.1
-        if ((VersionNumber.parse(gradle.gradleVersion) >= VersionNumber.parse('5.1'))) {
-            ospackage_version = "8.4.1"
-            project.logger.lifecycle("Selecting ospackage $ospackage_version for your gradle version $gradle.gradleVersion.")
-            project.logger.lifecycle("Customize the ospackage_version variable in build.gradle if met with plugin errors.")
-        }
-        classpath "com.netflix.nebula:gradle-ospackage-plugin:$ospackage_version"
-    }
-}
-
-apply plugin: 'eclipse'
-apply plugin: 'java'
-apply plugin: 'application'
-apply plugin: 'nebula.ospackage'
-apply plugin: 'maven'
-apply plugin: 'signing'
-
-ext.refsDir = new File(projectDir, 'refs')
-
-sourceCompatibility = 1.8
 
 dependencies {
     implementation libs.bouncycastle
@@ -66,81 +37,67 @@ dependencies {
     implementation libs.jcommander
 
     testImplementation libs.junit
-    testImplementation libs.powermock
+    testImplementation libs.mockito
 }
 
 // Maven packaging and signing
-group = 'io.github.nsacyber.paccor'
-version = '1.1.4r12'
-project.gradle.taskGraph.whenReady { graph ->
-    project.tasks.findAll().forEach { task ->
-      if (task.name.contains("signArchives") || task.name.contains("uploadArchives")) {
-          // If this is set to true, the signing and maven
-          // properties in gradle.properties must be set.
-          task.enabled = false 
-    }
-  }
-}
-task javadocJar(type: Jar) {
-    classifier = 'javadoc'
-    from javadoc
-}
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            pom {
+                from components.java
 
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-}
+                description = 'The Platform Attribute Certificate Creator can gather component details, create, sign, and validate the TCG-defined Platform Credential. #nsacyber'
+                group = 'io.github.nsacyber.paccor'
+                name = 'paccor'
+                packaging = 'jar'
+                url = 'https://github.com/nsacyber/paccor'
+                version = '1.1.4r12'
 
-artifacts {
-    archives javadocJar, sourcesJar
-}
-
-signing {
-    sign configurations.archives
-}
-
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            pom.project {
-                name 'paccor'
-                packaging 'jar'
-                // optionally artifactId can be defined here
-                description 'The Platform Attribute Certificate Creator can gather component details, create, sign, and validate the TCG-defined Platform Credential. #nsacyber'
-                url 'https://github.com/nsacyber/paccor'
-
-                scm {
-                  connection 'scm:git:git://github.com:nsacyber/paccor.git'
-                  developerConnection 'scm:git:git://github.com:nsacyber/paccor.git'
-                  url 'https://github.com/nsacyber/paccor'
-                }
                 licenses {
                     license {
-                        name 'The Apache Software License, Version 2.0'
-                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                        distribution 'repo'
+                        name = 'The Apache Software License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution = 'repo'
                     }
                 }
+
                 developers {
                     developer {
-                      id 'iadgovuser29'
-                      name 'iadgovuser29'
-                      email '33426478+iadgovuser29@users.noreply.github.com'
-                      organization 'NSA Cybersecurity Directorate'
-                      organizationUrl 'https://github.com/nsacyber'
+                        id = 'iadgovuser29'
+                        name = 'iadgovuser29'
+                        email = '33426478+iadgovuser29@users.noreply.github.com'
+                        organization = 'NSA Cybersecurity Directorate'
+                        organizationUrl = 'https://github.com/nsacyber'
                     }
                 }
-            }
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-            repository(url: "https://${sonatypeDomain}/service/local/staging/deploy/maven2/") {
-                authentication(userName: ossrhUsername, password: ossrhPassword)
-            }
-            snapshotRepository(url: "https://${sonatypeDomain}/content/repositories/snapshots/") {
-                authentication(userName: ossrhUsername, password: ossrhPassword)
+                scm {
+                  connection = 'scm:git:git://github.com:nsacyber/paccor.git'
+                  developerConnection = 'scm:git:git://github.com:nsacyber/paccor.git'
+                  url = 'https://github.com/nsacyber/paccor'
+                }
             }
         }
     }
+    repositories {
+        maven {
+            def domain = hasProperty('sonatypeDomain') ? sonatypeDomain : ""
+            def user = hasProperty('ossrhUsername') ? ossrhUsername : ""
+            def pass = hasProperty('ossrhPassword') ? ossrhPassword : ""
+            def releasesRepoUrl = "https://${domain}/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl = "https://${domain}/content/repositories/snapshots/"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            credentials {
+                username = user
+                password = pass
+            }
+        }
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
 }
 
 // Application packaging into a zip file

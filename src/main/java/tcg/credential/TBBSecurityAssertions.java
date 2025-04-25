@@ -62,25 +62,28 @@ public class TBBSecurityAssertions extends ASN1Object {
 			ccInfo = (CommonCriteriaMeasures) elements[pos];
 			pos++;
 		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 0)) {
-			if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof CommonCriteriaMeasures) {
-				ccInfo = (CommonCriteriaMeasures)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 0)) {
+			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+			if (elementObject instanceof CommonCriteriaMeasures ccm) {
+				ccInfo = ccm;
 			} else {
 				throw new IllegalArgumentException("Expected CommonCriteriaMeasures object, but received " + elements[pos].getClass().getName());
 			}
 			pos++;
 		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 1)) {
-			if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof FIPSLevel) {
-				fipsLevel = (FIPSLevel)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 1)) {
+			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+			if (elementObject instanceof FIPSLevel fl) {
+				fipsLevel = fl;
 			} else {
 				throw new IllegalArgumentException("Expected FIPSLevel object, but received " + elements[pos].getClass().getName());
 			}
 			pos++;
 		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 2)) {
-			if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof MeasurementRootType) {
-				rtmType = (MeasurementRootType)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 2)) {
+			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+			if (elementObject instanceof MeasurementRootType mrt) {
+				rtmType = mrt;
 			} else {
 				throw new IllegalArgumentException("Expected MeasurementRootType object, but received " + elements[pos].getClass().getName());
 			}
