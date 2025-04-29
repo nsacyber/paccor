@@ -177,6 +177,7 @@ public class PlatformCertificateFactory {
      * @param tcs {@link TCGSpecificationVersion}
      * @return The PlatformCertificateFactory object with the TCG certificate specification set.
      */
+    @Deprecated
     public final PlatformCertificateFactory tcgCredentialSpecification(final TCGSpecificationVersion tcs) {
         attributes.put(TCGObjectIdentifier.tcgAtTcgCredentialSpecification, tcs);
         return this;
