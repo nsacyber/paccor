@@ -1,0 +1,123 @@
+name: .NET build ComponentClassRegistry
+
+on:
+  push:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies
+      working-directory: dotnet/ComponentClassRegistry
+      run: dotnet restore
+    - name: Build
+      working-directory: dotnet/ComponentClassRegistry
+      run: dotnet build
+    - name: Test
+      working-directory: dotnet/ComponentClassRegistry
+      run: dotnet test
+    - name: Install Package Tools
+      working-directory: dotnet/ComponentClassRegistry
+      run: |
+        dotnet tool install --global dotnet-deb
+        dotnet tool install --global dotnet-rpm
+        dotnet tool install --global dotnet-zip
+    - name: SMBIOS Cli
+      working-directory: dotnet/ComponentClassRegistry/SmbiosCli
+      run: |
+        dotnet deb install
+        dotnet rpm install
+        dotnet zip install
+        dotnet deb -r linux-x64 -c Debug
+        dotnet rpm -r linux-x64 -c Debug
+        dotnet zip -r linux-x64 -c Debug
+        dotnet zip -r win-x64 -c Debug
+        dotnet deb -r linux-x64 -c Release
+        dotnet rpm -r linux-x64 -c Release
+        dotnet zip -r linux-x64 -c Release
+        dotnet zip -r win-x64 -c Release
+    - name: PCIe Cli
+      working-directory: dotnet/ComponentClassRegistry/PcieCli
+      run: |
+        dotnet deb install
+        dotnet rpm install
+        dotnet zip install
+        dotnet deb -r linux-x64 -c Debug
+        dotnet rpm -r linux-x64 -c Debug
+        dotnet zip -r linux-x64 -c Debug
+        dotnet zip -r win-x64 -c Debug
+        dotnet deb -r linux-x64 -c Release
+        dotnet rpm -r linux-x64 -c Release
+        dotnet zip -r linux-x64 -c Release
+        dotnet zip -r win-x64 -c Release
+    - name: Storage Cli
+      working-directory: dotnet/ComponentClassRegistry/StorageCli
+      run: |
+        dotnet deb install
+        dotnet rpm install
+        dotnet zip install
+        dotnet deb -r linux-x64 -c Debug
+        dotnet rpm -r linux-x64 -c Debug
+        dotnet zip -r linux-x64 -c Debug
+        dotnet zip -r win-x64 -c Debug
+        dotnet deb -r linux-x64 -c Release
+        dotnet rpm -r linux-x64 -c Release
+        dotnet zip -r linux-x64 -c Release
+        dotnet zip -r win-x64 -c Release
+    - name: Artifacts SHA256
+      shell: bash
+      run: |
+        sha256sum dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/**/**/**/*.{deb,rpm,zip} 2> /dev/null
+    - name: Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: testArtifacts.${{ matrix.os }}
+        retention-days: 1
+        if-no-files-found: error
+        path: |
+          dotnet/ComponentClassRegistry/SmbiosCli/**/*.deb
+          dotnet/ComponentClassRegistry/SmbiosCli/**/*.rpm
+          dotnet/ComponentClassRegistry/SmbiosCli/**/*.zip
+          dotnet/ComponentClassRegistry/PcieCli/**/*.deb
+          dotnet/ComponentClassRegistry/PcieCli/**/*.rpm
+          dotnet/ComponentClassRegistry/PcieCli/**/*.zip
+          dotnet/ComponentClassRegistry/StorageCli/**/*.deb
+          dotnet/ComponentClassRegistry/StorageCli/**/*.rpm
+          dotnet/ComponentClassRegistry/StorageCli/**/*.zip
+  nuget:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore dependencies
+        working-directory: dotnet/ComponentClassRegistry
+        run: dotnet restore
+      - name: Build
+        working-directory: dotnet/ComponentClassRegistry
+        run: dotnet build -c Release
+      - name: Nuget SHA256
+        shell: bash
+        run: |
+          sha256sum dotnet/ComponentClassRegistry/**/bin/Release/*nupkg
+      - name: Nuget Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget.pkgs
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            dotnet/ComponentClassRegistry/**/bin/Release/*nupkg
+      
+      
