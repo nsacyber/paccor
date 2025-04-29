@@ -1,31 +1,27 @@
 package cli;
 
-import java.lang.reflect.Method;
 import java.security.KeyStore;
-
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.reflect.Whitebox;
-
 import key.SignerCredential;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest(CliHelper.class)
+@ExtendWith(MockitoExtension.class)
 public class CliHelperTest {
 	private static final String IN_TMPPKCS12 = "src/test/resources/TestCA2.cert.example.pkcs12";
-	
-	@Test
+
+    @Test
     public void testPkcs12() throws Exception {
-		Method method = Whitebox.getMethod(CliHelper.class, "getPassword", String.class);
-    	PowerMockito.stub(method).toReturn(new KeyStore.PasswordProtection("password".toCharArray()));
-    	
-        SignerCredential pk = PowerMockito.mock(CliHelper.class).getKeyFromPkcs12(IN_TMPPKCS12);
-        Assert.assertNotNull(pk);
-        Assert.assertTrue(pk.hasKey());
-        Assert.assertTrue(pk.hasCertificate());
+        try(MockedStatic<CliHelper> mockedStatic = Mockito.mockStatic(CliHelper.class)) {
+            mockedStatic.when(() -> CliHelper.getPassword(Mockito.anyString())).thenReturn(new KeyStore.PasswordProtection("password".toCharArray()));
+
+            SignerCredential pk = CliHelper.getKeyFromPkcs12(IN_TMPPKCS12);
+            Assertions.assertNotNull(pk);
+            Assertions.assertTrue(pk.hasKey());
+            Assertions.assertTrue(pk.hasCertificate());
+        }
 	}
 }

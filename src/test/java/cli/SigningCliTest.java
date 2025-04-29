@@ -1,20 +1,17 @@
 package cli;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.reflect.Whitebox;
 import java.io.File;
-import java.lang.reflect.Method;
 import java.security.KeyStore;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({CliHelper.class, SigningCli.class})
+@ExtendWith(MockitoExtension.class)
 public class SigningCliTest {
     private static final String TEMP_FOLDER = System.getProperty("java.io.tmpdir") + "/";
     private static final String IN_EK = "src/test/resources/ek.cer";
@@ -54,8 +51,8 @@ public class SigningCliTest {
     private static final String IN_PRIV_PKCS12 = "src/test/resources/TestCA2.cert.example.pkcs12";
     public static final String OUT_FILE_PKCS12 = TEMP_FOLDER + "blah3.pem";
     
-    @BeforeClass
-    @AfterClass
+    @BeforeAll
+    @AfterAll
     public static void removeOldOutFiles() throws Exception {
         String[] filenames = new String[]{OUT_FILE, OUT_PKCS1_FILE, OUT_FILE_LARGE_2187, OUT_FILE_MEDIUM_2187, OUT_FILE_FLAWED_2187, OUT_FILE_PKCS12};
         for (String filename : filenames) {
@@ -75,7 +72,7 @@ public class SigningCliTest {
         SigningCli cli = new SigningCli();
         cli.handleCommandLine(args);
         File file = new File(OUT_FILE);
-        Assert.assertTrue(file.exists());
+        Assertions.assertTrue(file.exists());
     }
     
     @Test
@@ -87,7 +84,7 @@ public class SigningCliTest {
         SigningCli cli = new SigningCli();
         cli.handleCommandLine(args);
         File file = new File(OUT_PKCS1_FILE);
-        Assert.assertTrue(file.exists());
+        Assertions.assertTrue(file.exists());
     }
     
     @Test
@@ -99,7 +96,7 @@ public class SigningCliTest {
         SigningCli cli = new SigningCli();
         cli.handleCommandLine(args);
         File file = new File(OUT_FILE_LARGE_2187);
-        Assert.assertTrue(file.exists());
+        Assertions.assertTrue(file.exists());
     }
     
     @Test
@@ -111,7 +108,7 @@ public class SigningCliTest {
         SigningCli cli = new SigningCli();
         cli.handleCommandLine(args);
         File file = new File(OUT_FILE_MEDIUM_2187);
-        Assert.assertTrue(file.exists());
+        Assertions.assertTrue(file.exists());
     }
     
     @Test
@@ -123,21 +120,22 @@ public class SigningCliTest {
         SigningCli cli = new SigningCli();
         cli.handleCommandLine(args);
         File file = new File(OUT_FILE_FLAWED_2187);
-        Assert.assertTrue(file.exists());
+        Assertions.assertTrue(file.exists());
     }
     
     @Test
     public void testPKCS12() throws Exception {
-    	Method method = Whitebox.getMethod(CliHelper.class, "getPassword", String.class);
-    	PowerMockito.stub(method).toReturn(new KeyStore.PasswordProtection("password".toCharArray()));
-    	
-    	String[] args = {"-e", IN_EK, "-c", IN_DEV_JSON, "-p", IN_POL_JSON,
-		                 "-x", IN_OXT_JSON, "-k", IN_PRIV_PKCS12,
-		                 "-N", SERIAL_NUMBER, "-b", NOT_BEFORE, "-a", NOT_AFTER,
-		                 "-f", OUT_FILE_PKCS12, "--pem"};
-        //SigningCli cli = new SigningCli();
-    	PowerMockito.spy(new SigningCli()).handleCommandLine(args);
-        File file = new File(OUT_FILE_PKCS12);
-        Assert.assertTrue(file.exists());
+        try(MockedStatic<CliHelper> mockedStatic = Mockito.mockStatic(CliHelper.class)) {
+            mockedStatic.when(() -> CliHelper.getPassword(Mockito.anyString())).thenReturn(new KeyStore.PasswordProtection("password".toCharArray()));
+
+            String[] args = {"-e", IN_EK, "-c", IN_DEV_JSON, "-p", IN_POL_JSON,
+                    "-x", IN_OXT_JSON, "-k", IN_PRIV_PKCS12,
+                    "-N", SERIAL_NUMBER, "-b", NOT_BEFORE, "-a", NOT_AFTER,
+                    "-f", OUT_FILE_PKCS12, "--pem"};
+
+            Mockito.spy(new SigningCli()).handleCommandLine(args);
+            File file = new File(OUT_FILE_PKCS12);
+            Assertions.assertTrue(file.exists());
+        }
     }
 }

@@ -1,6 +1,6 @@
 package cli;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import factory.PlatformCertificateFactory;
 

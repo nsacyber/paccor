@@ -46,9 +46,9 @@ public class PlatformConfigurationV2 extends ASN1Object {
 		}
 		ASN1Object[] elements = (ASN1Object[]) seq.toArray();
 		int pos = 0;
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 0)) {
-			if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof ASN1Sequence) {
-				ASN1Sequence tempSeq = (ASN1Sequence)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 0)) {
+			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+			if (elementObject instanceof ASN1Sequence tempSeq) {
 				ASN1Object[] tempElements = (ASN1Object[]) tempSeq.toArray();
 				componentIdentifiers = new ComponentIdentifierV2[tempElements.length];
 				for(int i = 0; i < tempElements.length; i++) {
@@ -63,17 +63,18 @@ public class PlatformConfigurationV2 extends ASN1Object {
 			}
 			pos++;
 		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 1)) {
-            if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof URIReference) {
-                componentIdentifiersUri = (URIReference)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 1)) {
+			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+            if (elementObject instanceof URIReference uriRef) {
+                componentIdentifiersUri = uriRef;
             } else {
                 throw new IllegalArgumentException("Expected URIReference object, but received " + elements[pos].getClass().getName());
             }
             pos++;
         }
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 2)) {
-			if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof ASN1Sequence) {
-				ASN1Sequence tempSeq = (ASN1Sequence)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 2)) {
+			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+			if (elementObject instanceof ASN1Sequence tempSeq) {
 				ASN1Object[] tempElements = (ASN1Object[]) tempSeq.toArray();
 				platformProperties = new PlatformPropertiesV2[tempElements.length];
 				for(int i = 0; i < tempElements.length; i++) {
@@ -88,9 +89,10 @@ public class PlatformConfigurationV2 extends ASN1Object {
 			}
 			pos++;
 		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 3)) {
-			if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof URIReference) {
-				platformPropertiesUri = (URIReference)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 3)) {
+			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+			if (elementObject instanceof URIReference uriRef) {
+				platformPropertiesUri = uriRef;
 			} else {
 				throw new IllegalArgumentException("Expected URIReference object, but received " + elements[pos].getClass().getName());
 			}

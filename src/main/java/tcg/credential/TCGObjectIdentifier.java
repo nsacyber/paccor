@@ -30,14 +30,14 @@ public class TCGObjectIdentifier {
     public static final ASN1ObjectIdentifier tcgAtTpmSecurityAssertions = tcgAttribute.branch("18").intern();
     public static final ASN1ObjectIdentifier tcgAtTbbSecurityAssertions = tcgAttribute.branch("19").intern();
     /**
-     * @deprecated Use tcgAtTcgCertificateSpecification.  This variable has not been removed
-     * yet because it is still documented in the Platform Certificate specification.
+     * @deprecated Use tcgAtTcgCertificateSpecification.
      */
+    @Deprecated
     public static final ASN1ObjectIdentifier tcgAtTcgCredentialSpecification = tcgAttribute.branch("23").intern();
     /**
-     * @deprecated Use tcgAtTcgCertificateType.  This variable has not been removed
-     * yet because it is still documented in the Platform Certificate specification.
+     * @deprecated Use tcgAtTcgCertificateType.
      */
+    @Deprecated
     public static final ASN1ObjectIdentifier tcgAtTcgCredentialType = tcgAttribute.branch("25").intern();
     // Use of the word Credential in the Platform Certificate specification has been deprecated.
     public static final ASN1ObjectIdentifier tcgAtTcgCertificateSpecification = tcgAttribute.branch("23").intern();

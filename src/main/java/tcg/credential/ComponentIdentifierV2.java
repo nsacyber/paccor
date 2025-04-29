@@ -82,9 +82,10 @@ public class ComponentIdentifierV2 extends ASN1Object {
         } else {
             throw new IllegalArgumentException("Expected DERUTF8String, but received " + elements[pos].getClass().getName());
         }
-        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 0)) {
-            if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof DERUTF8String) {
-                componentSerial = (DERUTF8String)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 0)) {
+            ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+            if (elementObject instanceof DERUTF8String str) {
+                componentSerial = str;
                 if (componentSerial.toString().length() > Definitions.STRMAX) {
                     throw new IllegalArgumentException("Length of componentSerial exceeds STRMAX");
                 }
@@ -93,9 +94,10 @@ public class ComponentIdentifierV2 extends ASN1Object {
             }
             pos++;
         }
-        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 1)) {
-            if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof DERUTF8String) {
-                componentRevision = (DERUTF8String)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 1)) {
+            ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+            if (elementObject instanceof DERUTF8String str) {
+                componentRevision = str;
                 if (componentRevision.toString().length() > Definitions.STRMAX) {
                     throw new IllegalArgumentException("Length of componentRevision exceeds STRMAX");
                 }
@@ -104,25 +106,27 @@ public class ComponentIdentifierV2 extends ASN1Object {
             }
             pos++;
         }
-        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 2)) {
-            if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof ASN1ObjectIdentifier) {
-                componentManufacturerId = (ASN1ObjectIdentifier)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 2)) {
+            ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+            if (elementObject instanceof ASN1ObjectIdentifier oid) {
+                componentManufacturerId = oid;
             } else {
                 throw new IllegalArgumentException("Expected ASN1ObjectIdentifier object, but received " + elements[pos].getClass().getName());
             }
             pos++;
         }
-        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 3)) {
-            if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof ASN1Boolean) {
-                fieldReplaceable = (ASN1Boolean)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 3)) {
+            ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+            if (elementObject instanceof ASN1Boolean bool) {
+                fieldReplaceable = bool;
             } else {
                 throw new IllegalArgumentException("Expected ASN1Boolean object, but received " + elements[pos].getClass().getName());
             }
             pos++;
         }
-        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 4)) {
-            if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof ASN1Sequence) {
-                ASN1Sequence tempSeq = (ASN1Sequence)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 4)) {
+            ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+            if (elementObject instanceof ASN1Sequence tempSeq) {
                 // check for configmax size
                 ASN1Object[] tempElements = (ASN1Object[]) tempSeq.toArray();
                 componentAddress = new ComponentAddress[tempElements.length];
@@ -138,25 +142,28 @@ public class ComponentIdentifierV2 extends ASN1Object {
             }
             pos++;
         }
-        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 5)) {
-            if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof CertificateIdentifier) {
-                componentPlatformCert = (CertificateIdentifier)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 5)) {
+            ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+            if (elementObject instanceof CertificateIdentifier ci) {
+                componentPlatformCert = ci;
             } else {
                 throw new IllegalArgumentException("Expected CertificateIdentifier object, but received " + elements[pos].getClass().getName());
             }
             pos++;
         }
-        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 6)) {
-            if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof URIReference) {
-                componentPlatformCertUri = (URIReference)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 6)) {
+            ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+            if (elementObject instanceof URIReference uriRef) {
+                componentPlatformCertUri = uriRef;
             } else {
                 throw new IllegalArgumentException("Expected URIReference object, but received " + elements[pos].getClass().getName());
             }
             pos++;
         }
-        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 7)) {
-            if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof AttributeStatus) {
-                status = (AttributeStatus)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 7)) {
+            ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+            if (elementObject instanceof AttributeStatus as) {
+                status = as;
             } else {
                 throw new IllegalArgumentException("Expected AttributeStatus object, but received " + elements[pos].getClass().getName());
             }

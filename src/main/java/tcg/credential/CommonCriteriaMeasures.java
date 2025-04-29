@@ -77,39 +77,44 @@ public class CommonCriteriaMeasures extends ASN1Object {
 		if (((elements.length - pos) > 0) && elements[pos] instanceof ASN1Boolean) {
 			plus = (ASN1Boolean)elements[pos];
 		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 0)) {
-			if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof StrengthOfFunction) {
-				strengthOfFunction = (StrengthOfFunction)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 0)) {
+			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+			if (elementObject instanceof StrengthOfFunction sof) {
+				strengthOfFunction = sof;
 			} else {
-				throw new IllegalArgumentException("Expected StrengthOfFunction, received " + ((ASN1TaggedObject)elements[pos]).getObject().getClass().getName());
+				throw new IllegalArgumentException("Expected StrengthOfFunction, received " + elementObject.getClass().getName());
 			}
 		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 1)) {
-			if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof ASN1ObjectIdentifier) {
-				profileOid = (ASN1ObjectIdentifier)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 1)) {
+			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+			if (elementObject instanceof ASN1ObjectIdentifier oid) {
+				profileOid = oid;
 			} else {
-				throw new IllegalArgumentException("Expected ASN1ObjectIdentifier, received " + ((ASN1TaggedObject)elements[pos]).getObject().getClass().getName());
+				throw new IllegalArgumentException("Expected ASN1ObjectIdentifier, received " + elementObject.getClass().getName());
 			}
 		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 2)) {
-			if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof URIReference) {
-				profileUri = (URIReference)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 2)) {
+			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+			if (elementObject instanceof URIReference uriRef) {
+				profileUri = uriRef;
 			} else {
-				throw new IllegalArgumentException("Expected URIReference, received " + ((ASN1TaggedObject)elements[pos]).getObject().getClass().getName());
+				throw new IllegalArgumentException("Expected URIReference, received " + elementObject.getClass().getName());
 			}
 		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 3)) {
-			if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof ASN1ObjectIdentifier) {
-				targetOid = (ASN1ObjectIdentifier)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 3)) {
+			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+			if (elementObject instanceof ASN1ObjectIdentifier oid) {
+				targetOid = oid;
 			} else {
-				throw new IllegalArgumentException("Expected ASN1ObjectIdentifier, received " + ((ASN1TaggedObject)elements[pos]).getObject().getClass().getName());
+				throw new IllegalArgumentException("Expected ASN1ObjectIdentifier, received " + elementObject.getClass().getName());
 			}
 		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 4)) {
-			if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof URIReference) {
-				targetUri = (URIReference)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 4)) {
+			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+			if (elementObject instanceof URIReference uriRef) {
+				targetUri = uriRef;
 			} else {
-				throw new IllegalArgumentException("Expected URIReference, received " + ((ASN1TaggedObject)elements[pos]).getObject().getClass().getName());
+				throw new IllegalArgumentException("Expected URIReference, received " + elementObject.getClass().getName());
 			}
 		}
 	}

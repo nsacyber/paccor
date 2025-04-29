@@ -103,7 +103,7 @@ public class CliHelper {
         return buffer;
     }
     
-    private static KeyStore.PasswordProtection getPassword(String prompt) {
+    protected static KeyStore.PasswordProtection getPassword(String prompt) {
     	Console c = System.console();
     	return new KeyStore.PasswordProtection(c.readPassword(prompt));
     }

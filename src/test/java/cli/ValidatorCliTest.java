@@ -2,18 +2,13 @@ package cli;
 
 import java.io.File;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({CliHelper.class, SigningCli.class, ValidatorCliTest.class})
 public class ValidatorCliTest {
     // Requires tests within SigningCliTest to be complete prior to running these.
-    @AfterClass
+    @AfterAll
     public static void removeOldOutFiles() throws Exception {
         String[] filenames = new String[]{SigningCliTest.OUT_FILE, SigningCliTest.OUT_PKCS1_FILE, SigningCliTest.OUT_FILE_LARGE_2187, SigningCliTest.OUT_FILE_MEDIUM_2187, SigningCliTest.OUT_FILE_FLAWED_2187, SigningCliTest.OUT_FILE_PKCS12};
         for (String filename : filenames) {
@@ -31,7 +26,7 @@ public class ValidatorCliTest {
         String[] args = {"-P", SigningCliTest.IN_PUB_CERT, "-X", SigningCliTest.OUT_FILE};
         ValidatorCli cli = new ValidatorCli();
         boolean result = cli.handleCommandLine(args);
-        Assert.assertTrue(result);
+        Assertions.assertTrue(result);
     }
     
     @Test
@@ -41,7 +36,7 @@ public class ValidatorCliTest {
         String[] args = {"-P", SigningCliTest.IN_PKCS1_PUB, "-X", SigningCliTest.OUT_PKCS1_FILE};
         ValidatorCli cli = new ValidatorCli();
         boolean result = cli.handleCommandLine(args);
-        Assert.assertTrue(result);
+        Assertions.assertTrue(result);
     }
     
     @Test
@@ -51,7 +46,7 @@ public class ValidatorCliTest {
         String[] args = {"-P", SigningCliTest.PUB_CERT_2187, "-X", SigningCliTest.OUT_FILE_LARGE_2187};
         ValidatorCli cli = new ValidatorCli();
         boolean result = cli.handleCommandLine(args);
-        Assert.assertTrue(result);
+        Assertions.assertTrue(result);
     }
     
     @Test
@@ -61,7 +56,7 @@ public class ValidatorCliTest {
         String[] args = {"-P", SigningCliTest.PUB_CERT_2187, "-X", SigningCliTest.OUT_FILE_MEDIUM_2187};
         ValidatorCli cli = new ValidatorCli();
         boolean result = cli.handleCommandLine(args);
-        Assert.assertTrue(result);
+        Assertions.assertTrue(result);
     }
     
     @Test
@@ -71,7 +66,7 @@ public class ValidatorCliTest {
         String[] args = {"-P", SigningCliTest.PUB_CERT_2187, "-X", SigningCliTest.OUT_FILE_FLAWED_2187};
         ValidatorCli cli = new ValidatorCli();
         boolean result = cli.handleCommandLine(args);
-        Assert.assertTrue(result);
+        Assertions.assertTrue(result);
     }
     
     @Test
@@ -81,6 +76,6 @@ public class ValidatorCliTest {
         String[] args = {"-P", SigningCliTest.IN_PUB_CERT_PKCS12, "-X", SigningCliTest.OUT_FILE_PKCS12};
         ValidatorCli cli = new ValidatorCli();
         boolean result = cli.handleCommandLine(args);
-        Assert.assertTrue(result);
+        Assertions.assertTrue(result);
     }
 }

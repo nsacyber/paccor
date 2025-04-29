@@ -37,17 +37,19 @@ public class CertificateIdentifier extends ASN1Object {
         }
         ASN1Object[] elements = (ASN1Object[]) seq.toArray();
         int pos = 0;
-        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 0)) {
-            if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof AttributeCertificateIdentifier) {
-                attributeCertIdentifier = (AttributeCertificateIdentifier)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 0)) {
+            ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+            if (elementObject instanceof AttributeCertificateIdentifier aci) {
+                attributeCertIdentifier = aci;
             } else {
                 throw new IllegalArgumentException("Expected AttributeCertificateIdentifier object, but received " + elements[pos].getClass().getName());
             }
             pos++;
         }
-        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject ) && (((ASN1TaggedObject)elements[pos]).getTagNo() == 1)) {
-            if ((ASN1Object)((ASN1TaggedObject)elements[pos]).getObject() instanceof IssuerSerial) {
-                genericCertIdentifier = (IssuerSerial)(ASN1Object)((ASN1TaggedObject)elements[pos]).getObject();
+        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 1)) {
+            ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
+            if (elementObject instanceof IssuerSerial is) {
+                genericCertIdentifier = is;
             } else {
                 throw new IllegalArgumentException("Expected IssuerSerial object, but received " + elements[pos].getClass().getName());
             }

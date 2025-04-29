@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.util.encoders.Base64;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import tcg.credential.CommonCriteriaMeasures;
 import tcg.credential.EvaluationAssuranceLevel;
 import tcg.credential.EvaluationStatus;
@@ -75,26 +75,26 @@ public class TBBSecurityAssertionsFactoryTest {
                 TBBSecurityAssertionsFactory.create()
                 .fromJsonNode(root)
                 .build();
-        Assert.assertEquals(tbsa.getVersion(), new ASN1Integer(Integer.valueOf(version)));
+        Assertions.assertEquals(tbsa.getVersion(), new ASN1Integer(Integer.valueOf(version)));
         CommonCriteriaMeasures ccInfo = tbsa.getCcInfo();
-        Assert.assertEquals(ccVersion, ccInfo.getVersion().getString());
-        Assert.assertEquals(new EvaluationAssuranceLevel(assuranceLevel), ccInfo.getAssuranceLevel());
-        Assert.assertEquals(new EvaluationStatus(evaluationStatus), ccInfo.getEvaluationStatus());
-        Assert.assertEquals(Boolean.valueOf(plus).booleanValue(), ccInfo.getPlus().isTrue());
-        Assert.assertEquals(profileOid, ccInfo.getProfileOid().getId());
-        Assert.assertEquals(profileURI, ccInfo.getProfileUri().getUniformResourceIdentifier().getString());
-        Assert.assertEquals(profileAlg, ccInfo.getProfileUri().getHashAlgorithm().getAlgorithm().getId());
-        Assert.assertArrayEquals(profileHash.getBytes(), Base64.encode(ccInfo.getProfileUri().getHashValue().getBytes()));
-        Assert.assertEquals(targetOid, ccInfo.getTargetOid().getId());
-        Assert.assertEquals(targetURI, ccInfo.getTargetUri().getUniformResourceIdentifier().getString());
-        Assert.assertEquals(targetAlg, ccInfo.getTargetUri().getHashAlgorithm().getAlgorithm().getId());
-        Assert.assertArrayEquals(targetHash.getBytes(), Base64.encode(ccInfo.getTargetUri().getHashValue().getBytes()));
+        Assertions.assertEquals(ccVersion, ccInfo.getVersion().getString());
+        Assertions.assertEquals(new EvaluationAssuranceLevel(assuranceLevel), ccInfo.getAssuranceLevel());
+        Assertions.assertEquals(new EvaluationStatus(evaluationStatus), ccInfo.getEvaluationStatus());
+        Assertions.assertEquals(Boolean.valueOf(plus).booleanValue(), ccInfo.getPlus().isTrue());
+        Assertions.assertEquals(profileOid, ccInfo.getProfileOid().getId());
+        Assertions.assertEquals(profileURI, ccInfo.getProfileUri().getUniformResourceIdentifier().getString());
+        Assertions.assertEquals(profileAlg, ccInfo.getProfileUri().getHashAlgorithm().getAlgorithm().getId());
+        Assertions.assertArrayEquals(profileHash.getBytes(), Base64.encode(ccInfo.getProfileUri().getHashValue().getBytes()));
+        Assertions.assertEquals(targetOid, ccInfo.getTargetOid().getId());
+        Assertions.assertEquals(targetURI, ccInfo.getTargetUri().getUniformResourceIdentifier().getString());
+        Assertions.assertEquals(targetAlg, ccInfo.getTargetUri().getHashAlgorithm().getAlgorithm().getId());
+        Assertions.assertArrayEquals(targetHash.getBytes(), Base64.encode(ccInfo.getTargetUri().getHashValue().getBytes()));
         FIPSLevel fips = tbsa.getFipsLevel();
-        Assert.assertEquals(fipsVersion, fips.getVersion().getString());
-        Assert.assertEquals(new SecurityLevel(fipsLevel), fips.getLevel());
-        Assert.assertEquals(Boolean.valueOf(fipsPlus).booleanValue(), fips.getPlus().isTrue());
-        Assert.assertEquals(new MeasurementRootType(rtmType), tbsa.getRtmType());
-        Assert.assertEquals(Boolean.valueOf(iso9000Certified).booleanValue(), tbsa.getIso9000Certified().isTrue());
-        Assert.assertEquals(iso9000URI, tbsa.getIso9000Uri().getString());
+        Assertions.assertEquals(fipsVersion, fips.getVersion().getString());
+        Assertions.assertEquals(new SecurityLevel(fipsLevel), fips.getLevel());
+        Assertions.assertEquals(Boolean.valueOf(fipsPlus).booleanValue(), fips.getPlus().isTrue());
+        Assertions.assertEquals(new MeasurementRootType(rtmType), tbsa.getRtmType());
+        Assertions.assertEquals(Boolean.valueOf(iso9000Certified).booleanValue(), tbsa.getIso9000Certified().isTrue());
+        Assertions.assertEquals(iso9000URI, tbsa.getIso9000Uri().getString());
     }    
 }
