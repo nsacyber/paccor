@@ -522,6 +522,9 @@ parseGfxData () {
 
 ### Collate the component details
 collectBasicRegistryComponents () {
+    componentChassis=$(parseChassisData)
+	componentBaseboard=$(parseBaseboardData)
+	componentBios=$(parseBiosData)
     componentsCPU=$(parseCpuData)
     componentsRAM=$(parseRamData)
     componentsNIC=$(parseNicData)

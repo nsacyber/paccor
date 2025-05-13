@@ -6,6 +6,7 @@ $PEN_ROOT="1.3.6.1.4.1." # OID root for the private enterprise numbers
 ### JSON Structure Keywords
 $JSON_COMPONENTS="COMPONENTS"
 $JSON_PROPERTIES="PROPERTIES"
+$JSON_COMPONENTSURI="COMPONENTSURI"
 $JSON_PROPERTIESURI="PROPERTIESURI"
 $JSON_PLATFORM="PLATFORM"
 #### JSON Component Keywords
@@ -136,7 +137,7 @@ function HexToByteArray { # Powershell doesn't have a built in BinToHex function
     }
 }
 function jsonComponentClass () {
-    echo ("$JSON_COMPONENTCLASS_TEMPLATE" -f "$($args[0])","$($args[1])")
+    Write-Output ("$JSON_COMPONENTCLASS_TEMPLATE" -f "$($args[0])","$($args[1])")
 }
 function jsonManufacturer () {
     $manufacturer=("`"$JSON_MANUFACTURER`": `"{0}`"" -f "$($args[0])")
@@ -145,34 +146,34 @@ function jsonManufacturer () {
     #    $tmpManufacturerId=(jsonManufacturerId "$tmpManufacturerId")
     #    $manufacturer="$manufacturer,$tmpManufacturerId"
     #}
-    echo "$manufacturer"
+    Write-Output "$manufacturer"
 }
 function jsonModel () {
-    echo ("`"$JSON_MODEL`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_MODEL`": `"{0}`"" -f "$($args[0])")
 }
 function jsonSerial () {
-    echo ("`"$JSON_SERIAL`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_SERIAL`": `"{0}`"" -f "$($args[0])")
 }
 function jsonRevision () {
-    echo ("`"$JSON_REVISION`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_REVISION`": `"{0}`"" -f "$($args[0])")
 }
 function jsonManufacturerId () {
-    echo ("`"$JSON_MANUFACTURERID`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_MANUFACTURERID`": `"{0}`"" -f "$($args[0])")
 }
 function jsonFieldReplaceable () {
-    echo ("`"$JSON_FIELDREPLACEABLE`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_FIELDREPLACEABLE`": `"{0}`"" -f "$($args[0])")
 }
 function jsonEthernetMac () {
-    echo ("$JSON_ETHERNETMAC_TEMPLATE" -f "$($args[0])")
+    Write-Output ("$JSON_ETHERNETMAC_TEMPLATE" -f "$($args[0])")
 }
 function jsonWlanMac () {
-    echo ("$JSON_WLANMAC_TEMPLATE" -f "$($args[0])")
+    Write-Output ("$JSON_WLANMAC_TEMPLATE" -f "$($args[0])")
 }
 function jsonBluetoothMac () {
-    echo ("$JSON_BLUETOOTHMAC_TEMPLATE" -f "$($args[0])")
+    Write-Output ("$JSON_BLUETOOTHMAC_TEMPLATE" -f "$($args[0])")
 }
 function jsonPlatformModel () {
-    echo ("`"$JSON_PLATFORMMODEL`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_PLATFORMMODEL`": `"{0}`"" -f "$($args[0])")
 }
 function jsonPlatformManufacturerStr () {
     $manufacturer=("`"$JSON_PLATFORMMANUFACTURERSTR`": `"{0}`"" -f "$($args[0])")
@@ -181,16 +182,16 @@ function jsonPlatformManufacturerStr () {
     #    $tmpManufacturerId=(jsonPlatformManufacturerId "$tmpManufacturerId")
     #    $manufacturer="$manufacturer,$tmpManufacturerId"
     #}
-    echo "$manufacturer"
+    Write-Output "$manufacturer"
 }
 function jsonPlatformVersion () {
-    echo ("`"$JSON_PLATFORMVERSION`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_PLATFORMVERSION`": `"{0}`"" -f "$($args[0])")
 }
 function jsonPlatformSerial () {
-    echo ("`"$JSON_PLATFORMSERIAL`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_PLATFORMSERIAL`": `"{0}`"" -f "$($args[0])")
 }
 function jsonPlatformManufacturerId () {
-    echo ("`"$JSON_PLATFORMMANUFACTURERID`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_PLATFORMMANUFACTURERID`": `"{0}`"" -f "$($args[0])")
 }
 function queryForPen () {
     Write-Progress -Id 3 -ParentId 2 -Activity "Searching for PEN..."
@@ -204,85 +205,70 @@ function queryForPen () {
         }
     }
     Write-Progress -Id 3 -ParentId 2 -Activity "Searching for PEN..." -PercentComplete 100
-    echo $result
+    Write-Output $result
 }
 function jsonProperty () {
     if ($args.Length -eq 2) {
-        echo ("$JSON_PROPERTY_TEMPLATE" -f "$($args[0])","$($args[1])")
+        Write-Output ("$JSON_PROPERTY_TEMPLATE" -f "$($args[0])","$($args[1])")
     } elseif ($args.Length -eq 3) {
-        echo ("$JSON_PROPERTY_TEMPLATE_OPT" -f "$($args[0])","$($args[1])","$($args[2])")
+        Write-Output ("$JSON_PROPERTY_TEMPLATE_OPT" -f "$($args[0])","$($args[1])","$($args[2])")
     }
 }
 function jsonUri () {
-    echo ("`"$JSON_URI`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_URI`": `"{0}`"" -f "$($args[0])")
 }
 function jsonHashAlg () {
-    echo ("`"$JSON_HASHALG`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_HASHALG`": `"{0}`"" -f "$($args[0])")
 }
 function jsonHashValue () {
-    echo ("`"$JSON_HASHVALUE`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_HASHVALUE`": `"{0}`"" -f "$($args[0])")
 }
 function toCSV () {
-    if ($args.Length -ne 0) {
-        Write-Progress -Id 3 -ParentId 2 -Activity "CSV..." -PercentComplete 0
-
-        $size = $args[0].Length
-        for ($i=0; $i -lt $size; $i++) {
-            Write-Progress -Id 3 -ParentId 2 -Activity "CSV..." -PercentComplete (($i / $size) * 100)
-
-            $item=($args[0].Get($i))
-
-            if ($item) {
-                $value="$value,$($args[0].Get($i))"
-            }
-        }
-        echo "$value".Trim(" ", ",")
-        Write-Progress -Id 3 -ParentId 2 -Activity "CSV..." -PercentComplete 100
-    }
+    Write-Output ((($args | Where-Object { $_ -and $_.Trim() -ne "" } | ForEach-Object { $_.ToString() }) -join ",") -replace "}\s*,", "},")
 }
 function jsonAddress () {
-    echo ("$JSON_ADDRESSES_TEMPLATE" -f "$(toCSV($args))")
+    Write-Output ("$JSON_ADDRESSES_TEMPLATE" -f "$(toCSV @args)")
 }
 function jsonComponent () {
-    echo ("$JSON_COMPONENT_TEMPLATE" -f "$(toCSV($args))")
+    Write-Output ("$JSON_COMPONENT_TEMPLATE" -f "$(toCSV @args)")
 }
 function jsonComponentArray () {
-    echo ("$JSON_COMPONENT_ARRAY_TEMPLATE" -f "$(toCSV($args))")
+    Write-Output ("$JSON_COMPONENT_ARRAY_TEMPLATE" -f "$(toCSV @args)")
 }
 function jsonPropertyArray () {
-    echo ("$JSON_PROPERTY_ARRAY_TEMPLATE" -f "$(toCSV($args))")
+    Write-Output ("$JSON_PROPERTY_ARRAY_TEMPLATE" -f "$(toCSV @args)")
 }
 function jsonPlatformObject () {
-    echo ("$JSON_PLATFORM_TEMPLATE" -f "$(toCSV($args))")
+    Write-Output ("$JSON_PLATFORM_TEMPLATE" -f "$(toCSV @args)")
 }
-function jsonComponentsUri () {
-    if ($COMPONENTS_URI) {
-        $componentsUri=(jsonUri "$COMPONENTS_URI")
+function jsonComponentsUri ([string]$COMPONENTS_URI="", [string]$COMPONENTS_URI_LOCAL_COPY_FOR_HASH="") {
+    if (![string]::IsNullOrEmpty($COMPONENTS_URI)) {
+        $componentsUri=$(jsonUri "$COMPONENTS_URI")
         $componentsUriDetails=""
-        if ($COMPONENTS_URI_LOCAL_COPY_FOR_HASH) {
+        if (![string]::IsNullOrEmpty($COMPONENTS_URI_LOCAL_COPY_FOR_HASH) -and ($COMPONENTS_URI_LOCAL_COPY_FOR_HASH.Trim().Length -ne 0) -and (Test-Path -Path $COMPONENTS_URI_LOCAL_COPY_FOR_HASH)) {
             $hashAlg="2.16.840.1.101.3.4.2.1" # SHA256, see https://tools.ietf.org/html/rfc5754 for other common hash algorithm IDs
             $hashValue=([System.Convert]::ToBase64String($(HexToByteArray $(Get-FileHash "$COMPONENTS_URI_LOCAL_COPY_FOR_HASH"  -Algorithm SHA256).Hash.Trim())))
-            $hashAlgStr=(jsonHashAlg "$hashAlg")
-            $hashValueStr=(jsonHashValue "$hashValue")
-            $componentsUriDetails="$hashAlgStr"",""$hashValueStr"
+            $hashAlgStr=$(jsonHashAlg "$hashAlg")
+            $hashValueStr=$(jsonHashValue "$hashValue")
+            $componentsUriDetails="$hashAlgStr,$hashValueStr"
         }
-    echo ("$JSON_COMPONENTSURI_TEMPLATE" -f "$(toCSV("$componentsUri","$componentsUriDetails"))")
+        Write-Output ("$JSON_COMPONENTSURI_TEMPLATE" -f "$(toCSV "$componentsUri" "$componentsUriDetails")")
     }
 }
-function jsonPropertiesUri () {
-    if ($PROPERTIES_URI) {
-        $propertiesUri=(jsonUri "$PROPERTIES_URI")
+function jsonPropertiesUri ([string]$PROPERTIES_URI="", [string]$PROPERTIES_URI_LOCAL_COPY_FOR_HASH="") {
+    if (![string]::IsNullOrEmpty($PROPERTIES_URI)) {
+        $propertiesUri=$(jsonUri "$PROPERTIES_URI")
         $propertiesUriDetails=""
-        if ($PROPERTIES_URI_LOCAL_COPY_FOR_HASH) {
+        if (![string]::IsNullOrEmpty($PROPERTIES_URI_LOCAL_COPY_FOR_HASH) -and ($PROPERTIES_URI_LOCAL_COPY_FOR_HASH.Trim().Length -ne 0) -and (Test-Path -Path $PROPERTIES_URI_LOCAL_COPY_FOR_HASH)) {
             $hashAlg="2.16.840.1.101.3.4.2.1" # SHA256, see https://tools.ietf.org/html/rfc5754 for other common hash algorithm IDs
-            $hashValue=([System.Convert]::ToBase64String($(HexToByteArray $(Get-FileHash "$PROPERTIES_URI_LOCAL_COPY_FOR_HASH"  -Algorithm SHA256).Hash.Trim())))
-            $hashAlgStr=(jsonHashAlg "$hashAlg")
-            $hashValueStr=(jsonHashValue "$hashValue")
+            $hashValue=$([System.Convert]::ToBase64String($(HexToByteArray $(Get-FileHash "$PROPERTIES_URI_LOCAL_COPY_FOR_HASH"  -Algorithm SHA256).Hash.Trim())))
+            $hashAlgStr=$(jsonHashAlg "$hashAlg")
+            $hashValueStr=$(jsonHashValue "$hashValue")
             $propertiesUriDetails="$hashAlgStr,$hashValueStr"
         }
-        echo ("$JSON_PROPERTIESURI_TEMPLATE" -f "$(toCSV("$propertiesUri","$propertiesUriDetails"))")
+        Write-Output ("$JSON_PROPERTIESURI_TEMPLATE" -f "$(toCSV "$propertiesUri" "$propertiesUriDetails")")
     }
 }
 function jsonIntermediateFile () {
-    echo ("$JSON_INTERMEDIATE_FILE_OBJECT" -f "$(toCSV($args))")
+    Write-Output ("$JSON_INTERMEDIATE_FILE_OBJECT" -f "$(toCSV @args)")
 }

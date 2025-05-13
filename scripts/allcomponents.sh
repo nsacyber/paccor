@@ -23,6 +23,12 @@ PCIE_REGISTRY_UTILITY="$APP_HOME""/PcieCli"
 STORAGE_REGISTRY_UTILITY="$APP_HOME""/StorageCli"
 TCG_REGISTRY_SCRIPT="$APP_HOME""/tcg_ccr.sh"
 
+## Some of the commands below require root.
+if [ "$EUID" -ne 0 ]
+  then echo "Please run as root"
+  exit
+fi
+
 ### SMBIOS Type Constants
 source $SMBIOS_SCRIPT
 SMBIOS_TYPE_SYSTEM="1"
@@ -30,12 +36,6 @@ SMBIOS_TYPE_PLATFORM="$SMBIOS_TYPE_SYSTEM"
 
 ### JSON
 source $JSON_SCRIPT
-
-## Some of the commands below require root.
-if [ "$EUID" -ne 0 ]
-  then echo "Please run as root"
-  exit
-fi
 
 ### Gather platform details for the subject alternative name
 parseSystemData () {
