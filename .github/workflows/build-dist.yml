@@ -18,6 +18,8 @@ jobs:
       - name: Install Package Tools
         working-directory: dotnet/ComponentClassRegistry
         run: |
+          dotnet tool install --global dotnet-deb
+          dotnet tool install --global dotnet-rpm
           dotnet tool install --global dotnet-zip
       - name: SMBIOS Cli
         working-directory: dotnet/ComponentClassRegistry/SmbiosCli
