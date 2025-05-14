@@ -5,10 +5,10 @@ using System.Runtime.InteropServices;
 namespace paccor_scripts {
     public sealed class PaccorComponentScriptsPlugin : HardwareManifestPluginBase {
         public static readonly string Scripts = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(PaccorComponentScriptsPlugin).Assembly.Location)!, "scripts"));
-        public static readonly string LinuxComponents = Path.GetFullPath(Path.Combine(Scripts, "allcomponents.sh"));
+        public static readonly string LinuxComponents = Path.GetFullPath(Path.Combine(Scripts, "tcg_ccr.sh"));
         public static readonly string WinPath = Path.GetFullPath(Path.Combine(Scripts, "windows"));
         public static readonly string WinTempOutput = Path.GetFullPath(Path.Combine(WinPath, "out.json"));
-        public static readonly string WinComponents = Path.GetFullPath(Path.Combine(WinPath, "allcomponents.ps1"));
+        public static readonly string WinComponents = Path.GetFullPath(Path.Combine(WinPath, "tcg_ccr.ps1"));
 
         public static readonly string TraitDescription = "paccor component gathering scripts";
         public static readonly string TraitDescriptionUri = "https://github.com/nsacyber/paccor/scripts";

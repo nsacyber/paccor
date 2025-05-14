@@ -2,9 +2,13 @@ paccor_scripts.dll
 scripts/allcomponents.sh
 scripts/enterprise-numbers
 scripts/hw.sh
+scripts/json.sh
 scripts/nvme.sh
 scripts/smbios.sh
+scripts/tcg_ccr.sh
 scripts/windows/allcomponents.ps1
 scripts/windows/hw.ps1
+scripts/windows/json.ps1
 scripts/windows/nvme.ps1
 scripts/windows/SMBios.ps1
+scripts/windows/tcg_ccr.ps1

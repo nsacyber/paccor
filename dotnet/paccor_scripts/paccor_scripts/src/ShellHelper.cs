@@ -6,7 +6,7 @@ namespace paccor_scripts {
             var escapedArgs = cmd.Replace("\"", "\\\"");
             ProcessStartInfo info = new() {
                 FileName = "bash",
-                Arguments = $"\"{escapedArgs}\"",
+                Arguments = $"\"{escapedArgs}\" /dev/stdout",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
