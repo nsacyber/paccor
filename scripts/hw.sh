@@ -2,7 +2,7 @@
 lshwParse () {
     type="${1}"
     str=$(lshw -c "$type" -numeric)
-    numLines=$(printf "$str" | wc -l)
+    numLines=$(printf "%s" "$str" | wc -l)
     items=()
     busitems=()
     
@@ -12,11 +12,11 @@ lshwParse () {
     while read -r line; do
         lineItr=$((lineItr+1))
         lastLine=""
-        if (($lineItr > $numLines)); then 
+        if ((lineItr > numLines)); then
             parsing+="$line"$'\n'
             lastLine="1"
         fi
-        if (printf "$line" | grep --quiet -e "^[[:space:]]*\*-.*[[:space:]]*$") || [ -n "$lastLine" ]; then
+        if (printf "%s" "$line" | grep --quiet -e "^[[:space:]]*\*-.*[[:space:]]*$") || [ -n "$lastLine" ]; then
             if [ -n "$parsing" ]; then
                 items+=("${parsing}")
             fi
@@ -28,11 +28,11 @@ lshwParse () {
     numItemsDec=$(printf "%d" "0x"${#items[@]})
     for ((i = 0 ; i < numItemsDec ; i++ )); do
         matchesType=""
-        if (printf "${items[$i]}" | grep --quiet -e "^\*-"$type":\?[0-9A-Fa-f]*[[:space:]]*\(DISABLED\)\?$"); then
+        if (printf "%s" "${items[$i]}" | grep --quiet -e "^\*-$type:\?[0-9A-Fa-f]*[[:space:]]*\(DISABLED\)\?$"); then
             matchesType="1"
         fi
         isPhysical=""
-        if (printf "${items[$i]}" | grep --quiet -e "^bus info:.*$"); then
+        if (printf "%s" "${items[$i]}" | grep --quiet -e "^bus info:.*$"); then
             isPhysical="1"
         fi
 
@@ -51,105 +51,105 @@ lshwNetwork () {
     lshwParse "network"
 }
 lshwNumBusItems () {
-    printf "${#busitems[@]}"
+    printf "%s" "${#busitems[@]}"
 }
 lshwGetVendorIDFromBusItem () {
-    itemnumber="${1}"
+    itemNumber="${1}"
     result=""
-    str=$(echo "${busitems[$itemnumber]}" | grep -e "^vendor:.*[^\[]\[.\+$" | sed 's/^vendor:.*[^\[]\[\([0-9A-Fa-f]\+\)\]$/\1/')
+    str=$(echo "${busitems[$itemNumber]}" | grep -e "^vendor:.*[^\[]\[.\+$" | sed 's/^vendor:.*[^\[]\[\([0-9A-Fa-f]\+\)\]$/\1/')
     if [ -n "$str" ]; then
         result="0000$str"
         result="${result: -4}"
     fi
-    printf "$result"
+    printf "%s" "$result"
 }
 lshwGetProductIDFromBusItem () {
-    itemnumber="${1}"
+    itemNumber="${1}"
     result=""
-    str=$(echo "${busitems[$itemnumber]}" | grep -e "^product:.*[^\[]\[.\+$" | sed 's/^product:.*[^\[]\[[0-9A-Fa-f]\+:\([0-9A-Fa-f]\+\)\]$/\1/')
+    str=$(echo "${busitems[$itemNumber]}" | grep -e "^product:.*[^\[]\[.\+$" | sed 's/^product:.*[^\[]\[[0-9A-Fa-f]\+:\([0-9A-Fa-f]\+\)\]$/\1/')
     if [ -n "$str" ]; then
         result="0000$str"
         result="${result: -4}"
     fi
-    printf "$result"
+    printf "%s" "$result"
 }
 lshwGetVersionFromBusItem () {
-    itemnumber="${1}"
+    itemNumber="${1}"
     result=""
-    str=$(echo "${busitems[$itemnumber]}" | grep -e "^version:.*$" | sed 's/^version: \([0-9A-Za-z]\+\)$/\1/')
+    str=$(echo "${busitems[$itemNumber]}" | grep -e "^version:.*$" | sed 's/^version: \([0-9A-Za-z]\+\)$/\1/')
     if [ -n "$str" ]; then
         result=$str
     fi
-    printf "$result"
+    printf "%s" "$result"
 }
 lshwGetSerialFromBusItem () {
-    itemnumber="${1}"
+    itemNumber="${1}"
     result=""
-    str=$(echo "${busitems[$itemnumber]}" | grep -e "^serial:.*$" | sed 's/^serial: \([0-9A-Za-z:-]\+\)$/\1/')
+    str=$(echo "${busitems[$itemNumber]}" | grep -e "^serial:.*$" | sed 's/^serial: \([0-9A-Za-z:-]\+\)$/\1/')
     if [ -n "$str" ]; then
         result=$str
     fi
-    printf "$result"
+    printf "%s" "$result"
 }
 lshwGetLogicalNameFromBusItem () {
-    itemnumber="${1}"
+    itemNumber="${1}"
     result=""
-    str=$(echo "${busitems[$itemnumber]}" | grep -e "^logical name:.*$" | sed 's/^logical name: \(.\+\)$/\1/')
+    str=$(echo "${busitems[$itemNumber]}" | grep -e "^logical name:.*$" | sed 's/^logical name: \(.\+\)$/\1/')
     if [ -n "$str" ]; then
         result=$str
     fi
-    printf "$result"
+    printf "%s" "$result"
 }
 lshwGetVendorNameFromBusItem () {
-    itemnumber="${1}"
+    itemNumber="${1}"
     result=""
-    str=$(echo "${busitems[$itemnumber]}" | grep -e "^vendor:.*$" | sed 's/^vendor: \([0-9A-Za-z -]\+\) \?\[\?.*$/\1/')
+    str=$(echo "${busitems[$itemNumber]}" | grep -e "^vendor:.*$" | sed 's/^vendor: \([0-9A-Za-z -]\+\) \?\[\?.*$/\1/')
     if [ -n "$str" ]; then
         result=$str
     fi
-    printf "$result"
+    printf "%s" "$result"
 }
 lshwGetProductNameFromBusItem () {
-    itemnumber="${1}"
+    itemNumber="${1}"
     result=""
-    str=$(echo "${busitems[$itemnumber]}" | grep -e "^product:.*$" | sed 's/^product: \([0-9A-Za-z\(\) -]\+\) \?\[\?.*$/\1/')
+    str=$(echo "${busitems[$itemNumber]}" | grep -e "^product:.*$" | sed 's/^product: \([0-9A-Za-z\(\) -]\+\) \?\[\?.*$/\1/')
     if [ -n "$str" ]; then
         result=$str
     fi
-    printf "$result"
+    printf "%s" "$result"
 }
 lshwBusItemBluetoothCap () {
-    itemnumber="${1}"
+    itemNumber="${1}"
     result=""
-    if (echo "${busitems[$itemnumber]}" | grep --quiet "capabilities.*bluetooth"); then
+    if (echo "${busitems[$itemNumber]}" | grep --quiet "capabilities.*bluetooth"); then
         result="1"
     fi
-    printf "$result"
+    printf "%s" "$result"
 }
 lshwBusItemEthernetCap () {
-    itemnumber="${1}"
+    itemNumber="${1}"
     result=""
-    if (echo "${busitems[$itemnumber]}" | grep --quiet "capabilities.*ethernet"); then
+    if (echo "${busitems[$itemNumber]}" | grep --quiet "capabilities.*ethernet"); then
         result="1"
     fi
-    printf "$result"
+    printf "%s" "$result"
 }
 lshwBusItemWirelessCap () {
-    itemnumber="${1}"
+    itemNumber="${1}"
     result=""
-    if (echo "${busitems[$itemnumber]}" | grep --quiet "capabilities.*wireless"); then
+    if (echo "${busitems[$itemNumber]}" | grep --quiet "capabilities.*wireless"); then
         result="1"
     fi
-    printf "$result"
+    printf "%s" "$result"
 }
 ethtoolPermAddr () {
     iface="${1}"
     str=$(ethtool -P "$iface" 2> /dev/null | grep -e "^Perm.*$" | sed 's/^Permanent address: \([0-9a-f:]\+\)$/\1/')
-    printf "$str"
+    printf "%s" "$str"
 }
 standardizeMACAddr () {
-    mac=$(printf "${1}" | tr -d "[[:space:]]:-" | awk '{ print toupper($0) }')
-    printf "$mac"
+    mac=$(printf "%s" "${1}" | tr -d "[[:space:]]:-" | awk '{ print toupper($0) }')
+    printf "%s" "$mac"
 }
 #lshwParse "disk"
 #lshwNetwork
@@ -160,8 +160,8 @@ standardizeMACAddr () {
 #prod=$(lshwGetProductIDFromBusItem "0")
 #rev=$(lshwGetVersionFromBusItem "0")
 #serial=$(lshwGetSerialFromBusItem "0")
-#venname=$(lshwGetVendorNameFromBusItem "0")
-#prodname=$(lshwGetProductNameFromBusItem "0")
+#venName=$(lshwGetVendorNameFromBusItem "0")
+#prodName=$(lshwGetProductNameFromBusItem "0")
 #bluetoothCap=$(lshwBusItemBluetoothCap)
 #ethernetCap=$(lshwBusItemEthernetCap)
 #wirelessCap=$(lshwBusItemWirelessCap)
@@ -169,8 +169,8 @@ standardizeMACAddr () {
 #echo $prod
 #echo $rev
 #echo $serial
-#echo $venname
-#echo $prodname
+#echo $venName
+#echo $prodName
 #echo $bluetoothCap
 #echo $ethernetCap
 #echo $wirelessCap

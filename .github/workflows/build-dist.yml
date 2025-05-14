@@ -22,19 +22,31 @@ jobs:
       - name: SMBIOS Cli
         working-directory: dotnet/ComponentClassRegistry/SmbiosCli
         run: |
+          dotnet deb install
+          dotnet rpm install
           dotnet zip install
+          dotnet deb -r linux-x64 -c Release
+          dotnet rpm -r linux-x64 -c Release
           dotnet zip -r linux-x64 -c Release
           dotnet zip -r win-x64 -c Release
       - name: PCIe Cli
         working-directory: dotnet/ComponentClassRegistry/PcieCli
         run: |
+          dotnet deb install
+          dotnet rpm install
           dotnet zip install
+          dotnet deb -r linux-x64 -c Release
+          dotnet rpm -r linux-x64 -c Release
           dotnet zip -r linux-x64 -c Release
           dotnet zip -r win-x64 -c Release
       - name: Storage Cli
         working-directory: dotnet/ComponentClassRegistry/StorageCli
         run: |
+          dotnet deb install
+          dotnet rpm install
           dotnet zip install
+          dotnet deb -r linux-x64 -c Release
+          dotnet rpm -r linux-x64 -c Release
           dotnet zip -r linux-x64 -c Release
           dotnet zip -r win-x64 -c Release
       - name: Build packages
@@ -44,6 +56,9 @@ jobs:
         shell: bash
         run: |
           sha256sum build/distributions/*.{deb,rpm,zip} 2> /dev/null
+          ls -go --full-time build/distributions/*.{deb,rpm,zip} 2> /dev/null
+          sha256sum dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/**/**/**/*.{deb,rpm,zip} 2> /dev/null
+          ls -go --full-time dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/**/**/**/*.{deb,rpm,zip} 2> /dev/null
       - name: Artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -54,3 +69,12 @@ jobs:
             build/distributions/*.deb
             build/distributions/*.rpm
             build/distributions/*.zip
+            dotnet/ComponentClassRegistry/SmbiosCli/**/*.deb
+            dotnet/ComponentClassRegistry/SmbiosCli/**/*.rpm
+            dotnet/ComponentClassRegistry/SmbiosCli/**/*.zip
+            dotnet/ComponentClassRegistry/PcieCli/**/*.deb
+            dotnet/ComponentClassRegistry/PcieCli/**/*.rpm
+            dotnet/ComponentClassRegistry/PcieCli/**/*.zip
+            dotnet/ComponentClassRegistry/StorageCli/**/*.deb
+            dotnet/ComponentClassRegistry/StorageCli/**/*.rpm
+            dotnet/ComponentClassRegistry/StorageCli/**/*.zip

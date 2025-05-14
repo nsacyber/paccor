@@ -5,8 +5,8 @@ $PEN_ROOT="1.3.6.1.4.1." # OID root for the private enterprise numbers
 
 ### JSON Structure Keywords
 $JSON_COMPONENTS="COMPONENTS"
-$JSON_PROPERTIES="PROPERTIES"
 $JSON_COMPONENTSURI="COMPONENTSURI"
+$JSON_PROPERTIES="PROPERTIES"
 $JSON_PROPERTIESURI="PROPERTIESURI"
 $JSON_PLATFORM="PLATFORM"
 #### JSON Component Keywords
@@ -242,7 +242,7 @@ function jsonPlatformObject () {
     Write-Output ("$JSON_PLATFORM_TEMPLATE" -f "$(toCSV @args)")
 }
 function jsonComponentsUri ([string]$COMPONENTS_URI="", [string]$COMPONENTS_URI_LOCAL_COPY_FOR_HASH="") {
-    if (![string]::IsNullOrEmpty($COMPONENTS_URI)) {
+    if (![string]::IsNullOrEmpty($COMPONENTS_URI) -and ($COMPONENTS_URI.Trim().Length -ne 0)) {
         $componentsUri=$(jsonUri "$COMPONENTS_URI")
         $componentsUriDetails=""
         if (![string]::IsNullOrEmpty($COMPONENTS_URI_LOCAL_COPY_FOR_HASH) -and ($COMPONENTS_URI_LOCAL_COPY_FOR_HASH.Trim().Length -ne 0) -and (Test-Path -Path $COMPONENTS_URI_LOCAL_COPY_FOR_HASH)) {
@@ -256,7 +256,7 @@ function jsonComponentsUri ([string]$COMPONENTS_URI="", [string]$COMPONENTS_URI_
     }
 }
 function jsonPropertiesUri ([string]$PROPERTIES_URI="", [string]$PROPERTIES_URI_LOCAL_COPY_FOR_HASH="") {
-    if (![string]::IsNullOrEmpty($PROPERTIES_URI)) {
+    if (![string]::IsNullOrEmpty($PROPERTIES_URI) -and ($PROPERTIES_URI.Trim().Length -ne 0)) {
         $propertiesUri=$(jsonUri "$PROPERTIES_URI")
         $propertiesUriDetails=""
         if (![string]::IsNullOrEmpty($PROPERTIES_URI_LOCAL_COPY_FOR_HASH) -and ($PROPERTIES_URI_LOCAL_COPY_FOR_HASH.Trim().Length -ne 0) -and (Test-Path -Path $PROPERTIES_URI_LOCAL_COPY_FOR_HASH)) {

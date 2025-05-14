@@ -72,26 +72,27 @@ jobs:
         dotnet rpm -r linux-x64 -c Release
         dotnet zip -r linux-x64 -c Release
         dotnet zip -r win-x64 -c Release
-    - name: Artifacts SHA256
+    - name: Debug Apps SHA256
       shell: bash
       run: |
-        sha256sum dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/**/**/**/*.{deb,rpm,zip} 2> /dev/null
+        sha256sum dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/Debug/**/**/*.{deb,rpm,zip} 2> /dev/null
+        ls -go --full-time dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/Debug/**/**/*.{deb,rpm,zip} 2> /dev/null
     - name: Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: testArtifacts.${{ matrix.os }}
+        name: debugapps.builton_${{ matrix.os }}
         retention-days: 1
         if-no-files-found: error
         path: |
-          dotnet/ComponentClassRegistry/SmbiosCli/**/*.deb
-          dotnet/ComponentClassRegistry/SmbiosCli/**/*.rpm
-          dotnet/ComponentClassRegistry/SmbiosCli/**/*.zip
-          dotnet/ComponentClassRegistry/PcieCli/**/*.deb
-          dotnet/ComponentClassRegistry/PcieCli/**/*.rpm
-          dotnet/ComponentClassRegistry/PcieCli/**/*.zip
-          dotnet/ComponentClassRegistry/StorageCli/**/*.deb
-          dotnet/ComponentClassRegistry/StorageCli/**/*.rpm
-          dotnet/ComponentClassRegistry/StorageCli/**/*.zip
+          dotnet/ComponentClassRegistry/SmbiosCli/bin/Debug/**/*.deb
+          dotnet/ComponentClassRegistry/SmbiosCli/bin/Debug/**/*.rpm
+          dotnet/ComponentClassRegistry/SmbiosCli/bin/Debug/**/*.zip
+          dotnet/ComponentClassRegistry/PcieCli/bin/Debug/**/*.deb
+          dotnet/ComponentClassRegistry/PcieCli/bin/Debug/**/*.rpm
+          dotnet/ComponentClassRegistry/PcieCli/bin/Debug/**/*.zip
+          dotnet/ComponentClassRegistry/StorageCli/bin/Debug/**/*.deb
+          dotnet/ComponentClassRegistry/StorageCli/bin/Debug/**/*.rpm
+          dotnet/ComponentClassRegistry/StorageCli/bin/Debug/**/*.zip
   nuget:
     runs-on: ubuntu-latest
     needs: build
@@ -111,10 +112,11 @@ jobs:
         shell: bash
         run: |
           sha256sum dotnet/ComponentClassRegistry/**/bin/Release/*nupkg
+          ls -go --full-time dotnet/ComponentClassRegistry/**/bin/Release/*nupkg
       - name: Nuget Packages
         uses: actions/upload-artifact@v4
         with:
-          name: nuget.pkgs
+          name: nuget.rc.pkgs
           retention-days: 1
           if-no-files-found: error
           path: |

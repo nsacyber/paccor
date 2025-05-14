@@ -27,3 +27,16 @@ jobs:
     - name: Pack
       working-directory: dotnet/HardwareManifestPlugin
       run: dotnet pack
+    - name: Nuget SHA256
+      shell: bash
+      run: |
+        sha256sum dotnet/HardwareManifestPlugin/**/bin/Release/*nupkg
+        ls -go --full-time dotnet/HardwareManifestPlugin/**/bin/Release/*nupkg
+    - name: Nuget Packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget.pkgs
+        retention-days: 1
+        if-no-files-found: error
+        path: |
+          dotnet/HardwareManifestPlugin/**/bin/Release/*nupkg
