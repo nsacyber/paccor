@@ -35,7 +35,7 @@ jobs:
     - name: Nuget Packages
       uses: actions/upload-artifact@v4
       with:
-        name: nuget.pkgs
+        name: nuget.rc.builton_${{ matrix.os }}
         retention-days: 1
         if-no-files-found: error
         path: |
