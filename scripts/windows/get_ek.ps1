@@ -25,7 +25,7 @@ param(
                 }
 
                 if ($data -eq $null) {
-                    echo "Found no EK Certificates using the PowerShell TrustedPlatformModule module."
+                    Write-Output "Found no EK Certificates using the PowerShell TrustedPlatformModule module."
                     $data = $null
                 } else {
                     Write-Progress -Activity "EK Certificate Gathered" -CurrentOperation "Converting to Base64" -PercentComplete 75
@@ -37,7 +37,7 @@ param(
                 }
             }
         Else {
-            echo "Not admin"
+            Write-Output "Not admin"
         }
     }
 )

@@ -6,6 +6,13 @@ plugins {
     id 'signing'
 }
 
+// version number
+def base_version = '1.5.0'
+def base_release = 'beta1'
+def archive_version = "${base_version}-${base_release}"
+
+version = "${base_version}${base_release}"
+
 java {
     withJavadocJar()
     withSourcesJar()
@@ -52,7 +59,7 @@ publishing {
                 name = 'paccor'
                 packaging = 'jar'
                 url = 'https://github.com/nsacyber/paccor'
-                version = '1.1.4r12'
+                version = "${version}"
 
                 licenses {
                     license {
@@ -117,6 +124,12 @@ def createScript(project, mainClass, name) {
       duplicatesStrategy = 'exclude' // IMPORTANT: eliminates duplicate files within the ZIP
     }
   }
+    tasks.named("buildDeb") {
+        dependsOn tasks.named(name)
+    }
+    tasks.named("buildRpm") {
+        dependsOn tasks.named(name)
+    }
 }
 
 // Suppress standard application plugin behavior in favor of easier to read program declarations below
@@ -142,12 +155,135 @@ applicationDistribution.from("./") {
     into "./"
 }
 
+def createCcrPathString(String ccr, String config, String runtime) {
+    def prefix = "${project.rootDir}${File.separator}dotnet${File.separator}ComponentClassRegistry"
+    def netVersion = "net8.0"
+    return "${prefix}${File.separator}${ccr}${File.separator}bin${File.separator}${config}${File.separator}${netVersion}${File.separator}${runtime}${File.separator}publish${File.separator}${ccr}"
+}
+
+def getDotnetConfig() {
+    return "Release"
+}
+
+def getDotnetRuntimeLinux() {
+    return "linux-x64"
+}
+
+def getDotnetRuntimeWin() {
+    return "win-x64"
+}
+
+def getZipOutputPath() {
+    return layout.buildDirectory.dir("distributions")
+}
+
+def getStagingPathForUtilities() {
+    return layout.buildDirectory.dir("tmp${File.separator}staging")
+}
+
+def createLinuxZipFileList() {
+    def config = getDotnetConfig()
+    def runtime = getDotnetRuntimeLinux()
+    def smbios = file(createCcrPathString("SmbiosCli", config, runtime))
+    def pcie = file(createCcrPathString("PcieCli", config, runtime))
+    def storage = file(createCcrPathString("StorageCli", config, runtime))
+
+    return [smbios, pcie, storage]
+}
+
+def createWinZipFileList() {
+    def config = getDotnetConfig()
+    def runtime = getDotnetRuntimeWin()
+    def smbios = file(createCcrPathString("SmbiosCli", config, runtime) + ".exe")
+    def pcie = file(createCcrPathString("PcieCli", config, runtime) + ".exe")
+    def storage = file(createCcrPathString("StorageCli", config, runtime) + ".exe")
+
+    return [smbios, pcie, storage]
+}
+
+def checkFilesExist(ArrayList<File> fileList, String destinationIfExists) {
+    fileList.each { file ->
+        if (file.exists()) {
+            println "Copied ${file.name} into ${destinationIfExists}."
+        }
+    }
+}
+
+// Create Windows ZIP
+tasks.register("distZipWin", Zip) {
+    dependsOn tasks.named("distZip")
+
+    def destinationInZip = tasks.distZip.archiveBaseName.get() + "${File.separator}scripts${File.separator}windows"
+    def zipOutputDestination = getZipOutputPath()
+    def runtime = getDotnetRuntimeWin()
+    def archiveName = tasks.distZip.archiveBaseName.get() + ".${archive_version}.${runtime}.zip"
+
+    def fileList = createWinZipFileList()
+
+    from(zipTree(tasks.distZip.archiveFile.get().asFile))
+    from(fileList.findAll { it.exists() }) {
+        into "${destinationInZip}"
+    }
+
+    archiveFileName.set(archiveName)
+    destinationDirectory.set(zipOutputDestination)
+
+    doFirst {
+        checkFilesExist(fileList, "${archiveName}")
+    }
+}
+
+// Create Linux ZIP
+tasks.register("distZipLinux", Zip) {
+    dependsOn tasks.named("distZip")
+
+    def destinationInZip = tasks.distZip.archiveBaseName.get() + "${File.separator}scripts"
+    def zipOutputDestination = getZipOutputPath()
+    def runtime = getDotnetRuntimeLinux()
+    def archiveName = tasks.distZip.archiveBaseName.get() + ".${archive_version}.${runtime}.zip"
+
+    def fileList = createLinuxZipFileList()
+
+    from(zipTree(tasks.distZip.archiveFile.get().asFile))
+    from(fileList.findAll { it.exists() }) {
+        into "${destinationInZip}"
+    }
+
+    archiveFileName.set(archiveName)
+    destinationDirectory.set(zipOutputDestination)
+
+    doFirst {
+        checkFilesExist(fileList, "${archiveName}")
+    }
+}
+
+// Copies linux registry utilities into a packaging staging folder, if they exist
+tasks.register("stageUtilsForDebRpm", Copy) {
+    def stagingFolder = file(getStagingPathForUtilities())
+    def fileList = createLinuxZipFileList()
+
+    from fileList.findAll { it.exists() }
+    into "${stagingFolder}"
+
+    doFirst {
+        checkFilesExist(fileList, "${stagingFolder}")
+    }
+}
+
+tasks.named("buildDeb") {
+    dependsOn tasks.named("stageUtilsForDebRpm")
+}
+
+tasks.named("buildRpm") {
+    dependsOn tasks.named("stageUtilsForDebRpm")
+}
+
 // Produce packages
 ospackage {
     packageName='paccor'
     os=LINUX
-    version='1.1.4'
-    release='12'
+    version="${base_version}"
+    release="${base_release}"
 
     into '/opt/paccor'
     user 'root'
@@ -155,6 +291,7 @@ ospackage {
 
     requires('dmidecode', '3.2', GREATER | EQUAL)
     requires('ethtool')
+    requires('java-17-openjdk-devel')
     requires('jq')
     requires('lshw')
     requires('nvme-cli')
@@ -198,6 +335,10 @@ ospackage {
             details.file.name.endsWith('.md')
         }
         into './'
+    }
+
+    from (getStagingPathForUtilities()) {
+        into 'scripts'
     }
 }
 

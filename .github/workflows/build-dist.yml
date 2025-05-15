@@ -1,0 +1,82 @@
+name: Build Distribution Packages
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore dependencies
+        working-directory: dotnet/ComponentClassRegistry
+        run: dotnet restore
+      - name: Install Package Tools
+        working-directory: dotnet/ComponentClassRegistry
+        run: |
+          dotnet tool install --global dotnet-deb
+          dotnet tool install --global dotnet-rpm
+          dotnet tool install --global dotnet-zip
+      - name: SMBIOS Cli
+        working-directory: dotnet/ComponentClassRegistry/SmbiosCli
+        run: |
+          dotnet deb install
+          dotnet rpm install
+          dotnet zip install
+          dotnet deb -r linux-x64 -c Release
+          dotnet rpm -r linux-x64 -c Release
+          dotnet zip -r linux-x64 -c Release
+          dotnet zip -r win-x64 -c Release
+      - name: PCIe Cli
+        working-directory: dotnet/ComponentClassRegistry/PcieCli
+        run: |
+          dotnet deb install
+          dotnet rpm install
+          dotnet zip install
+          dotnet deb -r linux-x64 -c Release
+          dotnet rpm -r linux-x64 -c Release
+          dotnet zip -r linux-x64 -c Release
+          dotnet zip -r win-x64 -c Release
+      - name: Storage Cli
+        working-directory: dotnet/ComponentClassRegistry/StorageCli
+        run: |
+          dotnet deb install
+          dotnet rpm install
+          dotnet zip install
+          dotnet deb -r linux-x64 -c Release
+          dotnet rpm -r linux-x64 -c Release
+          dotnet zip -r linux-x64 -c Release
+          dotnet zip -r win-x64 -c Release
+      - name: Build packages
+        run: |
+          ./gradlew clean build buildRpm buildDeb distZipWin distZipLinux
+      - name: Artifacts SHA256
+        shell: bash
+        run: |
+          sha256sum build/distributions/*.{deb,rpm,zip} 2> /dev/null
+          ls -go --full-time build/distributions/*.{deb,rpm,zip} 2> /dev/null
+          sha256sum dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/**/**/**/*.{deb,rpm,zip} 2> /dev/null
+          ls -go --full-time dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/**/**/**/*.{deb,rpm,zip} 2> /dev/null
+      - name: Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dists
+          retention-days: 1
+          if-no-files-found: error
+          path: |
+            build/distributions/*.deb
+            build/distributions/*.rpm
+            build/distributions/*.zip
+            dotnet/ComponentClassRegistry/SmbiosCli/**/*.deb
+            dotnet/ComponentClassRegistry/SmbiosCli/**/*.rpm
+            dotnet/ComponentClassRegistry/SmbiosCli/**/*.zip
+            dotnet/ComponentClassRegistry/PcieCli/**/*.deb
+            dotnet/ComponentClassRegistry/PcieCli/**/*.rpm
+            dotnet/ComponentClassRegistry/PcieCli/**/*.zip
+            dotnet/ComponentClassRegistry/StorageCli/**/*.deb
+            dotnet/ComponentClassRegistry/StorageCli/**/*.rpm
+            dotnet/ComponentClassRegistry/StorageCli/**/*.zip

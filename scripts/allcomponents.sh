@@ -1,45 +1,23 @@
 #!/bin/bash
 
 ### User customizable values
-APP_HOME="`dirname "$0"`"
+APP_HOME=$(dirname "$0")
 COMPONENTS_URI="" # Specify the optional components URI field
+# shellcheck disable=SC2034
 COMPONENTS_URI_LOCAL_COPY_FOR_HASH="" # If empty, the optional hashAlgorithm and hashValue fields will not be included for the URI
 PROPERTIES_URI="" # Specify the optional properties URI field
+# shellcheck disable=SC2034
 PROPERTIES_URI_LOCAL_COPY_FOR_HASH="" # If empty, the optional hashAlgorithm and hashValue fields will not be included for the URI
-ENTERPRISE_NUMBERS_FILE="$APP_HOME""/enterprise-numbers"
-PEN_ROOT="1.3.6.1.4.1." # OID root for the private enterprise numbers
 JSON_SCRIPT="$APP_HOME""/json.sh" # Defines JSON structure and provides methods for producing relevant JSON
-SMBIOS_SCRIPT="$APP_HOME""/smbios.sh"
-HW_SCRIPT="$APP_HOME""/hw.sh" # For components not covered by SMBIOS
-NVME_SCRIPT="$APP_HOME""/nvme.sh" # For nvme components, until lshw supports them
 
-### SMBIOS Type Constants
-source $SMBIOS_SCRIPT
-SMBIOS_TYPE_PLATFORM="1"
-SMBIOS_TYPE_CHASSIS="3"
-SMBIOS_TYPE_BIOS="0"
-SMBIOS_TYPE_BASEBOARD="2"
-SMBIOS_TYPE_CPU="4"
-SMBIOS_TYPE_RAM="17"
-
-### hw
-source $HW_SCRIPT
-source $NVME_SCRIPT
-
-### ComponentClass values
-COMPCLASS_REGISTRY_TCG="2.23.133.18.3.1" # switch off values within SMBIOS to reveal accurate component classes
-COMPCLASS_BASEBOARD="00030003" # these values are meant to be an example.  check the component class registry.
-COMPCLASS_BIOS="00130003"
-COMPCLASS_UEFI="00130002"
-COMPCLASS_CHASSIS="00020001" # TODO:  chassis type is included in SMBIOS
-COMPCLASS_CPU="00010002"
-COMPCLASS_HDD="00070002"
-COMPCLASS_NIC="00090002"
-COMPCLASS_RAM="00060001"  # TODO: memory type is included in SMBIOS
-COMPCLASS_GFX="00050002"
-
-### JSON
-source $JSON_SCRIPT
+#### Registry Options
+INCLUDE_SMBIOS_REGISTRY=YES
+INCLUDE_PCIE_REGISTRY=YES
+INCLUDE_STORAGE_REGISTRY=YES
+INCLUDE_TCG_REGISTRY=
+SMBIOS_REGISTRY_UTILITY="$APP_HOME""/SmbiosCli"
+PCIE_REGISTRY_UTILITY="$APP_HOME""/PcieCli"
+STORAGE_REGISTRY_UTILITY="$APP_HOME""/StorageCli"
 
 ## Some of the commands below require root.
 if [ "$EUID" -ne 0 ]
@@ -47,538 +25,56 @@ if [ "$EUID" -ne 0 ]
   exit
 fi
 
-### Gather platform details for the subject alternative name
-dmidecodeParseTypeAssumeOneHandle "$SMBIOS_TYPE_PLATFORM"
-platformManufacturer=$(dmidecodeGetString $(dmidecodeGetByte "0x4"))
-platformModel=$(dmidecodeGetString $(dmidecodeGetByte "0x5"))
-platformVersion=$(dmidecodeGetString $(dmidecodeGetByte "0x6"))
-platformSerial=$(dmidecodeGetString $(dmidecodeGetByte "0x7"))
+### JSON
+# shellcheck source=./json.sh
+source "$JSON_SCRIPT"
 
-if [[ -z "${platformManufacturer// }" ]]; then
-    platformManufacturer="$NOT_SPECIFIED"
-fi
-platformManufacturer=$(echo "$platformManufacturer" | sed 's/^[ \t]*//;s/[ \t]*$//')
-platformManufacturer=$(jsonPlatformManufacturerStr "$platformManufacturer")
-
-if [[ -z "${platformModel// }" ]]; then
-    platformModel="$NOT_SPECIFIED"
-fi
-platformModel=$(echo "$platformModel" | sed 's/^[ \t]*//;s/[ \t]*$//')
-platformModel=$(jsonPlatformModel "$platformModel")
-
-if [[ -z "${platformVersion// }" ]]; then
-    platformVersion="$NOT_SPECIFIED"
-fi
-platformVersion=$(echo "$platformVersion" | sed 's/^[ \t]*//;s/[ \t]*$//')
-platformVersion=$(jsonPlatformVersion "$platformVersion")
-
-if ! [[ -z "${platformSerial// }" ]]; then
-    platformSerial=$(echo "$platformSerial" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    platformSerial=$(jsonPlatformSerial "$platformSerial")
-fi
-platform=$(jsonPlatformObject "$platformManufacturer" "$platformModel" "$platformVersion" "$platformSerial")
-
-
+### Base Registry Platform and Component data
+TCG_REGISTRY_SCRIPT="$APP_HOME""/tcg_ccr.sh" # Functions to collect hardware information labeled with the original TCG Component Class Registry
+# shellcheck source=./tcg_ccr.sh
+source "$TCG_REGISTRY_SCRIPT"
 
 ### Gather component details
-dmidecodeParseTypeAssumeOneHandle "$SMBIOS_TYPE_CHASSIS"
-chassisClass=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CHASSIS")
-chassisManufacturer=$(dmidecodeGetString $(dmidecodeGetByte "0x4"))
-chassisModel=$(dmidecodeGetByte "0x5")
-chassisModel=$(printf "%d" "0x""$chassisModel") # Convert to decimal
-chassisSerial=$(dmidecodeGetString $(dmidecodeGetByte "0x7"))
-chassisRevision=$(dmidecodeGetString $(dmidecodeGetByte "0x6"))
-
-if [[ -z "${chassisManufacturer// }" ]]; then
-    chassisManufacturer="$NOT_SPECIFIED"
+platformList=$(parseSystemData)
+platformObject=$(jsonPlatformObject "$platformList")
+smbiosRegistryData=""
+pcieRegistryData=""
+storageRegistryData=""
+tcgRegistryData=""
+if [[ -n "$INCLUDE_SMBIOS_REGISTRY" && -f "$SMBIOS_REGISTRY_UTILITY" ]]; then
+    smbiosRegistryData=$($SMBIOS_REGISTRY_UTILITY --components-only)
 fi
-chassisManufacturer=$(echo "$chassisManufacturer" | sed 's/^[ \t]*//;s/[ \t]*$//')
-chassisManufacturer=$(jsonManufacturer "$chassisManufacturer")
-
-if [[ -z "${chassisModel// }" ]]; then
-    chassisModel="$NOT_SPECIFIED"
+if [[ -n "$INCLUDE_PCIE_REGISTRY" && -f "$PCIE_REGISTRY_UTILITY" ]]; then
+    pcieRegistryData=$($PCIE_REGISTRY_UTILITY --components-only)
 fi
-chassisModel=$(echo "$chassisModel" | sed 's/^[ \t]*//;s/[ \t]*$//')
-chassisModel=$(jsonModel "$chassisModel")
-
-chassisOptional=""
-if ! [[ -z "${chassisSerial// }" ]]; then
-    chassisSerial=$(echo "$chassisSerial" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    chassisSerial=$(jsonSerial "$chassisSerial")
-    chassisOptional="$chassisOptional"",""$chassisSerial"
+if [[ -n "$INCLUDE_STORAGE_REGISTRY" && -f "$STORAGE_REGISTRY_UTILITY" ]]; then
+    storageRegistryData=$($STORAGE_REGISTRY_UTILITY --components-only)
 fi
-if ! [[ -z "${chassisRevision// }" ]]; then
-    chassisRevision=$(echo "$chassisRevision" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    chassisRevision=$(jsonRevision "$chassisRevision")
-    chassisOptional="$chassisOptional"",""$chassisRevision"
+if [[ -n "$INCLUDE_TCG_REGISTRY" ]]; then
+    tcgRegistryData=$(collectOldTcgRegistryComponents)
 fi
-chassisOptional=$(printf "$chassisOptional" | cut -c2-)
-componentChassis=$(jsonComponent "$chassisClass" "$chassisManufacturer" "$chassisModel" "$chassisOptional")
-
-### Gather baseboard details
-dmidecodeParseTypeAssumeOneHandle "$SMBIOS_TYPE_BASEBOARD"
-baseboardClass=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BASEBOARD")
-baseboardManufacturer=$(dmidecodeGetString $(dmidecodeGetByte "0x4"))
-baseboardModel=$(dmidecodeGetString $(dmidecodeGetByte "0x5"))
-baseboardSerial=$(dmidecodeGetString $(dmidecodeGetByte "0x7"))
-baseboardRevision=$(dmidecodeGetString $(dmidecodeGetByte "0x6"))
-baseboardFeatureFlags=$(dmidecodeGetByte "0x9")
-baseboardFeatureFlags=$(printf "%d" "0x""$baseboardFeatureFlags") # Convert to decimal
-baseboardReplaceableIndicator="28"
-baseboardFieldReplaceableAnswer="false"
-if (((baseboardFeatureFlags&baseboardReplaceableIndicator)!=0)); then
-    baseboardFieldReplaceableAnswer="true"
-fi
-baseboardFieldReplaceable=$(jsonFieldReplaceable "$baseboardFieldReplaceableAnswer")
-
-if [[ -z "${baseboardManufacturer// }" ]]; then
-    baseboardManufacturer="$NOT_SPECIFIED"
-fi
-baseboardManufacturer=$(echo "$baseboardManufacturer" | sed 's/^[ \t]*//;s/[ \t]*$//')
-baseboardManufacturer=$(jsonManufacturer "$baseboardManufacturer")
-
-if [[ -z "${baseboardModel// }" ]]; then
-    baseboardModel="$NOT_SPECIFIED"
-fi
-baseboardModel=$(echo "$baseboardModel" | sed 's/^[ \t]*//;s/[ \t]*$//')
-baseboardModel=$(jsonModel "$baseboardModel")
-
-baseboardOptional=""
-if ! [[ -z "${baseboardSerial// }" ]]; then
-    baseboardSerial=$(echo "$baseboardSerial" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    baseboardSerial=$(jsonSerial "$baseboardSerial")
-    baseboardOptional="$baseboardOptional"",""$baseboardSerial"
-fi
-if ! [[ -z "${baseboardRevision// }" ]]; then
-    baseboardRevision=$(echo "$baseboardRevision" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    baseboardRevision=$(jsonRevision "$baseboardRevision")
-    baseboardOptional="$baseboardOptional"",""$baseboardRevision"
-fi
-baseboardOptional=$(printf "$baseboardOptional" | cut -c2-)
-componentBaseboard=$(jsonComponent "$baseboardClass" "$baseboardManufacturer" "$baseboardModel" "$baseboardFieldReplaceable" "$baseboardOptional")
-
-### Gather BIOS details
-dmidecodeParseTypeAssumeOneHandle "$SMBIOS_TYPE_BIOS"
-biosClass=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_BIOS")
-biosManufacturer=$(dmidecodeGetString $(dmidecodeGetByte "0x4"))
-biosModel=""
-biosSerial=""
-biosRevision=$(dmidecodeGetString $(dmidecodeGetByte "0x5"))
-
-if [[ -z "${biosManufacturer// }" ]]; then
-    biosManufacturer="$NOT_SPECIFIED"
-fi
-biosManufacturer=$(echo "$biosManufacturer" | sed 's/^[ \t]*//;s/[ \t]*$//')
-biosManufacturer=$(jsonManufacturer "$biosManufacturer")
-
-if [[ -z "${biosModel// }" ]]; then
-    biosModel="$NOT_SPECIFIED"
-fi
-biosModel=$(echo "$biosModel" | sed 's/^[ \t]*//;s/[ \t]*$//')
-biosModel=$(jsonModel "$biosModel")
-
-biosOptional=""
-if ! [[ -z "${biosSerial// }" ]]; then
-    biosSerial=$(echo "$biosSerial" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    biosSerial=$(jsonSerial "$biosSerial")
-    biosOptional="$biosOptional"",""$biosSerial"
-fi
-if ! [[ -z "${biosRevision// }" ]]; then
-    biosRevision=$(echo "$biosRevision" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    biosRevision=$(jsonRevision "$biosRevision")
-    biosOptional="$biosOptional"",""$biosRevision"
-fi
-biosOptional=$(printf "$biosOptional" | cut -c2-)
-componentBios=$(jsonComponent "$biosClass" "$biosManufacturer" "$biosModel" "$biosOptional")
-
-parseCpuData () {
-    dmidecodeHandles "$SMBIOS_TYPE_CPU"
-
-    notReplaceableIndicator="6"
-    tmpData=""
-    numHandles=$(dmidecodeNumHandles)
-    class=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_CPU")
-
-    for ((i = 0 ; i < numHandles ; i++ )); do
-        dmidecodeParseHandle "${tableHandles[$i]}"
-
-    manufacturer=$(dmidecodeGetString $(dmidecodeGetByte "0x7"))
-    model=$(dmidecodeGetByte "0x6")
-        model=$(printf "%d" "0x""$model") # Convert to decimal
-    serial=$(dmidecodeGetString $(dmidecodeGetByte "0x20"))
-    revision=$(dmidecodeGetString $(dmidecodeGetByte "0x10"))
-        processorUpgrade=$(dmidecodeGetByte "0x19")
-        processorUpgrade=$(printf "%d" "0x""$processorUpgrade") # Convert to decimal
-
-    if [[ -z "${manufacturer// }" ]]; then
-        manufacturer="$NOT_SPECIFIED"
-    fi
-    manufacturer=$(echo "$manufacturer" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    manufacturer=$(jsonManufacturer "$manufacturer")
-
-    if [[ -z "${model// }" ]]; then
-        model="$NOT_SPECIFIED"
-    fi
-    model=$(echo "$model" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    model=$(jsonModel "$model")
-
-    optional=""
-    if ! [[ -z "${serial// }" ]]; then
-        serial=$(echo "$serial" | sed 's/^[ \t]*//;s/[ \t]*$//')
-        serial=$(jsonSerial "$serial")
-        optional="$optional"",""$serial"
-    fi
-    if ! [[ -z "${revision// }" ]]; then
-        revision=$(echo "$revision" | sed 's/^[ \t]*//;s/[ \t]*$//')
-        revision=$(jsonRevision "$revision")
-        optional="$optional"",""$revision"
-    fi
-    optional=$(printf "$optional" | cut -c2-)
-
-        replaceable="true"
-        if [ $processorUpgrade -eq $notReplaceableIndicator ]; then
-            replaceable="false"
-        fi
-        replaceable=$(jsonFieldReplaceable "$replaceable")
-
-        newCpuData=$(jsonComponent "$class" "$manufacturer" "$model" "$replaceable" "$optional")
-        tmpData="$tmpData"",""$newCpuData"
-    done
-
-    # remove leading comma
-    tmpData=$(printf "$tmpData" | cut -c2-)
-
-    printf "$tmpData"
-}
-
-parseRamData () {
-    dmidecodeHandles "$SMBIOS_TYPE_RAM"
-
-    replaceable=$(jsonFieldReplaceable "true")
-    tmpData=""
-    numHandles=$(dmidecodeNumHandles)
-    class=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_RAM")
-
-    for ((i = 0 ; i < numHandles ; i++ )); do
-        dmidecodeParseHandle "${tableHandles[$i]}"
-
-    manufacturer=$(dmidecodeGetString $(dmidecodeGetByte "0x17"))
-    model=$(dmidecodeGetString $(dmidecodeGetByte "0x1A"))
-    serial=$(dmidecodeGetString $(dmidecodeGetByte "0x18"))
-    revision=$(dmidecodeGetString $(dmidecodeGetByte "0x19"))
-
-        if ([[ -z "${manufacturer// }" ]] && [[ -z "${model// }" ]] && [[ -z "${serial// }" ]] && [[ -z "${revision// }" ]]); then
-            continue
-        fi
-
-    if [[ -z "${manufacturer// }" ]]; then
-        manufacturer="$NOT_SPECIFIED"
-    fi
-    manufacturer=$(echo "$manufacturer" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    manufacturer=$(jsonManufacturer "$manufacturer")
-
-    if [[ -z "${model// }" ]]; then
-        model="$NOT_SPECIFIED"
-    fi
-    model=$(echo "$model" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    model=$(jsonModel "$model")
-
-    optional=""
-    if ! [[ -z "${serial// }" ]]; then
-        serial=$(echo "$serial" | sed 's/^[ \t]*//;s/[ \t]*$//')
-        serial=$(jsonSerial "$serial")
-        optional="$optional"",""$serial"
-    fi
-    if ! [[ -z "${revision// }" ]]; then
-        revision=$(echo "$revision" | sed 's/^[ \t]*//;s/[ \t]*$//')
-        revision=$(jsonRevision "$revision")
-        optional="$optional"",""$revision"
-    fi
-    optional=$(printf "$optional" | cut -c2-)
-
-        newRamData=$(jsonComponent "$class" "$manufacturer" "$model" "$replaceable" "$optional")
-        tmpData="$tmpData"",""$newRamData"
-    done
-
-    # remove leading comma
-    tmpData=$(printf "$tmpData" | cut -c2-)
-
-    printf "$tmpData"
-}
-
-# Write script to parse multiple responses
-# Network:
-# lshw description: type of address.
-#                 : Ethernet interface, Wireless interface, Bluetooth wireless interface
-#           vendor: manufacturer
-#          product: model
-#           serial: address & serial number
-#          version: revision
-#
-# Example:
-# ADDRESS1=$(jsonEthernetMac "AB:CD:EE:EE:DE:34")
-# ADDR_LIST=$(jsonAddress "$ADDRESS1" "$ADDRESS2")
-parseNicData () {
-    lshwNetwork
-
-    replaceable=$(jsonFieldReplaceable "true")
-    tmpData=""
-    numHandles=$(lshwNumBusItems)
-    class=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_NIC")
-
-    for ((i = 0 ; i < numHandles ; i++ )); do
-        manufacturer=$(lshwGetVendorIDFromBusItem "$i")
-        model=$(lshwGetProductIDFromBusItem "$i")
-        serialConstant=$(lshwGetLogicalNameFromBusItem "$i")
-        serialConstant=$(ethtoolPermAddr "$serialConstant")
-        serialConstant=$(standardizeMACAddr "${serialConstant}")
-        serial=""
-        revision=$(lshwGetVersionFromBusItem "$i")
-
-        if [[ -z "${manufacturer// }" ]] && [[ -z "${model// }" ]] && (! [[ -z "${serialConstant// }" ]] || ! [[ -z "${revision// }" ]]); then
-            manufacturer=$(lshwGetVendorNameFromBusItem "$i")
-        model=$(lshwGetProductNameFromBusItem "$i")
-        fi
-
-    if [[ -z "${manufacturer// }" ]]; then
-        manufacturer="$NOT_SPECIFIED"
-    fi
-    manufacturer=$(echo "$manufacturer" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    manufacturer=$(jsonManufacturer "$manufacturer")
-
-    if [[ -z "${model// }" ]]; then
-        model="$NOT_SPECIFIED"
-    fi
-    model=$(echo "$model" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    model=$(jsonModel "$model")
-
-    optional=""
-    if ! [[ -z "${serialConstant// }" ]]; then
-        serial=$(echo "$serialConstant" | sed 's/^[ \t]*//;s/[ \t]*$//')
-        serial=$(jsonSerial "$serialConstant")
-        optional="$optional"",""$serial"
-    fi
-    if ! [[ -z "${revision// }" ]]; then
-        revision=$(echo "$revision" | sed 's/^[ \t]*//;s/[ \t]*$//' | awk '{ print toupper($0) }')
-        revision=$(jsonRevision "$revision")
-        optional="$optional"",""$revision"
-    fi
-        bluetoothCap=$(lshwBusItemBluetoothCap "$i")
-        ethernetCap=$(lshwBusItemEthernetCap "$i")
-        wirelessCap=$(lshwBusItemWirelessCap "$i")
-
-        if ([ -n "$bluetoothCap" ] || [ -n "$ethernetCap" ] || [ -n "$wirelessCap" ]) && ! [[ -z "${serialConstant// }" ]]; then
-            thisAddress=
-            if [ -n "$wirelessCap" ]; then
-                thisAddress=$(jsonWlanMac "$serialConstant")
-            elif [ -n "$bluetoothCap" ]; then
-                thisAddress=$(jsonBluetoothMac "$serialConstant")
-            elif [ -n "$ethernetCap" ]; then
-                thisAddress=$(jsonEthernetMac "$serialConstant")
-            fi
-            if [ -n "$thisAddress" ]; then
-                thisAddress=$(jsonAddress "$thisAddress")
-                optional="$optional"",""$thisAddress"
-            fi
-        fi
-    optional=$(printf "$optional" | cut -c2-)
-
-        newNicData=$(jsonComponent "$class" "$manufacturer" "$model" "$replaceable" "$optional")
-        tmpData="$tmpData"",""$newNicData"
-    done
-
-    # remove leading comma
-    tmpData=$(printf "$tmpData" | cut -c2-)
-
-    printf "$tmpData"
-}
-
-parseHddData () {
-    lshwDisk
-
-    replaceable=$(jsonFieldReplaceable "true")
-    tmpData=""
-    numHandles=$(lshwNumBusItems)
-    class=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_HDD")
-
-    for ((i = 0 ; i < numHandles ; i++ )); do
-        manufacturer=$(lshwGetVendorIDFromBusItem "$i")
-        model=$(lshwGetProductIDFromBusItem "$i")
-        serial=$(lshwGetSerialFromBusItem "$i")
-        revision=$(lshwGetVersionFromBusItem "$i")
-
-        if [[ -z "${manufacturer// }" ]] && [[ -z "${model// }" ]] && (! [[ -z "${serial// }" ]] || ! [[ -z "${revision// }" ]]); then
-            model=$(lshwGetProductNameFromBusItem "$i")
-            manufacturer=""
-            revision="" # Seeing inconsistent behavior cross-OS for this case, will return
-        fi
-
-    if [[ -z "${manufacturer// }" ]]; then
-        manufacturer="$NOT_SPECIFIED"
-    fi
-    manufacturer=$(echo "$manufacturer" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    manufacturer=$(jsonManufacturer "$manufacturer")
-
-    if [[ -z "${model// }" ]]; then
-        model="$NOT_SPECIFIED"
-    fi
-    model=$(echo "$model" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    model=$(jsonModel "$model")
-
-    optional=""
-    if ! [[ -z "${serial// }" ]]; then
-        serial=$(echo "$serial" | sed 's/^[ \t]*//;s/[ \t]*$//')
-        serial=$(jsonSerial "$serial")
-        optional="$optional"",""$serial"
-    fi
-    if ! [[ -z "${revision// }" ]]; then
-        revision=$(echo "$revision" | sed 's/^[ \t]*//;s/[ \t]*$//' | awk '{ print toupper($0) }')
-        revision=$(jsonRevision "$revision")
-        optional="$optional"",""$revision"
-    fi
-    optional=$(printf "$optional" | cut -c2-)
-
-        newHddData=$(jsonComponent "$class" "$manufacturer" "$model" "$replaceable" "$optional")
-        tmpData="$tmpData"",""$newHddData"
-    done
-
-    # remove leading comma
-    tmpData=$(printf "$tmpData" | cut -c2-)
-
-    printf "$tmpData"
-}
-
-parseNvmeData () {
-    nvmeParse
-
-    replaceable=$(jsonFieldReplaceable "true")
-    tmpData=""
-    numHandles=$(nvmeNumDevices)
-    class=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_HDD")
-
-    for ((i = 0 ; i < numHandles ; i++ )); do
-        manufacturer="" # Making this appear as it does on windows, nvme-cli doesn't return a manufacturer field
-        model=$(nvmeGetModelNumberForDevice "$i")
-        serial=$(nvmeGetNguidForDevice "$i")
-        if [[ $serial =~ ^[0]+$ ]]; then
-            serial=$(nvmeGetEuiForDevice "$i")
-        fi
-        revision="" # empty for a similar reason to the manufacturer field
-
-    if [[ -z "${manufacturer// }" ]]; then
-        manufacturer="$NOT_SPECIFIED"
-    fi
-    manufacturer=$(echo "$manufacturer" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    manufacturer=$(jsonManufacturer "$manufacturer")
-
-    if [[ -z "${model// }" ]]; then
-        model="$NOT_SPECIFIED"
-    fi
-    model=$(echo "${model:0:16}" | sed 's/^[ \t]*//;s/[ \t]*$//') # limited to 16 characters for compatibility to windows, then trimmed
-    model=$(jsonModel "$model")
-
-    optional=""
-    if ! [[ -z "${serial// }" ]]; then
-        serial=$(echo "${serial^^}" | sed 's/^[ \t]*//;s/[ \t]*$//' | sed 's/.\{4\}/&_/g' | sed 's/_$/\./')
-        serial=$(jsonSerial "$serial")
-        optional="$optional"",""$serial"
-    fi
-    optional=$(printf "$optional" | cut -c2-)
-
-        newHddData=$(jsonComponent "$class" "$manufacturer" "$model" "$replaceable" "$optional")
-        tmpData="$tmpData"",""$newHddData"
-    done
-
-    # remove leading comma
-    tmpData=$(printf "$tmpData" | cut -c2-)
-
-    printf "$tmpData"
-}
-
-parseGfxData () {
-    lshwDisplay
-
-    replaceable=$(jsonFieldReplaceable "true")
-    tmpData=""
-    numHandles=$(lshwNumBusItems)
-    class=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_GFX")
-
-    for ((i = 0 ; i < numHandles ; i++ )); do
-        manufacturer=$(lshwGetVendorIDFromBusItem "$i")
-    model=$(lshwGetProductIDFromBusItem "$i")
-    serial=$(lshwGetSerialFromBusItem "$i")
-    revision=$(lshwGetVersionFromBusItem "$i")
-
-        if [[ -z "${manufacturer// }" ]] && [[ -z "${model// }" ]] && (! [[ -z "${serial// }" ]] || ! [[ -z "${revision// }" ]]); then
-            manufacturer=$(lshwGetVendorNameFromBusItem "$i")
-            model=$(lshwGetProductNameFromBusItem "$i")
-        fi
-
-    if [[ -z "${manufacturer// }" ]]; then
-        manufacturer="$NOT_SPECIFIED"
-    fi
-    manufacturer=$(echo "$manufacturer" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    manufacturer=$(jsonManufacturer "$manufacturer")
-
-    if [[ -z "${model// }" ]]; then
-        model="$NOT_SPECIFIED"
-    fi
-    model=$(echo "$model" | sed 's/^[ \t]*//;s/[ \t]*$//')
-    model=$(jsonModel "$model")
-
-    optional=""
-    if ! [[ -z "${serial// }" ]]; then
-        serial=$(echo "$serial" | sed 's/^[ \t]*//;s/[ \t]*$//')
-        serial=$(jsonSerial "$serial")
-        optional="$optional"",""$serial"
-    fi
-    if ! [[ -z "${revision// }" ]]; then
-        revision=$(echo "$revision" | sed 's/^[ \t]*//;s/[ \t]*$//' | awk '{ print toupper($0) }')
-        revision=$(jsonRevision "$revision")
-        optional="$optional"",""$revision"
-    fi
-    optional=$(printf "$optional" | cut -c2-)
-
-        newGfxData=$(jsonComponent "$class" "$manufacturer" "$model" "$replaceable" "$optional")
-        tmpData="$tmpData"",""$newGfxData"
-    done
-
-    # remove leading comma
-    tmpData=$(printf "$tmpData" | cut -c2-)
-
-    printf "$tmpData"
-}
-
+componentArray=$(jsonComponentArray "$smbiosRegistryData" "$pcieRegistryData" "$storageRegistryData" "$tcgRegistryData")
 
 ### Gather property details
 property1=$(jsonProperty "uname -r" "$(uname -r)")  ## Example1
 property2=$(jsonProperty "OS Release" "$(grep 'PRETTY_NAME=' /etc/os-release | sed 's/[^=]*=//' | sed -e 's/^[[:space:]\"]*//' | sed -e 's/[[:space:]\"]*$//')") # "$JSON_STATUS_ADDED") ## Example2 with optional third status argument
 
-### Collate the component details
-componentsCPU=$(parseCpuData)
-componentsRAM=$(parseRamData)
-componentsNIC=$(parseNicData)
-componentsHDD=$(parseHddData)
-componentsNVMe=$(parseNvmeData)
-componentsGFX=$(parseGfxData)
-componentArray=$(jsonComponentArray "$componentChassis" "$componentBaseboard" "$componentBios" "$componentsCPU" "$componentsRAM" "$componentsNIC" "$componentsHDD" "$componentsNVMe" "$componentsGFX")
-
 ### Collate the property details
 propertyArray=$(jsonPropertyArray "$property1" "$property2")
 
-### Construct the final JSON object
-FINAL_JSON_OBJECT=$(jsonIntermediateFile "$platform" "$componentArray" "$propertyArray")
-
 ### Collate the URI details, if parameters above are blank, the fields will be excluded from the final JSON structure
+componentsUri=""
 if [ -n "$COMPONENTS_URI" ]; then
-    componentsUri=$(jsonComponentsUri)
-    FINAL_JSON_OBJECT="$FINAL_JSON_OBJECT"",""$componentsUri"
+    componentsUri=$(jsonComponentsUri "$COMPONENTS_URI" "$COMPONENTS_URI_LOCAL_COPY_FOR_HASH")
 fi
+propertiesUri=""
 if [ -n "$PROPERTIES_URI" ]; then
-    propertiesUri=$(jsonPropertiesUri)
-    FINAL_JSON_OBJECT="$FINAL_JSON_OBJECT"",""$propertiesUri"
+    propertiesUri=$(jsonPropertiesUri "$PROPERTIES_URI" "$PROPERTIES_URI_LOCAL_COPY_FOR_HASH")
 fi
 
-printf "$FINAL_JSON_OBJECT""\n\n"
+### Construct the final JSON object
+FINAL_JSON_OBJECT=$(jsonIntermediateFile "$platformObject" "$componentArray" "$componentsUri" "$propertyArray" "$propertiesUri")
+
+printf "%s\n\n" "$FINAL_JSON_OBJECT"
 
 

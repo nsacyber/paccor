@@ -32,3 +32,16 @@ jobs:
       run: |
         dotnet publish -r linux-x64 -c Release
         dotnet publish -r win-x64 -c Release
+    - name: Nuget SHA256
+      shell: bash
+      run: |
+        sha256sum dotnet/paccor_scripts/paccor_scripts/bin/Release/*nupkg
+        ls -go --full-time dotnet/paccor_scripts/paccor_scripts/bin/Release/*nupkg
+    - name: Nuget Packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget.rc.builton_${{ matrix.os }}
+        retention-days: 1
+        if-no-files-found: error
+        path: |
+          dotnet/paccor_scripts/paccor_scripts/bin/Release/*nupkg
