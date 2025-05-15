@@ -68,13 +68,13 @@ public class DeviceObserverCli {
         IssuerSerial issuerSerial = null;
         boolean delta = false;
         
-        try {
+        try {// Attempt to parse holder as a PK certificate
             ekCert = (X509CertificateHolder)CliHelper.loadCert(ekCertFile, x509type.CERTIFICATE);
             issuerSerial = new IssuerSerial(ekCert.getIssuer(), ekCert.getSerialNumber());
-        } catch (IOException e) {
+        } catch (Exception e) {
             
         }
-        try {
+        try {// Attempt to parse holder as an attribute certificate. If so, create a delta certificate.
             pCert = (X509AttributeCertificateHolder)CliHelper.loadCert(ekCertFile, x509type.ATTRIBUTE_CERTIFICATE);
             delta = true;
             // X509AttributeCertificateHolder does not extract a compatible IssuerSerial object 
@@ -84,7 +84,7 @@ public class DeviceObserverCli {
                 gns[i] = new GeneralName(parts[i]);
             }
             issuerSerial = new IssuerSerial(new GeneralNames(gns), pCert.getSerialNumber());
-        } catch (IOException e) {
+        } catch (Exception e) {
             
         }
         
