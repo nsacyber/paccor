@@ -6,6 +6,13 @@ plugins {
     id 'signing'
 }
 
+// version number
+def base_version = '1.5.0'
+def base_release = 'beta1'
+def archive_version = "${base_version}-${base_release}"
+
+version = "${base_version}${base_release}"
+
 java {
     withJavadocJar()
     withSourcesJar()
@@ -52,7 +59,7 @@ publishing {
                 name = 'paccor'
                 packaging = 'jar'
                 url = 'https://github.com/nsacyber/paccor'
-                version = '1.1.4r12'
+                version = "${version}"
 
                 licenses {
                     license {
@@ -209,7 +216,7 @@ tasks.register("distZipWin", Zip) {
     def destinationInZip = tasks.distZip.archiveBaseName.get() + "${File.separator}scripts${File.separator}windows"
     def zipOutputDestination = getZipOutputPath()
     def runtime = getDotnetRuntimeWin()
-    def archiveName = tasks.distZip.archiveBaseName.get() + "_${runtime}.zip"
+    def archiveName = tasks.distZip.archiveBaseName.get() + ".${archive_version}.${runtime}.zip"
 
     def fileList = createWinZipFileList()
 
@@ -233,7 +240,7 @@ tasks.register("distZipLinux", Zip) {
     def destinationInZip = tasks.distZip.archiveBaseName.get() + "${File.separator}scripts"
     def zipOutputDestination = getZipOutputPath()
     def runtime = getDotnetRuntimeLinux()
-    def archiveName = tasks.distZip.archiveBaseName.get() + "_${runtime}.zip"
+    def archiveName = tasks.distZip.archiveBaseName.get() + ".${archive_version}.${runtime}.zip"
 
     def fileList = createLinuxZipFileList()
 
@@ -251,7 +258,7 @@ tasks.register("distZipLinux", Zip) {
 }
 
 // Copies linux registry utilities into a packaging staging folder, if they exist
-tasks.register("stageRegistryUtilitiesForPackaging", Copy) {
+tasks.register("stageUtilsForDebRpm", Copy) {
     def stagingFolder = file(getStagingPathForUtilities())
     def fileList = createLinuxZipFileList()
 
@@ -264,19 +271,19 @@ tasks.register("stageRegistryUtilitiesForPackaging", Copy) {
 }
 
 tasks.named("buildDeb") {
-    dependsOn tasks.named("stageRegistryUtilitiesForPackaging")
+    dependsOn tasks.named("stageUtilsForDebRpm")
 }
 
 tasks.named("buildRpm") {
-    dependsOn tasks.named("stageRegistryUtilitiesForPackaging")
+    dependsOn tasks.named("stageUtilsForDebRpm")
 }
 
 // Produce packages
 ospackage {
     packageName='paccor'
     os=LINUX
-    version='1.1.4'
-    release='12'
+    version="${base_version}"
+    release="${base_release}"
 
     into '/opt/paccor'
     user 'root'
@@ -284,6 +291,7 @@ ospackage {
 
     requires('dmidecode', '3.2', GREATER | EQUAL)
     requires('ethtool')
+    requires('java-17-openjdk-devel')
     requires('jq')
     requires('lshw')
     requires('nvme-cli')
