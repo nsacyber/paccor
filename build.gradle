@@ -8,7 +8,7 @@ plugins {
 
 // version number
 def base_version = '1.5.0'
-def base_release = 'beta1'
+def base_release = 'beta2'
 def archive_version = "${base_version}-${base_release}"
 
 version = "${base_version}${base_release}"
@@ -205,6 +205,8 @@ def checkFilesExist(ArrayList<File> fileList, String destinationIfExists) {
     fileList.each { file ->
         if (file.exists()) {
             println "Copied ${file.name} into ${destinationIfExists}."
+        } else {
+            println "${file.name} not found. If it was expected, build dotnet before gradle."
         }
     }
 }

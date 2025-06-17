@@ -20,7 +20,7 @@ jobs:
       run: dotnet restore
     - name: Build
       working-directory: dotnet/paccor_scripts
-      run: dotnet build
+      run: dotnet build -c Release
     - name: Test
       working-directory: dotnet/paccor_scripts
       run: dotnet test
