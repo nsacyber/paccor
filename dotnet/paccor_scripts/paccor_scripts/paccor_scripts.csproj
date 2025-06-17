@@ -7,7 +7,7 @@
     <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageId>paccor.paccor_scripts</PackageId>
-    <PackageVersion>2.1.0</PackageVersion>
+    <PackageVersion>2.2.0</PackageVersion>
     <PackageTags>paccor;platform;certificate;hardware;manifest;scripts;component;class;registry;evidence;collection</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -17,11 +17,12 @@
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <Target Name="CopyFiles" BeforeTargets="PreBuildEvent">
     <ItemGroup>
-      <PaccorScriptsLinux Include="..\..\..\scripts\allcomponents.sh;..\..\..\scripts\enterprise-numbers;..\..\..\scripts\hw.sh;..\..\..\scripts\json.sh;..\..\..\scripts\nvme.sh;..\..\..\scripts\smbios.sh..\..\..\scripts\tcg_ccr.sh" />
+      <PaccorScriptsLinux Include="..\..\..\scripts\allcomponents.sh;..\..\..\scripts\enterprise-numbers;..\..\..\scripts\hw.sh;..\..\..\scripts\json.sh;..\..\..\scripts\nvme.sh;..\..\..\scripts\smbios.sh;..\..\..\scripts\tcg_ccr.sh" />
 	  <PaccorScriptsWindows Include="..\..\..\scripts\windows\allcomponents.ps1;..\..\..\scripts\windows\hw.ps1;..\..\..\scripts\windows\json.ps1;..\..\..\scripts\windows\nvme.ps1;..\..\..\scripts\windows\SMBios.ps1;..\..\..\scripts\windows\tcg_ccr.ps1" />
     </ItemGroup>
     <Copy SourceFiles="@(PaccorScriptsLinux)" DestinationFolder="$(ProjectDir)scripts" />

@@ -67,3 +67,5 @@ bin/
 generated/
 obj/
 
+# generated on build
+dotnet/paccor_scripts/paccor_scripts/scripts

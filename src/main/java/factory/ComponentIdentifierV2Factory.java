@@ -138,7 +138,7 @@ public class ComponentIdentifierV2Factory {
      * @return The ComponentIdentifierV2Factory object with the component serial number set.
      */
     public final ComponentIdentifierV2Factory componentSerial(final String serial) {
-        componentSerial = serial != null && !serial.trim().isEmpty() ? new DERUTF8String(serial) : null;
+        componentSerial = serial != null && !serial.isEmpty() ? new DERUTF8String(serial) : null;
         return this;
     }
     
@@ -148,7 +148,7 @@ public class ComponentIdentifierV2Factory {
      * @return The ComponentIdentifierV2Factory object with the component revision set.
      */
     public final ComponentIdentifierV2Factory componentRevision(final String revision) {
-        componentRevision = revision != null && !revision.trim().isEmpty() ? new DERUTF8String(revision) : null;
+        componentRevision = revision != null && !revision.isEmpty() ? new DERUTF8String(revision) : null;
         return this;
     }
     
