@@ -125,7 +125,7 @@ echo "All JSON structures look valid."
 # Step 6 create a sample signing key pair
 if (!(Test-Path "$pcsigncert" -PathType Leaf)) {
     echo "Creating a signing key for signing platform credentials"
-    $newcert=(New-SelfSignedCertificate -Type Custom -KeyExportPolicy Exportable -Subject "$subjectDN" -KeyUsage DigitalSignature -KeyAlgorithm "$sigalg" -KeyLength "$sigalgbits" -NotAfter "$daysValid" -CertStoreLocation "$certStoreLocation")
+    $newcert=(New-SelfSignedCertificate -Type Custom -KeyExportPolicy Exportable -Subject "$subjectDN" -KeyUsage DigitalSignature -KeyAlgorithm "$sigalg" -KeyLength "$sigalgbits" -NotAfter ([datetime]"$daysValid") -CertStoreLocation "$certStoreLocation")
     if (!$?) {
         echo "Failed to create the key pair, exiting"
         exit 1
