@@ -8,7 +8,7 @@ plugins {
 
 // version number
 def base_version = '1.5.0'
-def base_release = 'beta2'
+def base_release = 'beta3'
 def archive_version = "${base_version}-${base_release}"
 
 version = "${base_version}${base_release}"
@@ -215,7 +215,7 @@ def checkFilesExist(ArrayList<File> fileList, String destinationIfExists) {
 tasks.register("distZipWin", Zip) {
     dependsOn tasks.named("distZip")
 
-    def destinationInZip = tasks.distZip.archiveBaseName.get() + "${File.separator}scripts${File.separator}windows"
+    def destinationInZip = tasks.distZip.archiveBaseName.get() + "-${version}${File.separator}scripts${File.separator}windows"
     def zipOutputDestination = getZipOutputPath()
     def runtime = getDotnetRuntimeWin()
     def archiveName = tasks.distZip.archiveBaseName.get() + ".${archive_version}.${runtime}.zip"
@@ -239,7 +239,7 @@ tasks.register("distZipWin", Zip) {
 tasks.register("distZipLinux", Zip) {
     dependsOn tasks.named("distZip")
 
-    def destinationInZip = tasks.distZip.archiveBaseName.get() + "${File.separator}scripts"
+    def destinationInZip = tasks.distZip.archiveBaseName.get() + "-${version}${File.separator}scripts"
     def zipOutputDestination = getZipOutputPath()
     def runtime = getDotnetRuntimeLinux()
     def archiveName = tasks.distZip.archiveBaseName.get() + ".${archive_version}.${runtime}.zip"
