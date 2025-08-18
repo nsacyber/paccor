@@ -91,7 +91,7 @@ public sealed class SmbiosHardwareManifestPlugin : HardwareManifestPluginBase {
                         component.SERIAL = Strref(table, 0x18);
                         component.REVISION = Strref(table, 0x2B);
                         component.FIELDREPLACEABLE = "";
-                        addComponent = true;
+                        addComponent = !BitField(table, 0x0C, 0x00); // Size of the memory device; If the value is 0, no memory device is installed in the socket.
                         break;
                     case 0x0001: // SYSTEM
                         component.COMPONENTCLASS.COMPONENTCLASSREGISTRY = dmtfRegistryOid;
