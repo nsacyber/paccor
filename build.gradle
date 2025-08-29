@@ -8,7 +8,7 @@ plugins {
 
 // version number
 def base_version = '1.5.0'
-def base_release = 'beta3'
+def base_release = 'beta4'
 def archive_version = "${base_version}-${base_release}"
 
 version = "${base_version}${base_release}"

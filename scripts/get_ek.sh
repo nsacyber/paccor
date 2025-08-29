@@ -30,9 +30,12 @@ fi
 if [ -z "$TPM_VER_1_2" ] && [ -z "$TPM_VER_2_0"  ]; then
     tpmServerActive=$(ps -aux | grep "tpm_server" | grep -v "grep")
     tpmAbrmdActive=$(ps -aux | grep "tpm2-abrmd" | grep -v "grep")
+    tpm2NvreadpublicSuccess=$(tpm2_nvreadpublic &> /dev/null && echo "1")
     if [ -n "$tpmServerActive" ]; then
         TPM_VER_2_0=1
     elif [ -n "$tpmAbrmdActive" ]; then
+        TPM_VER_2_0=1
+    elif [ -n "$tpm2NvreadpublicSuccess" ]; then
         TPM_VER_2_0=1
     else
         echo "Could not detect version of TPM.  Please manually set in get_ek.sh"

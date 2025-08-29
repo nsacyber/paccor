@@ -211,11 +211,10 @@ public class PcieDevice {
                 case "rV":
                     byte checksum = inData[pos+3];
                     byte calc = 0;
-                    for (int i = 0; i < (pos + 3); i++) {
+                    for (int i = 0; i <= (pos + 3); i++) {
                         calc += inData[i];
                     }
-
-                    if (checksum != calc) {
+                    if (calc != 0) {
                         pn = "";
                         mn = "";
                         sn = "";
