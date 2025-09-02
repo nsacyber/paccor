@@ -45,14 +45,13 @@ namespace paccor_scripts {
 
             if (!string.IsNullOrWhiteSpace(json)) {
                 ManifestV2 = ManifestV2.Parser.WithDiscardUnknownFields(true).ParseJson(json);
-                ManifestV3 = HardwareManifestConverter.FromManifestV2(ManifestV2, TraitDescription, TraitDescriptionUri);
                 result = true;
             }
             return result;
         }
 
         private async Task<Tuple<int, string, string>> RunWindows() {
-            return await Path.GetFullPath(WinComponents).ToString().Powershell(WinComponents);
+            return await Path.GetFullPath(WinComponents).ToString().Powershell(WinTempOutput);
         }
 
         private async Task<Tuple<int, string, string>> RunLinux() {

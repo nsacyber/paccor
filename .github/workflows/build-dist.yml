@@ -2,29 +2,41 @@ name: Build Distribution Packages
 
 on:
   push:
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      DOTNET_ROLL_FORWARD: LatestMajor
     steps:
-      - uses: actions/checkout@v4
-      - name: Create .NET global json file
-        run: |
-          echo '{"sdk": {"version": "8.0.416","rollForward": "latestFeature"}}' > global.json
+      - uses: actions/checkout@v6
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          ## dotnet-version: 8.0.x   ## Runners defaulting to .NET 10 and this flag is not setting it to 8 as expected. As of 20251217
-          global-json-file: global.json
+          dotnet-version: '10.0.x'
+      - name: Restore dependencies
+        working-directory: dotnet/ComponentClassRegistry
+        run: dotnet restore
+      - name: Restore Tools
+        working-directory: dotnet/ComponentClassRegistry
+        run: dotnet tool restore
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
       - name: Restore dependencies
         working-directory: dotnet/ComponentClassRegistry
         run: dotnet restore
       - name: Install Package Tools
         working-directory: dotnet/ComponentClassRegistry
         run: |
-          dotnet tool install --global dotnet-deb
-          dotnet tool install --global dotnet-rpm
-          dotnet tool install --global dotnet-zip
+          dotnet tool install --global dotnet-deb --allow-roll-forward
+          dotnet tool install --global dotnet-rpm --allow-roll-forward
+          dotnet tool install --global dotnet-zip --allow-roll-forward
       - name: SMBIOS Cli
         working-directory: dotnet/ComponentClassRegistry/SmbiosCli
         run: |
@@ -66,7 +78,8 @@ jobs:
           sha256sum dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/**/**/**/*.{deb,rpm,zip} 2> /dev/null
           ls -go --full-time dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/**/**/**/*.{deb,rpm,zip} 2> /dev/null
       - name: Artifacts
-        uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'v') || contains(github.event.head_commit.message, '[save artifacts]') || contains(github.event.head_commit.message, '[save dist artifacts]')
+        uses: actions/upload-artifact@v7
         with:
           name: dists
           retention-days: 1

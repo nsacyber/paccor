@@ -1,0 +1,13 @@
+{
+    "CERTIFICATEPOLICIES": [
+        {
+            "POLICYIDENTIFIER": "1.2.3",
+            "POLICYQUALIFIERS": [
+                {
+                    "POLICYQUALIFIERID": "USERNOTICE",
+                    "QUALIFIER": "TCG Trusted Platform Endorsement"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,56 @@
+{
+    "PLATFORM": {
+        "PLATFORMMANUFACTURERSTR": "Sample Platform Manufacturer",
+        "PLATFORMMANUFACTURERID": "1.3.6.1.4.1.32473",
+        "PLATFORMMODEL": "Sample Platform Model",
+        "PLATFORMVERSION": "Sample Platform Version",
+        "PLATFORMSERIAL": "Sample Platform Serial"
+    },
+    "componentIdentifiers": [
+        {
+            "MANUFACTURER": "Sample Chassis Manufacturer",
+            "MODEL": "Sample Chassis Model",
+            "SERIAL": "Sample Chassis Serial Number",
+            "REVISION": "Sample Chassis Revision",
+            "MANUFACTURERID": "1.3.6.1.4.1.32473",
+            "FIELDREPLACEABLE": "true"
+        },
+        {
+            "MANUFACTURER": "Sample Baseboard Manufacturer",
+            "MODEL": "Sample Baseboard Model",
+            "SERIAL": "Sample Baseboard Serial Number",
+            "REVISION": "Sample Baseboard Revision",
+            "MANUFACTURERID": "1.3.6.1.4.1.32473",
+            "FIELDREPLACEABLE": "false",
+            "ADDRESSES": [
+                { "ETHERNETMAC": "8289FAD361" },
+                { "WLANMAC": "D483B4F278" },
+                { "BLUETOOTHMAC": "B27E046620" }
+            ]
+        },
+        {
+            "MANUFACTURER": "Sample CPU Manufacturer",
+            "MODEL": "Sample CPU Model",
+            "SERIAL": "Sample CPU Serial Number",
+            "REVISION": "Sample CPU Revision",
+            "MANUFACTURERID": "1.3.6.1.4.1.32473",
+            "FIELDREPLACEABLE": "true"
+        },
+        {
+            "MANUFACTURER": "Sample TPM Manufacturer",
+            "MODEL": "Sample TPM Model",
+            "SERIAL": "Sample TPM Serial Number",
+            "REVISION": "Sample TPM Revision",
+            "MANUFACTURERID": "1.3.6.1.4.1.32473",
+            "FIELDREPLACEABLE": "false"
+        },
+        {
+            "MANUFACTURER": "Sample BMC Manufacturer",
+            "MODEL": "Sample BMC Model",
+            "SERIAL": "Sample BMC Serial Number",
+            "REVISION": "Sample BMC Revision",
+            "MANUFACTURERID": "1.3.6.1.4.1.32473",
+            "FIELDREPLACEABLE": "false"
+        }
+    ]
+}

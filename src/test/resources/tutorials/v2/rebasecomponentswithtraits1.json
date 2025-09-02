@@ -1,0 +1,116 @@
+{
+  "PLATFORM": {
+    "TRAITS": [
+      {
+        "traitCategory": "2.23.133.19.2.1",
+        "traitRegistry": "2.23.133.18.3.3",
+        "utf8": "ASUSTeK COMPUTER INC."
+      },
+      {
+        "traitCategory": "2.23.133.19.2.2",
+        "traitRegistry": "2.23.133.18.3.3",
+        "utf8": "Zenbook UP6502ZA_Q529ZA"
+      },
+      {
+        "traitCategory": "2.23.133.19.2.3",
+        "traitRegistry": "2.23.133.18.3.3",
+        "utf8": "1.0"
+      },
+      {
+        "traitCategory": "2.23.133.19.2.4",
+        "traitRegistry": "2.23.133.18.3.3",
+        "utf8": "A3A2PI88M1789543"
+      }
+    ]
+  },
+  "COMPONENTS": [
+    {
+      "COMPONENTCLASS": {
+        "COMPONENTCLASSREGISTRY": "2.23.133.18.3.3",
+        "COMPONENTCLASSVALUE": "0000810D"
+      },
+      "MANUFACTURER": "American Megatrends International, LLC.",
+      "MODEL": "UP6502ZA.305",
+      "REVISION": "05NO"
+    },
+    {
+      "COMPONENTCLASS": {
+        "COMPONENTCLASSREGISTRY": "2.23.133.18.3.3",
+        "COMPONENTCLASSVALUE": "00010000"
+      },
+      "MODEL": "Zenbook UP6502ZA_Q529ZA",
+      "SERIAL": "A3A2PI88M1789543",
+      "REVISION": "1.0       ",
+      "TRAITS": [
+        {
+          "traitCategory": "2.23.133.19.2.8",
+          "traitRegistry": "2.23.133.18.3.3",
+          "UTF8": "ASUSTeK COMPUTER INC."
+        }
+      ]
+    },
+    {
+      "TRAITS": [
+        {
+          "COMPONENTIDENTIFIERV11": {
+            "COMPONENTCLASS": {
+              "COMPONENTCLASSREGISTRY": "2.23.133.18.3.4",
+              "COMPONENTCLASSVALUE": "00028000"
+            },
+            "MANUFACTURER": "8086:8086:",
+            "MODEL": "51F0:0094:",
+            "REVISION": "01",
+            "ADDRESSES": [
+              {
+                "WLANMAC": "AAB1238907EE"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "TRAITS": [
+        {
+          "traitRegistry": "2.23.133.18.3.3",
+          "COMPONENTCLASS": "00040003"
+        },
+        {
+          "traitCategory": "2.23.133.19.2.8",
+          "traitRegistry": "2.23.133.18.3.3",
+          "utf8": "Intel(R) Corporation"
+        },
+        {
+          "traitCategory": "2.23.133.19.2.9",
+          "traitRegistry": "2.23.133.18.3.3",
+          "utf8": "C6"
+        },
+        {
+          "traitCategory": "2.23.133.19.2.10",
+          "traitRegistry": "2.23.133.18.3.3",
+          "utf8": " "
+        },
+        {
+          "traitCategory": "2.23.133.19.2.13",
+          "traitRegistry": "2.23.133.18.3.3",
+          "utf8": "Intel(R) Core(TM) i7-10810U CPU @ 1.10GHz"
+        },
+        {
+          "traitCategory": "2.23.133.19.2.14",
+          "traitRegistry": "2.23.133.18.3.3",
+          "bool": "true"
+        }
+      ]
+    }
+  ],
+  "PROPERTIES": [
+    {
+      "PROPERTYNAME": "caption",
+      "PROPERTYVALUE": "Microsoft Windows 11 Pro"
+    },
+    {
+      "PROPERTYNAME": "caption",
+      "PROPERTYVALUE": "Microsoft Windows 11 Pro"
+    }
+  ]
+}

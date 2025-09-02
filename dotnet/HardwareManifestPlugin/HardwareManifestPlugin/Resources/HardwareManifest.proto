@@ -4,10 +4,10 @@ import "PlatformCertificateIM.proto";
 
 package HardwareManifestProto;
 
-message ManifestV3 {
-  PlatformCertificateProto.PlatformIdentifierOtherName platformIdentifier = 1;
-  PlatformCertificateProto.PlatformConfiguration platformConfiguration = 2;
-}
+//message ManifestV3 {
+// PlatformCertificateProto.PlatformIdentifierOtherName platformIdentifier = 1;
+ // PlatformCertificateProto.PlatformConfiguration platformConfiguration = 2;
+//}
 
 message ManifestV2 {
   SanPlatformFields PLATFORM = 1;                          // Subject Alt Name Platform Fields
@@ -23,6 +23,7 @@ message SanPlatformFields {
   string PLATFORMVERSION = 3;
   string PLATFORMSERIAL = 4;
   string PLATFORMMANUFACTURERID = 5;
+  repeated PlatformCertificateProto.Trait TRAITS = 13;
 }
 
 message ComponentIdentifier {
@@ -38,6 +39,7 @@ message ComponentIdentifier {
   CertificateIdentifier PLATFORMCERT = 10;
   UriReference COMPONENTPLATFORMCERTURI = 11;
   CertificateIdentifier CERTIFICATEIDENTIFIER = 12;
+  repeated PlatformCertificateProto.Trait TRAITS = 13;
 }
 
 message Property {

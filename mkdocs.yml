@@ -1,0 +1,136 @@
+site_name: paccor
+site_description: Platform Attribute Certificate Creator
+site_url: https://nsacyber.github.io/paccor/
+repo_url: https://github.com/nsacyber/paccor
+repo_name: nsacyber/paccor
+docs_dir: docs
+use_directory_urls: false
+exclude_docs: |
+  doc-tools/**
+edit_uri: edit/main/docs/
+
+# Generated reference fragments under reference/_generated/ are linked from the
+# curated reference pages but not listed in nav. Don't fail strict builds on it.
+validation:
+  omitted_files: ignore
+  absolute_links: warn
+  unrecognized_links: warn
+
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - content.code.copy
+    - content.tabs.link
+    - search.suggest
+    - search.highlight
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - include-markdown
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/nsacyber/paccor
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Setup:
+      - setup/index.md
+      - Requirements: setup/requirements.md
+      - Install: setup/install.md
+      - Build: setup/build.md
+      - GitHub Access: setup/github-access.md
+  - Concepts:
+      - concepts/index.md
+      - JSON Model: concepts/json-model.md
+      - ASN.1 Mapping: concepts/asn1-mapping.md
+      - Pipeline: concepts/pipeline.md
+      - Which Spec Version?: concepts/which-spec-version.md
+      - Traits: concepts/traits.md
+  - Tutorials:
+      - tutorials/index.md
+      - Certificate Flows:
+          - tutorials/paccor/index.md
+          - v2.1 Attribute Certificate: tutorials/paccor/v2.1-attribute-certificate.md
+          - v2.1 Public Key Certificate: tutorials/paccor/v2.1-public-key-certificate.md
+          - v1.1 Attribute Certificate: tutorials/paccor/v1.1-attribute-certificate.md
+          - v1.0 Attribute Certificate: tutorials/paccor/v1.0-attribute-certificate.md
+          - v1.0 Public Key Certificate: tutorials/paccor/v1.0-public-key-certificate.md
+      - By Spec Version:
+          - v2.1: tutorials/by-spec-version/v2.1.md
+          - v1.1: tutorials/by-spec-version/v1.1.md
+          - v1.0: tutorials/by-spec-version/v1.0.md
+      - Profile Matrix: tutorials/profile-matrix.md
+      - Signing Modes: tutorials/signing-options.md
+      - Collect with .NET: tutorials/collect-with-dotnet.md
+      - Minimal Component: tutorials/minimal-component.md
+      - Full Platform: tutorials/full-platform.md
+      - Trait Collection: tutorials/trait-collection.md
+      - Hardware Manifest: tutorials/hardware-manifest.md
+  - Reference:
+      - reference/index.md
+      - CLI Commands: reference/cli-commands.md
+      - Signing Algorithms: reference/signing-algorithms.md
+      - Output Snapshots: reference/output-snapshots.md
+      - Field Sets: reference/field-sets.md
+      - Vocabularies: reference/vocabularies.md
+      - Global ASN.1 Types: reference/global-asn1-types.md
+      - JSON Schemas: reference/json-schemas.md
+      - HardwareManifest Proto: reference/hardware-manifest-proto.md
+  - Glossary: glossary.md

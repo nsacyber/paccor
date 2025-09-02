@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageId>paccor.HardwareManifestPlugin</PackageId>
-    <PackageVersion>2.0.5</PackageVersion>
+    <PackageVersion>2.1.0</PackageVersion>
     <PackageTags>paccor;platform;certificate;hardware;manifest;interface</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -19,14 +19,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.28.3" />
-    <PackageReference Include="Google.Protobuf.Tools" Version="3.28.3">
+    <PackageReference Include="Google.Protobuf" Version="3.33.5" />
+    <PackageReference Include="Google.Protobuf.Tools" Version="3.33.5">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <!--Source Link -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-    <PackageReference Include="PlatformCertificate.Proto" Version="2.0.8" />
-    <PackageReference Include="PlatformCertificate.Proto.ProtoFiles" Version="2.0.8" />
+    <PackageReference Include="PlatformCertificate.Proto" Version="2.1.0" />
+    <PackageReference Include="PlatformCertificate.Proto.ProtoFiles" Version="2.1.0" />
   </ItemGroup>
 
   <ItemGroup>

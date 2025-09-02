@@ -69,3 +69,7 @@ obj/
 
 # generated on build
 dotnet/paccor_scripts/paccor_scripts/scripts
+
+# mkdocs documentation
+/docs/reference/_generated/
+/site/

@@ -1,22 +1,36 @@
 package tcg.credential;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import java.util.Optional;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.ToString;
+import lombok.extern.jackson.Jacksonized;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1IA5String;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1TaggedObject;
-import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERTaggedObject;
 
 /**
- * <pre>
+ * <pre>{@code
  * tBBSecurityAssertions ATTRIBUTE ::= {
  *      WITH SYNTAX TBBSecurityAssertions
  *      ID tcg-at-tbbSecurityAssertions }
- * 
+ *
  * TBBSecurityAssertions ::= SEQUENCE {
  *      version Version DEFAULT v1,
  *      ccInfo [0] IMPLICIT CommonCriteriaMeasures OPTIONAL,
@@ -24,103 +38,95 @@ import org.bouncycastle.asn1.DERTaggedObject;
  *      rtmType [2] IMPLICIT MeasurementRootType OPTIONAL,
  *      iso9000Certified BOOLEAN DEFAULT FALSE,
  *      iso9000Uri IA5STRING (SIZE (1..URIMAX) OPTIONAL }
- *      
+ *
  * Version ::= INTEGER { v1(0) }
- * </pre>
+ * }</pre>
  */
+@AllArgsConstructor
+@Builder(toBuilder = true)
+@EqualsAndHashCode(callSuper = false)
+@Getter
+@Jacksonized
+@JsonClassDescription("Security assertions associated with the trusted building block, including CC, FIPS, RTM, and ISO 9000 statements.")
+@JsonFormat(with = JsonFormat.Feature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
+@JsonIgnoreProperties(ignoreUnknown = true)
+@NoArgsConstructor(force = true)
+@ToString
 public class TBBSecurityAssertions extends ASN1Object {
-	// literally, every element of this object is either default or optional
-	//  -- it's theoretically possible to have a valid TBBSecurityAssertions that contains nothing
-	ASN1Integer version = new ASN1Integer(1); // default = 1
-	CommonCriteriaMeasures ccInfo = null; // optional, tagged 0
-	FIPSLevel fipsLevel = null; // optional, tagged 1
-	MeasurementRootType rtmType = null; // optional, tagged 2
-	ASN1Boolean iso9000Certified = ASN1Boolean.FALSE; // default = false
-	DERIA5String iso9000Uri = null; // optional
-	
-	public static TBBSecurityAssertions getInstance(Object obj) {
+	private static final int MIN_SEQUENCE_SIZE = 0;
+	private static final int MAX_SEQUENCE_SIZE = 6;
+	private static final int ASN1BOOLEAN_MAX_POSITION_IN_SEQUENCE = 4;
+	private static final int ASN1STRING_MAX_POSITION_IN_SEQUENCE = 5;
+
+	@Builder.Default
+	@JsonPropertyDescription("Assertion version. Defaults to 1.")
+	@NonNull
+	private final ASN1Integer version = new ASN1Integer(1); // default = 1
+	@JsonPropertyDescription("Optional Common Criteria assertions.")
+	private final CommonCriteriaMeasures ccInfo; // optional, tagged 0
+	@JsonPropertyDescription("Optional FIPS level statement.")
+	private final FIPSLevel fipsLevel; // optional, tagged 1
+	@JsonPropertyDescription("Optional measurement root type.")
+	private final MeasurementRootType rtmType; // optional, tagged 2
+	@Builder.Default
+	@JsonProperty(defaultValue = "false")
+	@JsonPropertyDescription("Whether ISO 9000 certification is asserted. Defaults to false.")
+	@NonNull
+	private final ASN1Boolean iso9000Certified = ASN1Boolean.FALSE; // default = false
+	@JsonPropertyDescription("Optional URI providing ISO 9000 certification details.")
+	private final ASN1IA5String iso9000Uri; // optional
+
+	/**
+	 * Attempts to cast the provided object.
+	 * If the object is an ASN1Sequence, the object is parsed by fromASN1Sequence.
+	 * @param obj the object to parse
+	 * @return {@link TBBSecurityAssertions}
+	 */
+	public static final TBBSecurityAssertions getInstance(Object obj) {
 		if (obj == null || obj instanceof TBBSecurityAssertions) {
 			return (TBBSecurityAssertions) obj;
 		}
-		if (obj instanceof ASN1Sequence) {
-			return new TBBSecurityAssertions((ASN1Sequence)obj);
+        if (obj instanceof ASN1Sequence || obj instanceof ASN1TaggedObject) {
+            return fromASN1Sequence(ASN1Utils.getSequence(obj));
 		}
 		throw new IllegalArgumentException("Illegal argument in getInstance: " + obj.getClass().getName());
 	}
 
-	private TBBSecurityAssertions(ASN1Sequence seq) {
-		if (seq.size() < 0 || seq.size() > 6) {
+	/**
+	 * Attempts to parse the given ASN1Sequence.
+	 * @param seq An ASN1Sequence
+	 * @return {@link TBBSecurityAssertions}
+	 */
+	public static final TBBSecurityAssertions fromASN1Sequence(@NonNull ASN1Sequence seq) {
+		if (seq.size() < TBBSecurityAssertions.MIN_SEQUENCE_SIZE) {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}
-		ASN1Object[] elements = (ASN1Object[]) seq.toArray();
-		int pos = 0;
-		if (((elements.length - pos) > 0) && elements[pos] instanceof ASN1Integer) {
-			version = (ASN1Integer) elements[pos];
-			pos++;
-		}
-		if (((elements.length - pos) > 0) && elements[pos] instanceof CommonCriteriaMeasures) {
-			ccInfo = (CommonCriteriaMeasures) elements[pos];
-			pos++;
-		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 0)) {
-			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
-			if (elementObject instanceof CommonCriteriaMeasures ccm) {
-				ccInfo = ccm;
-			} else {
-				throw new IllegalArgumentException("Expected CommonCriteriaMeasures object, but received " + elements[pos].getClass().getName());
+
+		TBBSecurityAssertions.TBBSecurityAssertionsBuilder builder = TBBSecurityAssertions.builder();
+
+		// version can only be in the first position
+		builder.version(ASN1Utils.safeGetDefaultElementFromSequence(seq, 0, new ASN1Integer(1), ASN1Utils::getInteger));
+		// iso9000Certified could be in any position 0 through 4
+		builder.iso9000Certified(ASN1Utils.safeGetFirstInstanceFromSequenceGivenRange(seq, 0, 4, ASN1Boolean.FALSE, ASN1Utils::getBoolean));
+		// iso9000Uri could be in any position 0 through 5, and if not present, don't give anything to the builder
+		Optional.ofNullable(ASN1Utils.safeGetFirstInstanceFromSequenceGivenRange(seq, 0, 5, null, ASN1Utils::getIA5String))
+				.ifPresent(builder::iso9000Uri);
+
+		ASN1Utils.parseTaggedElements(seq).forEach((key, value) -> {
+			switch (key) {
+				case 0 -> builder.ccInfo(CommonCriteriaMeasures.getInstance(ASN1Utils.getSequence(value)));
+				case 1 -> builder.fipsLevel(FIPSLevel.getInstance(ASN1Utils.getSequence(value)));
+				case 2 -> builder.rtmType(MeasurementRootType.getInstance(value));
+				default -> {}
 			}
-			pos++;
-		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 1)) {
-			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
-			if (elementObject instanceof FIPSLevel fl) {
-				fipsLevel = fl;
-			} else {
-				throw new IllegalArgumentException("Expected FIPSLevel object, but received " + elements[pos].getClass().getName());
-			}
-			pos++;
-		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 2)) {
-			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
-			if (elementObject instanceof MeasurementRootType mrt) {
-				rtmType = mrt;
-			} else {
-				throw new IllegalArgumentException("Expected MeasurementRootType object, but received " + elements[pos].getClass().getName());
-			}
-			pos++;
-		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1Boolean)) {
-			iso9000Certified = (ASN1Boolean) elements[pos];
-			pos++;
-		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof DERIA5String)) {
-			iso9000Uri = (DERIA5String) elements[pos];
-			if (iso9000Uri.toString().length() > Definitions.URIMAX) {
-				throw new IllegalArgumentException("Length of iso9000Uri exceeds URIMAX");
-			}
-			pos++;
-		}
-		if ((elements.length - pos) > 0) {
-			throw new IllegalArgumentException("Too many elements in TBBSecurityAssertions");
-		}
+		});
+
+		return builder.build();
 	}
-	
-	public TBBSecurityAssertions (ASN1Integer version, 
-			CommonCriteriaMeasures ccInfo, 
-			FIPSLevel fipsLevel, 
-			MeasurementRootType rtmType, 
-			ASN1Boolean iso9000Certified, 
-			DERIA5String iso9000Uri) {
-		if (iso9000Uri != null && iso9000Uri.toString().length() > Definitions.URIMAX) {
-			throw new IllegalArgumentException("Length of iso9000Uri exceeds URIMAX");
-		}
-		this.ccInfo = ccInfo;
-		this.fipsLevel = fipsLevel;
-		this.rtmType = rtmType;
-		this.iso9000Certified = iso9000Certified;
-		this.iso9000Uri = iso9000Uri;
-	}
-	
+
+	/**
+	 * @return This object as an ASN1Sequence
+	 */
 	public ASN1Primitive toASN1Primitive() {
 		ASN1EncodableVector vec = new ASN1EncodableVector();
 		if (version.getValue().longValue() != 1) {
@@ -143,29 +149,4 @@ public class TBBSecurityAssertions extends ASN1Object {
 		}
 		return new DERSequence(vec);
 	}
-
-	public ASN1Integer getVersion() {
-		return version;
-	}
-
-	public CommonCriteriaMeasures getCcInfo() {
-		return ccInfo;
-	}
-
-	public FIPSLevel getFipsLevel() {
-		return fipsLevel;
-	}
-
-	public MeasurementRootType getRtmType() {
-		return rtmType;
-	}
-
-	public ASN1Boolean getIso9000Certified() {
-		return iso9000Certified;
-	}
-
-	public DERIA5String getIso9000Uri() {
-		return iso9000Uri;
-	}
-
 }

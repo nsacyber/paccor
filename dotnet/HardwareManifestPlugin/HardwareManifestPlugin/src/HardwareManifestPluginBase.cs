@@ -27,11 +27,6 @@ namespace HardwareManifestPlugin {
             protected set;
         } = new();
 
-        public ManifestV3 ManifestV3 {
-            get;
-            protected set;
-        } = new();
-
         public abstract bool GatherHardwareIdentifiers();
 
         public bool GatherHardwareIdentifiers(string[] args) {

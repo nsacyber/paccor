@@ -41,13 +41,12 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         }
 
         AddComponentsToManifestV2(nvmeData, ataData, scsiData, ManifestV2);
-        ManifestV3 = HardwareManifestConverter.FromManifestV2(ManifestV2, TraitDescription, TraitDescriptionUri);
 
         return true;
     }
 
     public static void AddComponentsToManifestV2(List<StorageNvmeData> nvmeData, List<StorageAtaData> ataData, List<StorageScsiData> scsiData, ManifestV2 manifest) {
-        string storageRegistryOid = OidsUtils.Find(TCG_REGISTRY_COMPONENTCLASS_NODE.TcgRegistryComponentclassDisk).Oid;
+        string storageRegistryOid = OidsUtils.Find(TCG_REGISTRY_COMPONENTCLASS_NODE.TcgRegistryComponentclassDisk);
         foreach (StorageAtaData data in ataData) {
             ComponentIdentifier component = new() {
                 COMPONENTCLASS = new ComponentClass {

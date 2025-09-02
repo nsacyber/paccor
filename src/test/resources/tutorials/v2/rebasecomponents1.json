@@ -1,0 +1,55 @@
+{
+  "PLATFORM": {
+    "PLATFORMMANUFACTURERSTR": "ASUSTeK COMPUTER INC.",
+    "PLATFORMMODEL": "Zenbook UP6502ZA_Q529ZA",
+    "PLATFORMVERSION": "1.0",
+    "PLATFORMSERIAL": "A3A2PI88M1789543"
+  },
+  "COMPONENTS": [
+    {
+      "COMPONENTCLASS": {
+        "COMPONENTCLASSREGISTRY": "2.23.133.18.3.3",
+        "COMPONENTCLASSVALUE": "0000810D"
+      },
+      "MANUFACTURER": "American Megatrends International, LLC.",
+      "MODEL": "UP6502ZA.305",
+      "REVISION": "05NO"
+    },
+    {
+      "COMPONENTCLASS": {
+        "COMPONENTCLASSREGISTRY": "2.23.133.18.3.3",
+        "COMPONENTCLASSVALUE": "00010000"
+      },
+      "MANUFACTURER": "ASUSTeK COMPUTER INC.",
+      "MODEL": "Zenbook UP6502ZA_Q529ZA",
+      "SERIAL": "A3A2PI88M1789543",
+      "REVISION": "1.0       "
+    },
+    {
+      "COMPONENTCLASS": {
+        "COMPONENTCLASSREGISTRY": "2.23.133.18.3.4",
+        "COMPONENTCLASSVALUE": "00028000"
+      },
+      "MANUFACTURER": "8086:8086:",
+      "MODEL": "51F0:0094:",
+      "REVISION": "01",
+      "ADDRESSES": [
+        {
+          "WLANMAC": "AAB1238907EE"
+        }
+      ]
+    },
+    {
+      "COMPONENTCLASS": {
+        "COMPONENTCLASSREGISTRY": "2.23.133.18.3.3",
+        "COMPONENTCLASSVALUE": "00040003"
+      },
+      "MANUFACTURER": "Intel(R) Corporation",
+      "MODEL": "C6",
+      "SERIAL": " ",
+      "REVISION": "Intel(R) Core(TM) i7-10810U CPU @ 1.10GHz",
+      "FIELDREPLACEABLE": "true"
+    }
+  ],
+  "PROPERTIES": []
+}

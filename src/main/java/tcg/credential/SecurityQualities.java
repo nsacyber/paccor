@@ -1,15 +1,23 @@
 package tcg.credential;
 
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.ASN1UTF8String;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERUTF8String;
 
 /**
- *<pre>
+ *<pre>{@code
  * securityQualities ATTRIBUTE ::= {
  *    WITH SYNTAX SecurityQualities
  *    ID tcg-at-tpmSecurityQualities }
@@ -18,59 +26,65 @@ import org.bouncycastle.asn1.DERUTF8String;
  *    version INTEGER,
  *    -- version 0 defined by TCPA 1.1b
  *    statement UTF8String }
- *</pre>
+ *}</pre>
  */
+@AllArgsConstructor
+@Builder(toBuilder = true)
+@EqualsAndHashCode(callSuper = false)
+@Getter
+@NoArgsConstructor(force = true)
 public class SecurityQualities extends ASN1Object {
-	
-	ASN1Integer version;
-	DERUTF8String statement;
-	
-	public static SecurityQualities getInstance(Object obj) {
+	private static final int SEQUENCE_SIZE = 2;
+
+	@NonNull
+	@NotNull
+	private final ASN1Integer version;
+	@NonNull
+	@NotNull
+	private final ASN1UTF8String statement;
+
+	/**
+	 * Attempts to cast the provided object.
+	 * If the object is an ASN1Sequence, the object is parsed by fromASN1Sequence.
+	 * @param obj the object to parse
+	 * @return SecurityQualities
+	 */
+	public static final SecurityQualities getInstance(Object obj) {
 		if (obj == null || obj instanceof SecurityQualities) {
 			return (SecurityQualities) obj;
 		}
 		if (obj instanceof ASN1Sequence seq) {
-			return new SecurityQualities(seq);
+			return SecurityQualities.fromASN1Sequence(seq);
 		}
 		throw new IllegalArgumentException("Illegal argument in getInstance: " + obj.getClass().getName());
 	}
-	
-	private SecurityQualities(ASN1Sequence seq) {
-		if (seq.size() != 2) {
+
+	/**
+	 * Attempts to parse the given ASN1Sequence.
+	 * @param seq An ASN1Sequence
+	 * @return SecurityQualities
+	 */
+	public static final SecurityQualities fromASN1Sequence(@NonNull ASN1Sequence seq) {
+		if (seq.size() != SecurityQualities.SEQUENCE_SIZE) {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}
-		
+
 		ASN1Object[] elements = (ASN1Object[]) seq.toArray();
-		if (elements[0] instanceof ASN1Integer num) {
-			version = num;
-		} else {
-			throw new IllegalArgumentException("Array object not instance of ASN1Integer: " + elements[0].getClass().getName());
-		}
-		if (elements[1] instanceof DERUTF8String str) {
-			statement = str;
-		} else {
-			throw new IllegalArgumentException("Array object not instance of DERUTF8String: " + elements[1].getClass().getName());
-		}
-	}
-	
-	public SecurityQualities(ASN1Integer version, DERUTF8String statement) {
-		this.version = version;
-		this.statement = statement;
+
+		SecurityQualities.SecurityQualitiesBuilder builder = SecurityQualities.builder()
+				.version(ASN1Integer.getInstance(elements[0]))
+				.statement(DERUTF8String.getInstance(elements[1]));
+
+		return builder.build();
 	}
 
-	@Override
+	/**
+	 * @return This object as an ASN1Sequence
+	 */
 	public ASN1Primitive toASN1Primitive() {
 		ASN1EncodableVector vec = new ASN1EncodableVector();
 		vec.add(version);
 		vec.add(statement);
 		return new DERSequence(vec);
-	}
-	
-	public ASN1Integer getVersion() {
-		return version;
-	}
-	
-	public DERUTF8String getStatement() {
-		return statement;
 	}
 }

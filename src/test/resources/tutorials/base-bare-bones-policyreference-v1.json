@@ -1,0 +1,35 @@
+{
+  "TCGPLATFORMSPECIFICATION": {
+    "VERSION": {
+      "MAJORVERSION": "1",
+      "MINORVERSION": "3",
+      "REVISION": "22"
+    },
+    "PLATFORMCLASS": "AAAAAQ=="
+  },
+  "TCGCREDENTIALSPECIFICATION": {
+    "MAJORVERSION": "1",
+    "MINORVERSION": "0",
+    "REVISION": "2"
+  },
+  "TBBSECURITYASSERTIONS": {
+    "VERSION": "1",
+    "ISO9000CERTIFIED": "false"
+  },
+  "TCPASPECVERSION": {
+    "MAJOR": "1",
+    "MINOR": "2"
+  },
+  "TPMMANUFACTURER": "Acme",
+  "TPMMODEL": "RoadRunner",
+  "TPMVERSION": "7.1",
+  "TPMSPECIFICATION": {
+    "FAMILY": "2.0",
+    "LEVEL": "138",
+    "REVISION": "1"
+  },
+  "TPMSECURITYASSERTIONS": {
+    "VERSION": "0",
+    "FIELDUPGRADABLE": "true"
+  }
+}

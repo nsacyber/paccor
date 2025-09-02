@@ -27,7 +27,6 @@ public sealed class SmbiosHardwareManifestPlugin : HardwareManifestPluginBase {
         }
 
         AddComponentsToManifestV2(smbios.Structures, ManifestV2);
-        ManifestV3 = HardwareManifestConverter.FromManifestV2(ManifestV2, TraitDescription, TraitDescriptionUri);
 
         result = smbios.Valid;
 
@@ -35,7 +34,7 @@ public sealed class SmbiosHardwareManifestPlugin : HardwareManifestPluginBase {
     }
 
     public static void AddComponentsToManifestV2(IDictionary<int, IList<SmbiosTable>> structures, ManifestV2 manifest) {
-        string dmtfRegistryOid = OidsUtils.Find(TCG_REGISTRY_COMPONENTCLASS_NODE.TcgRegistryComponentclassDmtf).Oid;
+        string dmtfRegistryOid = OidsUtils.Find(TCG_REGISTRY_COMPONENTCLASS_NODE.TcgRegistryComponentclassDmtf);
 
         foreach (int type in structures.Keys) {
             foreach (SmbiosTable table in structures[type]) {
