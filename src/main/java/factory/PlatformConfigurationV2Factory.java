@@ -221,7 +221,7 @@ public class PlatformConfigurationV2Factory {
                     
                     if (!name.isEmpty() && !value.isEmpty()) {
                         if (statusNode != null) {
-                            AttributeStatus status = new AttributeStatus(statusNode.asText());
+                            AttributeStatus status = AttributeStatus.getInstance(statusNode);
                             addProperty(name, value, status);
                         } else {
                             addProperty(name, value);

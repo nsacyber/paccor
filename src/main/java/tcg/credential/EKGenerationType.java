@@ -1,10 +1,7 @@
 package tcg.credential;
 
-import java.math.BigInteger;
-import java.util.Hashtable;
-import org.bouncycastle.asn1.ASN1Enumerated;
-import org.bouncycastle.asn1.ASN1Object;
-import org.bouncycastle.asn1.ASN1Primitive;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 /**
  * <pre>
@@ -15,73 +12,60 @@ import org.bouncycastle.asn1.ASN1Primitive;
  *      injectedRevocable(3) }
  * </pre>
  */
-public class EKGenerationType extends ASN1Object {
-	
-	ASN1Enumerated value = null;
-	
-	// enum.ordinal() is based on the ordering below, 
-	public enum Enumerated {
-	    internal(0),
-	    injected(1),
-	    internalRevocable(2),
-	    injectedRevocable(3);
-	    
-	    private static final Hashtable<Integer, Enumerated> lookup =
-                new Hashtable<Integer, Enumerated>();
-        
-        static {
-            for(Enumerated e : values()) {
-                lookup.put(e.getValue(), e);
-            }
-        }
-        
-        private final int value;
-        
-        private Enumerated(int value) {
-            this.value = value;
-        }
-        
-        public final int getValue() {
-            return value;
-        }
-        
-        public static final Enumerated lookup(int value) {
-            return lookup.get(value);
-        }
+public class EKGenerationType extends ASN1EnumeratedEnumBase<EKGenerationType.Enumerated> {
+	/**
+	 * Factory object used to provide conversion context.
+	 */
+	public static final Factory<Enumerated, EKGenerationType> FACTORY = factory(Enumerated.class, EKGenerationType::new);
+
+	/**
+	 * EKGenerationType options
+	 */
+	@AllArgsConstructor
+	@Getter
+	public enum Enumerated implements EnumWithIntegerValue {
+		/**
+		 * <pre>
+		 * internal: internally generated within the TPM
+		 * </pre>
+		 */
+		internal(0),
+		/**
+		 * <pre>
+		 * injected: generated externally and then inserted under a controlled environment during manufacturing
+		 * </pre>
+		 */
+		injected(1),
+		/**
+		 * <pre>
+		 * internalRevocable: internally generated within the TPM and indicates the EK was created consistent with the TPM_CreateRevocableEK command
+		 * </pre>
+		 */
+		internalRevocable(2),
+		/**
+		 * <pre>
+		 * internalRevocable: generated externally and then inserted under a controlled environment during manufacturing and indicates the EK was created consistent with the TPM_CreateRevocableEK command
+		 * </pre>
+		 */
+		injectedRevocable(3);
+
+		private final int value;
 	}
-	
+
+	/**
+	 * Convert data into an EKGenerationType object.
+	 * @param obj Could be any type that can be transformed into ASN1Enumerated
+	 * @return EKGenerationType
+	 */
 	public static EKGenerationType getInstance(Object obj) {
-		if (obj instanceof EKGenerationType) {
-			return (EKGenerationType) obj;
-		}
-		if (obj != null) {
-			return new EKGenerationType(ASN1Enumerated.getInstance(obj).getValue().intValue());
-		}
-		return null;
-	}
-	
-	public EKGenerationType(int type) {
-	    this(Enumerated.lookup(type));
-	}
-	
-	public EKGenerationType(Enumerated option) {
-	    value = (option != null) ? new ASN1Enumerated(option.ordinal()) : null;
-	}
-	
-	public String toString() {
-	    String str = "invalid";
-        if (value != null) {
-            int type = getValue().intValue();
-            str = getClass().getSimpleName() + ": " + Enumerated.values()[type].name();
-        }
-        return str;
-    }
-
-	public ASN1Primitive toASN1Primitive() {
-		return value;
+		return ASN1EnumBase.getInstance(obj, FACTORY);
 	}
 
-	public BigInteger getValue() {
-        return value.getValue();
-    }
+	/**
+	 * New EKGenerationType, looking up the given value in the enum class.
+	 * @param value value to look up
+	 */
+	public EKGenerationType(int value) {
+		super(value, Enumerated.class);
+	}
 }

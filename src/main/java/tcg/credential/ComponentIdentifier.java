@@ -1,12 +1,20 @@
 package tcg.credential;
 
+import java.util.Arrays;
+import java.util.List;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.Singular;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.ASN1TaggedObject;
+import org.bouncycastle.asn1.ASN1UTF8String;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERTaggedObject;
 import org.bouncycastle.asn1.DERUTF8String;
@@ -23,196 +31,108 @@ import org.bouncycastle.asn1.DERUTF8String;
  *      componentAddress [4] IMPLICIT SEQUENCE(SIZE(1..CONFIGMAX)) OF ComponentAddress OPTIONAL }
  * </pre>
  */
+@AllArgsConstructor
+@Builder(toBuilder = true)
+@Getter
+@NoArgsConstructor(force = true)
 public class ComponentIdentifier extends ASN1Object {
+	private static final int MIN_SEQUENCE_SIZE = 2;
+	private static final int MAX_SEQUENCE_SIZE = 7;
 
-	//minimum 2, max 6
-	DERUTF8String componentManufacturer;
-	DERUTF8String componentModel;
-	DERUTF8String componentSerial = null; // optional, tagged 0
-	DERUTF8String componentRevision = null; // optional, tagged 1
-	ASN1ObjectIdentifier componentManufacturerId = null; // optional, tagged 2
-	ASN1Boolean fieldReplaceable = null; // optional, tagged 3
-	ComponentAddress[] componentAddress = null; // optional, tagged 4, sequence of 1 to configmax length
-	
+	@NonNull
+	private final ASN1UTF8String componentManufacturer;
+	@NonNull
+	private final ASN1UTF8String componentModel;
+	private final ASN1UTF8String componentSerial; // optional, tagged 0
+	private final ASN1UTF8String componentRevision; // optional, tagged 1
+	private final ASN1ObjectIdentifier componentManufacturerId; // optional, tagged 2
+	private final ASN1Boolean fieldReplaceable; // optional, tagged 3
+	@Singular
+	private final List<ComponentAddress> componentAddresses; // optional, tagged 4
+
+	/**
+	 * Attempts to cast the provided object.
+	 * If the object is an ASN1Sequence, the object is parsed by fromASN1Sequence.
+	 * @param obj the object to parse
+	 * @return ComponentIdentifier
+	 */
 	public static ComponentIdentifier getInstance(Object obj) {
 		if (obj == null || obj instanceof ComponentIdentifier) {
 			return (ComponentIdentifier) obj;
 		}
-		if (obj instanceof ASN1Sequence) {
-			return new ComponentIdentifier((ASN1Sequence)obj);
+		if (obj instanceof ASN1Sequence seq) {
+			return ComponentIdentifier.getInstance(seq);
 		}
 		throw new IllegalArgumentException("Illegal argument in getInstance: " + obj.getClass().getName());
 	}
-	
-	private ComponentIdentifier (ASN1Sequence seq) {
-		if (seq.size() < 2 || seq.size() > 6) {
+
+	/**
+	 * Attempts to parse the given ASN1Sequence.
+	 * @param seq An ASN1Sequence
+	 * @return ComponentIdentifier
+	 */
+	public static ComponentIdentifier fromASN1Sequence(@NonNull ASN1Sequence seq) {
+		if (seq.size() < ComponentIdentifier.MIN_SEQUENCE_SIZE) {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}
+
 		ASN1Object[] elements = (ASN1Object[]) seq.toArray();
-		int pos = 0;
-		if (elements[pos] instanceof DERUTF8String) {
-			componentManufacturer = (DERUTF8String) elements[pos];
-			if (componentManufacturer.toString().length() > Definitions.STRMAX) {
-				throw new IllegalArgumentException("Length of componentManufacturer exceeds STRMAX");
+
+		ComponentIdentifier.ComponentIdentifierBuilder builder = ComponentIdentifier.builder()
+				.componentManufacturer(DERUTF8String.getInstance(elements[0]))
+				.componentModel(DERUTF8String.getInstance(elements[1]));
+
+		ASN1Utils.parseTaggedElements(seq).forEach((key, value) -> {
+			switch (key) {
+				case 0 -> builder.componentSerial(DERUTF8String.getInstance(value));
+				case 1 -> builder.componentRevision(DERUTF8String.getInstance(value));
+				case 2 -> builder.componentManufacturerId(ASN1ObjectIdentifier.getInstance(value));
+				case 3 -> builder.fieldReplaceable(ASN1Boolean.getInstance(value));
+				case 4 -> builder.componentAddressesFromSequence(ASN1Sequence.getInstance(value));
+				default -> {}
 			}
-			pos++;
-		} else {
-			throw new IllegalArgumentException("Expected DERUTF8String, but received " + elements[pos].getClass().getName());
-		}
-		if (elements[pos] instanceof DERUTF8String) {
-			componentModel = (DERUTF8String) elements[pos];
-			if (componentModel.toString().length() > Definitions.STRMAX) {
-				throw new IllegalArgumentException("Length of componentModel exceeds STRMAX");
-			}
-			pos++;
-		} else {
-			throw new IllegalArgumentException("Expected DERUTF8String, but received " + elements[pos].getClass().getName());
-		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 0)) {
-			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
-			if (elementObject instanceof DERUTF8String str) {
-				componentSerial = str;
-				if (componentSerial.toString().length() > Definitions.STRMAX) {
-					throw new IllegalArgumentException("Length of componentSerial exceeds STRMAX");
-				}
-			} else {
-				throw new IllegalArgumentException("Expected DERUTF8String object, but received " + elements[pos].getClass().getName());
-			}
-			pos++;
-		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 1)) {
-			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
-			if (elementObject instanceof DERUTF8String str) {
-				componentRevision = str;
-				if (componentRevision.toString().length() > Definitions.STRMAX) {
-					throw new IllegalArgumentException("Length of componentRevision exceeds STRMAX");
-				}
-			} else {
-				throw new IllegalArgumentException("Expected DERUTF8String object, but received " + elements[pos].getClass().getName());
-			}
-			pos++;
-		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 2)) {
-			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
-			if (elementObject instanceof ASN1ObjectIdentifier oid) {
-				componentManufacturerId = oid;
-			} else {
-				throw new IllegalArgumentException("Expected ASN1ObjectIdentifier object, but received " + elements[pos].getClass().getName());
-			}
-			pos++;
-		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 3)) {
-			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
-            if (elementObject instanceof ASN1Boolean bool) {
-                fieldReplaceable = bool;
-            } else {
-                throw new IllegalArgumentException("Expected ASN1Boolean object, but received " + elements[pos].getClass().getName());
-            }
-            pos++;
-        }
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 4)) {
-			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
-			if (elementObject instanceof ASN1Sequence tempSeq) {
-				// check for configmax size
-				ASN1Object[] tempElements = (ASN1Object[]) tempSeq.toArray();
-				componentAddress = new ComponentAddress[tempElements.length];
-				for(int i = 0; i < tempElements.length; i++) {
-					if (tempElements[i] instanceof ComponentAddress) {
-						componentAddress[i] = (ComponentAddress) tempElements[i];
-					} else {
-						throw new IllegalArgumentException("Expected ComponentAddress, received " + tempElements[i].getClass().getName());
-					}
-				}
-			} else {
-				throw new IllegalArgumentException("Expected ASN1Sequence object, but received " + elements[pos].getClass().getName());
-			}
-			pos++;
-		}
-		if ((elements.length - pos) > 0) {
-			throw new IllegalArgumentException("Too many elements in ComponentIdentifiers");
-		}
-	}
-	
-	public ComponentIdentifier(DERUTF8String componentManufacturer, DERUTF8String componentModel,
-			DERUTF8String componentSerial, DERUTF8String componentRevision,
-			ASN1ObjectIdentifier componentManufacturerId, ASN1Boolean fieldReplaceable,
-			ComponentAddress[] componentAddress) {
-		if (componentManufacturer != null && componentManufacturer.toString().length() > Definitions.STRMAX) {
-			throw new IllegalArgumentException("Length of componentManufacturer exceeds STRMAX");
-		}
-		if (componentModel != null && componentModel.toString().length() > Definitions.STRMAX) {
-			throw new IllegalArgumentException("Length of componentModel exceeds STRMAX");
-		}
-		if (componentSerial != null && componentSerial.toString().length() > Definitions.STRMAX) {
-			throw new IllegalArgumentException("Length of componentSerial exceeds STRMAX");
-		}
-		if (componentRevision != null && componentRevision.toString().length() > Definitions.STRMAX) {
-			throw new IllegalArgumentException("Length of componentRevision exceeds STRMAX");
-		}
-		this.componentManufacturer = componentManufacturer;
-		this.componentModel = componentModel;
-		this.componentSerial = componentSerial;
-		this.componentRevision = componentRevision;
-		this.componentManufacturerId = componentManufacturerId;
-		this.fieldReplaceable = fieldReplaceable;
-		this.componentAddress = componentAddress;
+		});
+
+		return builder.build();
 	}
 
+	/**
+	 * @return This object as an ASN1Sequence
+	 */
 	public ASN1Primitive toASN1Primitive() {
 		ASN1EncodableVector vec = new ASN1EncodableVector();
-		vec.add(componentManufacturer);
-		vec.add(componentModel);
-		if (componentSerial != null) {
-			vec.add(new DERTaggedObject(false, 0, componentSerial));
+		vec.add(this.componentManufacturer);
+		vec.add(this.componentModel);
+		if (this.componentSerial != null) {
+			vec.add(new DERTaggedObject(false, 0, this.componentSerial));
 		}
-		if (componentRevision != null) {
-			vec.add(new DERTaggedObject(false, 1, componentRevision));
+		if (this.componentRevision != null) {
+			vec.add(new DERTaggedObject(false, 1, this.componentRevision));
 		}
-		if (componentManufacturerId != null) {
-			vec.add(new DERTaggedObject(false, 2, componentManufacturerId));
+		if (this.componentManufacturerId != null) {
+			vec.add(new DERTaggedObject(false, 2, this.componentManufacturerId));
 		}
-		if (fieldReplaceable != null) {
-		    vec.add(new DERTaggedObject(false, 3, fieldReplaceable));
+		if (this.fieldReplaceable != null) {
+			vec.add(new DERTaggedObject(false, 3, this.fieldReplaceable));
 		}
-		if (componentAddress != null && componentAddress.length > 0) {
-			ASN1EncodableVector vec2 = new ASN1EncodableVector();
-			for (int i = 0; i < componentAddress.length; i++) {
-				vec2.add(componentAddress[i]);
-			}
-			vec.add(new DERTaggedObject(false, 4, new DERSequence(vec2)));
+		if (this.componentAddresses != null) {
+			vec.add(new DERTaggedObject(false, 4, new DERSequence(ASN1Utils.toASN1EncodableVector(this.componentAddresses))));
 		}
 		return new DERSequence(vec);
 	}
 
-	public DERUTF8String getComponentManufacturer() {
-		return componentManufacturer;
-	}
-
-
-	public DERUTF8String getComponentModel() {
-		return componentModel;
-	}
-
-
-	public DERUTF8String getComponentSerial() {
-		return componentSerial;
-	}
-
-
-	public DERUTF8String getComponentRevision() {
-		return componentRevision;
-	}
-
-
-	public ASN1ObjectIdentifier getComponentManufacturerId() {
-		return componentManufacturerId;
-	}
-	
-	public ASN1Boolean getFieldReplaceable() {
-	    return fieldReplaceable;
-	}
-
-	public ComponentAddress[] getComponentAddress() {
-		return componentAddress;
+	/**
+	 * The rest of this builder is generated by lombok Builder annotation
+	 */
+	public static class ComponentIdentifierBuilder {
+		/**
+		 * Reads elements of the given sequence as ComponentAddresses and adds them to the builder.
+		 * @param seq ASN1Sequence
+		 */
+		public final void componentAddressesFromSequence(@NonNull ASN1Sequence seq) {
+			Arrays.asList(seq.toArray()).forEach(
+					element ->
+							this.componentAddress(ComponentAddress.getInstance(element)));
+		}
 	}
 }

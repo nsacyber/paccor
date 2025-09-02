@@ -13,7 +13,9 @@ import tcg.credential.URIReference;
 /**
  * Functions to help manage the creation of the common criteria measures object.
  * See <a href="https://www.commoncriteriaportal.org/cc/">https://www.commoncriteriaportal.org/cc/</a>
+ * @deprecated see {@link tcg.credential.CommonCriteriaMeasures}
  */
+@Deprecated
 public class CommonCriteriaMeasuresFactory {
     /**
      * fields of the common criteria measures JSON object
@@ -182,9 +184,8 @@ public class CommonCriteriaMeasuresFactory {
             
             ccmf = CommonCriteriaMeasuresFactory.create();
             ccmf.version(new DERIA5String(versionNode.asText()));
-            String assuranceLevel = assuranceLevelNode.asText();
-            ccmf.assuranceLevel(new EvaluationAssuranceLevel(assuranceLevel));
-            ccmf.evaluationStatus(new EvaluationStatus(evaluationStatusNode.asText()));
+            ccmf.assuranceLevel(EvaluationAssuranceLevel.getInstance(assuranceLevelNode));
+            ccmf.evaluationStatus(EvaluationStatus.getInstance(evaluationStatusNode));
             
             boolean plus = false;
             if (plusNode != null) {
@@ -197,7 +198,7 @@ public class CommonCriteriaMeasuresFactory {
             ccmf.plus(ASN1Boolean.getInstance(plus));
             
             if (sofNode != null) {
-                ccmf.strengthOfFunction(new StrengthOfFunction(sofNode.asText()));
+                ccmf.strengthOfFunction(StrengthOfFunction.getInstance(sofNode));
             }
             
             if (profileOidNode != null) {

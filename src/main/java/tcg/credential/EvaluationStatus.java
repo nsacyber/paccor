@@ -1,10 +1,7 @@
 package tcg.credential;
 
-import java.math.BigInteger;
-import java.util.Hashtable;
-import org.bouncycastle.asn1.ASN1Enumerated;
-import org.bouncycastle.asn1.ASN1Object;
-import org.bouncycastle.asn1.ASN1Primitive;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 /**
  * <pre>
@@ -14,84 +11,54 @@ import org.bouncycastle.asn1.ASN1Primitive;
  *      evaluationCompleted (2) }
  * </pre>
  */
-public class EvaluationStatus extends ASN1Object {
-	
-	ASN1Enumerated value;
-	
-	public enum Enumerated {
-	    designedToMeet(0),
-	    evaluationInProgress(1),
-	    evaluationCompleted(2);
-	    
-	    private static final Hashtable<Integer, Enumerated> lookup =
-                new Hashtable<Integer, Enumerated>();
-        
-        static {
-            for(Enumerated e : values()) {
-                lookup.put(e.getValue(), e);
-            }
-        }
-        
-        private final int value;
-        
-        private Enumerated(int value) {
-            this.value = value;
-        }
-        
-        public final int getValue() {
-            return value;
-        }
-        
-        public static final Enumerated lookup(int value) {
-            return lookup.get(value);
-        }
-        
-        public static final Enumerated lookup(String value) {
-            for (Enumerated opt : lookup.values()) {
-                if (opt.name().equalsIgnoreCase(value)) {
-                    return opt;
-                }
-            }
-            throw new IllegalArgumentException(value + " is not a valid enum constant.");
-        }
+public class EvaluationStatus extends ASN1EnumeratedEnumBase<EvaluationStatus.Enumerated> {
+	/**
+	 * Factory object used to provide conversion context.
+	 */
+	public static final Factory<Enumerated, EvaluationStatus> FACTORY = factory(Enumerated.class, EvaluationStatus::new);
+
+	/**
+	 * EvaluationStatus options
+	 */
+	@AllArgsConstructor
+	@Getter
+	public enum Enumerated implements EnumWithIntegerValue {
+		/**
+		 * <pre>
+		 * designedToMeet: No Common Criteria Evaluation Status yet. Product is designed to meet Common Criteria.
+		 * </pre>
+		 */
+		designedToMeet(0),
+		/**
+		 * <pre>
+		 * evaluationInProgress: Common Criteria evaluation in progress.
+		 * </pre>
+		 */
+		evaluationInProgress(1),
+		/**
+		 * <pre>
+		 * evaluationCompleted: Common Criteria evaluation successful.
+		 * </pre>
+		 */
+		evaluationCompleted(2);
+
+		private final int value;
 	}
-	
+
+	/**
+	 * Convert data into a EvaluationStatus object.
+	 * @param obj Could be any type that can be transformed into ASN1Enumerated
+	 * @return EvaluationStatus
+	 */
 	public static EvaluationStatus getInstance(Object obj) {
-		if (obj instanceof EvaluationStatus) {
-			return (EvaluationStatus) obj;
-		}
-		if (obj != null) {
-			return new EvaluationStatus(ASN1Enumerated.getInstance(obj).getValue().intValue());
-		}
-		return null;
+		return ASN1EnumBase.getInstance(obj, FACTORY);
 	}
 
-	public EvaluationStatus(int status) {
-	    this(Enumerated.lookup(status));
+	/**
+	 * New EvaluationStatus, looking up the given value in the enum class.
+	 * @param value value to look up
+	 */
+	public EvaluationStatus(int value) {
+		super(value, Enumerated.class);
 	}
-	
-	public EvaluationStatus(String status) {
-	    this(Enumerated.lookup(status));
-	}
-	
-	public EvaluationStatus(Enumerated option) {
-	    value = (option != null) ? new ASN1Enumerated(option.ordinal()) : null;
-	}
-	
-	public String toString() {
-	    String str = "invalid";
-        if (value != null) {
-            int type = getValue().intValue();
-            str = getClass().getSimpleName() + ": " + Enumerated.values()[type].name();
-        }
-        return str;
-    }
-
-	public ASN1Primitive toASN1Primitive() {
-		return value;
-	}
-	
-	public BigInteger getValue() {
-        return value.getValue();
-    }
 }

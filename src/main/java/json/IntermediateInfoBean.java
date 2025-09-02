@@ -1,5 +1,7 @@
 package json;
 
+import lombok.Data;
+import lombok.Singular;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Primitive;

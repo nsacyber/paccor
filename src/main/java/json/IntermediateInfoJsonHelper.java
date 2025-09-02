@@ -14,6 +14,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Vector;
 
+/**
+ * @deprecated see AttributesJsonHelper
+ */
 public class IntermediateInfoJsonHelper {
 
     public enum InfoJson {

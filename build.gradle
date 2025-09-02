@@ -34,7 +34,9 @@ allprojects {
                       'com.fasterxml.jackson.core:jackson-databind:2.18.3'],
       jcommander:     'org.jcommander:jcommander:2.0', // Apache 2.0
       junit:          'org.junit.jupiter:junit-jupiter:5.12.2', // EPL 2.0
-      mockito:       'org.mockito:mockito-junit-jupiter:5.17.0' // MIT
+      lombok:         'org.projectlombok:lombok:1.18.38', // MIT
+      mockito:        'org.mockito:mockito-junit-jupiter:5.17.0', // MIT
+      protobuf:       'com.google.protobuf:protobuf-java:4.31.0' // BSD-3
     ]
 }
 
@@ -42,9 +44,19 @@ dependencies {
     implementation libs.bouncycastle
     implementation libs.jackson
     implementation libs.jcommander
+    implementation libs.lombok
+    implementation libs.protobuf
+
+    annotationProcessor libs.lombok
 
     testImplementation libs.junit
     testImplementation libs.mockito
+
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 // Maven packaging and signing

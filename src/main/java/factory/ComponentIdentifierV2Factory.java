@@ -14,7 +14,7 @@ import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.IssuerSerial;
 import org.bouncycastle.util.encoders.Base64;
-import tcg.credential.AttributeCertificateIdentifier;
+import tcg.credential.HashedCertificateIdentifier;
 import tcg.credential.AttributeStatus;
 import tcg.credential.CertificateIdentifier;
 import tcg.credential.ComponentAddress;
@@ -22,6 +22,7 @@ import tcg.credential.ComponentClass;
 import tcg.credential.ComponentIdentifierV2;
 import tcg.credential.TCGObjectIdentifier;
 import tcg.credential.URIReference;
+import tcg.credential.ASN1Utils;
 
 /**
  * Functions to help manage the creation of a component identifier field.
@@ -49,7 +50,8 @@ public class ComponentIdentifierV2Factory {
         GENERICCERTIDENTIFIER,
         ISSUER,
         PLATFORMCERTURI,
-        STATUS;
+        STATUS,
+        HASHEDCERTIDENTIFIER;
     }
     
     private ComponentClass componentClass;
@@ -138,7 +140,7 @@ public class ComponentIdentifierV2Factory {
      * @return The ComponentIdentifierV2Factory object with the component serial number set.
      */
     public final ComponentIdentifierV2Factory componentSerial(final String serial) {
-        componentSerial = serial != null && !serial.trim().isEmpty() ? new DERUTF8String(serial) : null;
+        componentSerial = serial != null && !serial.isEmpty() ? new DERUTF8String(serial) : null;
         return this;
     }
     
@@ -148,7 +150,7 @@ public class ComponentIdentifierV2Factory {
      * @return The ComponentIdentifierV2Factory object with the component revision set.
      */
     public final ComponentIdentifierV2Factory componentRevision(final String revision) {
-        componentRevision = revision != null && !revision.trim().isEmpty() ? new DERUTF8String(revision) : null;
+        componentRevision = revision != null && !revision.isEmpty() ? new DERUTF8String(revision) : null;
         return this;
     }
     
@@ -235,7 +237,7 @@ public class ComponentIdentifierV2Factory {
                         componentRevision,
                         componentManufacturerId,
                         fieldReplaceable,
-                        componentAddress.toArray(new ComponentAddress[componentAddress.size()]),
+                        componentAddress,
                         componentPlatformCert,
                         componentPlatformCertUri,
                         status);
@@ -264,7 +266,7 @@ public class ComponentIdentifierV2Factory {
             final JsonNode status = refNode.get(ComponentIdentifierV2Factory.Json.STATUS.name());
 
             component
-            .componentClass(new ComponentClass(new ASN1ObjectIdentifier(componentClassRegistry.asText()), componentClassValue.asText()))
+            .componentClass(new ComponentClass(new ASN1ObjectIdentifier(componentClassRegistry.asText()), ASN1Utils.resizeOctets(ComponentClass.VALUE_SIZE, componentClassValue.asText())))
             .componentManufacturer(manufacturer.asText())
             .componentModel(model.asText())
             // all other fields are optional or have default values
@@ -285,9 +287,9 @@ public class ComponentIdentifierV2Factory {
                 final JsonNode hashNode = attributeCertNode.get(ComponentIdentifierV2Factory.Json.HASH.name());
                 final String hashAlg = hashAlgNode != null ? hashAlgNode.asText() : "";
                 final String hash = hashNode != null ? hashNode.asText() : "";
-                AttributeCertificateIdentifier aci = null;
+                HashedCertificateIdentifier aci = null;
                 if (!hashAlg.isEmpty() && !hash.isEmpty()) {
-                    aci = new AttributeCertificateIdentifier(
+                    aci = new HashedCertificateIdentifier(
                             new AlgorithmIdentifier(new ASN1ObjectIdentifier(hashAlg)),
                             new DEROctetString(Base64.decode(hash)));
                 }
@@ -307,7 +309,7 @@ public class ComponentIdentifierV2Factory {
             }
             
             if (status != null) {
-                component.status(new AttributeStatus(status.asText()));
+                component.status(AttributeStatus.getInstance(status));
             }
             
             JsonNode addresses = refNode.get(ComponentIdentifierV2Factory.Json.ADDRESSES.name());

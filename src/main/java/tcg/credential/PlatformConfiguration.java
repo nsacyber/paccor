@@ -1,10 +1,16 @@
 package tcg.credential;
 
+import java.util.Arrays;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.Singular;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERTaggedObject;
 import java.util.List;
@@ -14,113 +20,77 @@ import java.util.List;
  * platformConfiguration ATTRIBUTE ::= {
  *      WITH SYNTAX PlatformConfiguration
  *      ID tcg-at-platformConfiguration-v1 }
- * 
+ *
  * PlatformConfiguration ::= SEQUENCE {
  *      componentIdentifier [0] IMPLICIT SEQUENCE(SIZE(1..CONFIGMAX)) OF ComponentIdentifier OPTIONAL,
  *      platformProperties [1] IMPLICIT SEQUENCE(SIZE(1..CONFIGMAX)) OF Properties OPTIONAL,
  *      platformPropertiesUri [2] IMPLICIT URIReference OPTIONAL }
  * </pre>
  */
+@AllArgsConstructor
+@Builder(toBuilder = true)
+@Getter
+@NoArgsConstructor(force = true)
 public class PlatformConfiguration extends ASN1Object {
-	
-	// minimum 0, max 3
-	ComponentIdentifier[] componentIdentifier = null; // optional, tagged 0, placed in sequence of 1 to configmax length
-	PlatformProperties[] platformProperties = null; // optional, tagged 1, placed in sequence of 1 to configmax length
-	URIReference platformPropertiesUri = null; // optional, tagged 2
+	private static final int MIN_SEQUENCE_SIZE = 0;
+	private static final int MAX_SEQUENCE_SIZE = 3;
 
+	@Singular
+	private final List<ComponentIdentifier> componentIdentifiers; // optional, tagged 0
+	@Singular
+	private final List<PlatformProperties> platformProperties; // optional, tagged 1
+	private final URIReference platformPropertiesUri; // optional, tagged 2
+
+	/**
+	 * Attempts to cast the provided object.
+	 * If the object is an ASN1Sequence, the object is parsed by fromASN1Sequence.
+	 * @param obj the object to parse
+	 * @return PlatformConfiguration
+	 */
 	public static PlatformConfiguration getInstance(Object obj) {
 		if (obj == null || obj instanceof PlatformConfiguration) {
 			return (PlatformConfiguration) obj;
 		}
-		if (obj instanceof ASN1Sequence) {
-			return new PlatformConfiguration((ASN1Sequence)obj);
+		if (obj instanceof ASN1Sequence seq) {
+			return PlatformConfiguration.fromASN1Sequence(seq);
 		}
 		throw new IllegalArgumentException("Illegal argument in getInstance: " + obj.getClass().getName());
 	}
 
-	private PlatformConfiguration(ASN1Sequence seq) {
-		if (seq.size() < 0 || seq.size() > 3) {
+	/**
+	 * Attempts to parse the given ASN1Sequence.
+	 * @param seq An ASN1Sequence
+	 * @return PlatformConfiguration
+	 */
+	public static PlatformConfiguration fromASN1Sequence(@NonNull ASN1Sequence seq) {
+		if (seq.size() < PlatformConfiguration.MIN_SEQUENCE_SIZE) {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}
-		ASN1Object[] elements = (ASN1Object[]) seq.toArray();
-		int pos = 0;
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 0)) {
-			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
-			if (elementObject instanceof ASN1Sequence tempSeq) {
-				ASN1Object[] tempElements = (ASN1Object[]) tempSeq.toArray();
-				componentIdentifier = new ComponentIdentifier[tempElements.length];
-				for(int i = 0; i < tempElements.length; i++) {
-					if (tempElements[i] instanceof ComponentIdentifier) {
-						componentIdentifier[i] = (ComponentIdentifier) tempElements[i];
-					} else {
-						throw new IllegalArgumentException("Expected ComponentIdentifier, received " + tempElements[i].getClass().getName());
-					}
-				}
-			} else {
-				throw new IllegalArgumentException("Expected ASN1Sequence object, but received " + elements[pos].getClass().getName());
+
+		PlatformConfiguration.PlatformConfigurationBuilder builder = PlatformConfiguration.builder();
+
+		ASN1Utils.parseTaggedElements(seq).forEach((key, value) -> {
+			switch (key) {
+				case 0 -> builder.componentIdentifiersFromSequence(ASN1Sequence.getInstance(value));
+				case 1 -> builder.platformPropertiesFromSequence(ASN1Sequence.getInstance(value));
+				case 2 -> builder.platformPropertiesUri(URIReference.getInstance(value));
+				default -> {}
 			}
-			pos++;
-		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 1)) {
-			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
-			if (elementObject instanceof ASN1Sequence tempSeq) {
-				ASN1Object[] tempElements = (ASN1Object[]) tempSeq.toArray();
-				platformProperties = new PlatformProperties[tempElements.length];
-				for(int i = 0; i < tempElements.length; i++) {
-					if (tempElements[i] instanceof PlatformProperties) {
-						platformProperties[i] = (PlatformProperties) tempElements[i];
-					} else {
-						throw new IllegalArgumentException("Expected Properties, received " + tempElements[i].getClass().getName());
-					}
-				}
-			} else {
-				throw new IllegalArgumentException("Expected ASN1Sequence object, but received " + elements[pos].getClass().getName());
-			}
-			pos++;
-		}
-		if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 2)) {
-			ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
-			if (elementObject instanceof URIReference uriRef) {
-				platformPropertiesUri = uriRef;
-			} else {
-				throw new IllegalArgumentException("Expected URIReference object, but received " + elements[pos].getClass().getName());
-			}
-			pos++;
-		}
-		if ((elements.length - pos) > 0) {
-			throw new IllegalArgumentException("Too many elements in PlatformConfiguration");
-		}
-	}
-	
-	public PlatformConfiguration(List<ComponentIdentifier> componentIdentifier,
-             List<PlatformProperties> platformProperties, URIReference platformPropertiesUri) {
-	    this(componentIdentifier.toArray(new ComponentIdentifier[componentIdentifier.size()]),
-	         platformProperties.toArray(new PlatformProperties[platformProperties.size()]),
-	         platformPropertiesUri);
-	}
-	
-	public PlatformConfiguration(ComponentIdentifier[] componentIdentifier, PlatformProperties[] platformProperties,
-			URIReference platformPropertiesUri) {
-		this.componentIdentifier = componentIdentifier;
-		this.platformProperties = platformProperties;
-		this.platformPropertiesUri = platformPropertiesUri;
+		});
+
+		return builder.build();
 	}
 
+	/**
+	 * @return This object as an ASN1Sequence
+	 */
 	public ASN1Primitive toASN1Primitive() {
 		ASN1EncodableVector vec = new ASN1EncodableVector();
-		if (componentIdentifier != null) {
-			ASN1EncodableVector vec2 = new ASN1EncodableVector();
-			for (int i = 0; i < componentIdentifier.length; i++) {
-				vec2.add(componentIdentifier[i]);
-			}
-			vec.add(new DERTaggedObject(false, 0, new DERSequence(vec2)));
+		if (componentIdentifiers != null) {
+			vec.add(new DERTaggedObject(false, 0, new DERSequence(ASN1Utils.toASN1EncodableVector(componentIdentifiers))));
 		}
 		if (platformProperties != null) {
-			ASN1EncodableVector vec2 = new ASN1EncodableVector();
-			for (int i = 0; i < platformProperties.length; i++) {
-				vec2.add(platformProperties[i]);
-			}
-			vec.add(new DERTaggedObject(false, 1, new DERSequence(vec2)));
+			vec.add(new DERTaggedObject(false, 1, new DERSequence(ASN1Utils.toASN1EncodableVector(platformProperties))));
 		}
 		if (platformPropertiesUri != null) {
 			vec.add(new DERTaggedObject(false, 2, platformPropertiesUri));
@@ -128,15 +98,28 @@ public class PlatformConfiguration extends ASN1Object {
 		return new DERSequence(vec);
 	}
 
-	public ComponentIdentifier[] getComponentIdentifier() {
-		return componentIdentifier;
-	}
+	/**
+	 * The rest of this builder is generated by lombok Builder annotation
+	 */
+	public static class PlatformConfigurationBuilder {
+		/**
+		 * Reads elements of the given sequence as ComponentIdentifiers and adds them to the builder.
+		 * @param seq ASN1Sequence
+		 */
+		public final void componentIdentifiersFromSequence(@NonNull ASN1Sequence seq) {
+			Arrays.asList(seq.toArray()).forEach(
+					element ->
+							this.componentIdentifier(ComponentIdentifier.getInstance(element)));
+		}
 
-	public PlatformProperties[] getPlatformProperties() {
-		return platformProperties;
-	}
-
-	public URIReference getPlatformPropertiesUri() {
-		return platformPropertiesUri;
+		/**
+		 * Reads elements of the given sequence as PlatformProperties and adds them to the builder.
+		 * @param seq ASN1Sequence
+		 */
+		public final void platformPropertiesFromSequence(@NonNull ASN1Sequence seq) {
+			Arrays.asList(seq.toArray()).forEach(
+					element ->
+							this.platformProperty(PlatformProperties.getInstance(element)));
+		}
 	}
 }

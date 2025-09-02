@@ -1,8 +1,14 @@
 package factory;
 
+import cli.CliHelper;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Vector;
-
+import java.util.List;
+import java.util.Optional;
+import json.JsonUtils;
+import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERUTF8String;
 import org.bouncycastle.asn1.x500.AttributeTypeAndValue;
 import org.bouncycastle.asn1.x500.RDN;
@@ -12,16 +18,20 @@ import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.Target;
 import org.bouncycastle.asn1.x509.TargetInformation;
 import org.bouncycastle.cert.X509CertificateHolder;
+import tcg.credential.ASN1Utils;
 
 /**
  * Functions to help manage the creation of the AC targeting extension.
  */
 public class TargetingInformationFactory {
+    public enum TargetInformationJson {
+        FILE;
+    }
     
-private Vector<Target> elements = new Vector<Target>();
+    private final List<Target> elements;
     
     private TargetingInformationFactory() {
-        elements = new Vector<Target>();
+        elements = new ArrayList<>();
     }
     
     /**
@@ -29,8 +39,7 @@ private Vector<Target> elements = new Vector<Target>();
      * @return A new TargetingInformationFactory builder.
      */
     public static final TargetingInformationFactory create() {
-        TargetingInformationFactory tif = new TargetingInformationFactory();
-        return tif;
+        return new TargetingInformationFactory();
     }
     
     /**
@@ -66,11 +75,10 @@ private Vector<Target> elements = new Vector<Target>();
             RDN serialNumberRdn = new RDN(serialNumberATV);
             
             // Add the RDN to the X500Name
-            Vector<RDN> rdns = new Vector<RDN>();
-            rdns.addAll(Arrays.asList(subjectName.getRDNs()));
-            rdns.add(serialNumberRdn);
+            List<RDN> rdnList = new ArrayList<>(Arrays.asList(subjectName.getRDNs()));
+            rdnList.add(serialNumberRdn);
             
-            subjectName = new X500Name(rdns.toArray(new RDN[rdns.size()]));
+            subjectName = new X500Name(rdnList.toArray(new RDN[0]));
         }
         
         // Add the new Target to the extension
@@ -84,11 +92,34 @@ private Vector<Target> elements = new Vector<Target>();
      * @return {@link TargetInformation}
      */
     public final TargetInformation build() {
-        if (elements.isEmpty()) {
-            return null;
+        return TargetInformation.getInstance(new DERSequence(ASN1Utils.toASN1EncodableVector(elements)));
+    }
+    
+    /**
+     * Create a new certificate policies object from a JSON node.
+     * @param refNode JsonNode representing a project relevant certificate policies JSON object
+     * @return The CertificatePoliciesFactory object with new information from the JSON data.
+     */
+    public static final TargetingInformationFactory fromJsonNode(final JsonNode refNode) {
+        TargetingInformationFactory tif = TargetingInformationFactory.create();
+        boolean caseSens = false;
+        if (refNode.isArray()) {
+            JsonUtils.asStream(refNode.spliterator())
+                    .filter(target -> JsonUtils.has(target, caseSens, TargetInformationJson.FILE.name()))
+                    .forEach(target -> {
+                        Optional<JsonNode> targetOpt = JsonUtils.get(target, caseSens, TargetInformationJson.FILE.name());
+
+                        String targetFilename = targetOpt.orElseThrow().asText();
+
+                        try {
+                            X509CertificateHolder cert = CliHelper.loadCert(targetFilename, CliHelper.x509type.CERTIFICATE);
+                            tif.addCertificate(cert);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }); // forEach
         }
-        Target[] targets = elements.toArray(new Target[elements.size()]);
-        TargetInformation ti = new TargetInformation(targets);
-        return ti;
+        
+        return tif;
     }
 }

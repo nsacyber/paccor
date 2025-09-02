@@ -24,6 +24,9 @@ import factory.TargetingInformationFactory;
 import factory.AuthorityInfoAccessFactory.ElementJson;
 import factory.AuthorityInfoAccessFactory.MethodJson;
 
+/**
+ * @deprecated see ExtensionsJsonHelper
+ */
 public class OtherExtensionsJsonHelper {
     public enum Json {
         CERTIFICATEPOLICIES,

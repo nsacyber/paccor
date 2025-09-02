@@ -12,7 +12,9 @@ import tcg.credential.TBBSecurityAssertions;
 
 /**
  * Functions to help manage the creation of the TBB security assertions attributes.
+ * @deprecated see {@link tcg.credential.TBBSecurityAssertions}
  */
+@Deprecated
 public class TBBSecurityAssertionsFactory {
     /**
      * fields of the TBB security assertions JSON object
@@ -172,12 +174,12 @@ public class TBBSecurityAssertionsFactory {
                         }
                     }
                     final String fipsVersion = fipsVersionNode.asText();
-                    fipsLevel(new FIPSLevel(new DERIA5String(fipsVersion), new SecurityLevel(levelNode.asText()), ASN1Boolean.getInstance(fipsPlus)));
+                    fipsLevel(new FIPSLevel(new DERIA5String(fipsVersion), SecurityLevel.getInstance(levelNode), ASN1Boolean.getInstance(fipsPlus)));
                 }
             }
             
             if (rtmTypeNode != null) {
-                rtmType(new MeasurementRootType(rtmTypeNode.asText()));
+                rtmType(MeasurementRootType.getInstance(rtmTypeNode));
             }
             
             // required field, which has a default value

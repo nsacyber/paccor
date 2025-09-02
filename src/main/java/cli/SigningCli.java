@@ -14,7 +14,8 @@ import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import json.OtherExtensionsJsonHelper;
+import java.util.Optional;
+import json.ExtensionsJsonHelper;
 import key.SignerCredential;
 import operator.PcBcContentSignerBuilder;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
@@ -151,25 +152,20 @@ public class SigningCli {
         pcf.issuer(new AttributeCertificateIssuer(caCred.getCertificate().getSubject()));
         
         // Build other extensions
+        ExtensionsJsonHelper ext = ExtensionsJsonHelper.read(argList.getExtensionsJsonFile());
         BcX509ExtensionUtils extUtils = new BcX509ExtensionUtils();
         AuthorityKeyIdentifier aki = extUtils.createAuthorityKeyIdentifier(caCred.getCertificate());
-        CertificatePoliciesFactory cpf = OtherExtensionsJsonHelper.policiesFromJsonFile(argList.getExtensionsJsonFile());
-        AuthorityInfoAccessFactory aiaf = OtherExtensionsJsonHelper.accessesFromJsonFile(argList.getExtensionsJsonFile());
-        AuthorityInformationAccess aia = aiaf.build();
-        CRLDistPoint cdp = OtherExtensionsJsonHelper.crlFromJsonFile(argList.getExtensionsJsonFile());
-        TargetingInformationFactory tif = OtherExtensionsJsonHelper.ekTargetsFromJsonFile(argList.getExtensionsJsonFile()); 
-        TargetInformation ti = tif != null ? tif.build() : null;
         
         pcf.addExtension(Extension.authorityKeyIdentifier, aki);
-        pcf.addExtension(Extension.certificatePolicies, cpf.build());
-        if (aia != null) {
-            pcf.addExtension(Extension.authorityInfoAccess, aia);
+        pcf.addExtension(Extension.certificatePolicies, ext.getCertificatePolicies());
+        if (ext.getAuthorityInformationAccess() != null) {
+            pcf.addExtension(Extension.authorityInfoAccess, ext.getAuthorityInformationAccess());
         }
-        if (cdp != null) {
-            pcf.addExtension(Extension.cRLDistributionPoints, cdp);
+        if (ext.getCrlDistPoint() != null) {
+            pcf.addExtension(Extension.cRLDistributionPoints, ext.getCrlDistPoint());
         }
-        if (ti != null) {
-            pcf.addExtension(Extension.targetInformation, ti);
+        if (ext.getTargetingInformation() != null) {
+            pcf.addExtension(Extension.targetInformation, ext.getTargetingInformation());
         }
         
         // Build the cert & sign it using the private key

@@ -101,7 +101,7 @@ public class DeviceObserverCli {
                 SubjectAlternativeNameFactory
                 .fromJsonFile(componentFile);
         PlatformCertificateFactory pcf =
-                PlatformCertificateFactory.newPolicyRefJson(policyFile);
+                PlatformCertificateFactory.readAttributesJson(policyFile);
         final GeneralNames san = sanf.build();
         if (delta) {
             pcf.setDeltaCertificate();

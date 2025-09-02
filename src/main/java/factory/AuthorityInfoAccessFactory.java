@@ -1,10 +1,19 @@
 package factory;
 
-import java.util.Vector;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import json.JsonUtils;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AccessDescription;
 import org.bouncycastle.asn1.x509.AuthorityInformationAccess;
 import org.bouncycastle.asn1.x509.GeneralName;
+import tcg.credential.ASN1Utils;
 
 /**
  * Functions to help manage the creation of the authority info access extension.
@@ -21,25 +30,19 @@ public class AuthorityInfoAccessFactory {
     /**
      * access method options
      */
+    @AllArgsConstructor
+    @Getter
     public enum MethodJson {
         OCSP(AccessDescription.id_ad_ocsp),
         CAISSUERS(AccessDescription.id_ad_caIssuers);
         
-        private ASN1ObjectIdentifier oid;
-        
-        private MethodJson(ASN1ObjectIdentifier oid) {
-            this.oid = oid;
-        }
-        
-        public ASN1ObjectIdentifier getOid() {
-            return oid;
-        }
+        private final ASN1ObjectIdentifier oid;
     }
     
-    private Vector<AccessDescription> elements = new Vector<AccessDescription>();
+    private final List<AccessDescription> elements;
     
     private AuthorityInfoAccessFactory() {
-        elements = new Vector<AccessDescription>();
+        elements = new ArrayList<>();
     }
     
     /**
@@ -47,8 +50,7 @@ public class AuthorityInfoAccessFactory {
      * @return A new AuthorityInfoAccessFactory builder.
      */
     public static final AuthorityInfoAccessFactory create() {
-        AuthorityInfoAccessFactory aiaf = new AuthorityInfoAccessFactory();
-        return aiaf;
+        return new AuthorityInfoAccessFactory();
     }
     
     /**
@@ -77,11 +79,27 @@ public class AuthorityInfoAccessFactory {
      * @return {@link AuthorityInformationAccess}
      */
     public final AuthorityInformationAccess build() {
-        if (elements.isEmpty()) {
-            return null;
+        return AuthorityInformationAccess.getInstance(new DERSequence(ASN1Utils.toASN1EncodableVector(elements)));
+    }
+
+    public static final AuthorityInfoAccessFactory fromJsonNode(final JsonNode refNode) {
+        AuthorityInfoAccessFactory aia = AuthorityInfoAccessFactory.create();
+        boolean caseSens = false;
+
+        if (refNode.isArray()) {
+            JsonUtils.asStream(refNode.spliterator())
+                .filter(elementNode -> JsonUtils.has(elementNode, caseSens, ElementJson.ACCESSMETHOD.name(), ElementJson.ACCESSLOCATION.name()))
+                .forEach(elementNode -> {
+                    Optional<JsonNode> methodNodeOpt = JsonUtils.get(elementNode, caseSens, ElementJson.ACCESSMETHOD.name());
+                    Optional<JsonNode> locationNodeOpt = JsonUtils.get(elementNode, caseSens, ElementJson.ACCESSLOCATION.name());
+
+                    methodNodeOpt.ifPresent(methodNode ->
+                        locationNodeOpt.ifPresent(locationNode ->
+                                aia.addElement(MethodJson.valueOf(methodNode.asText()), new GeneralName(new X500Name(locationNode.asText()))
+                    )));
+                });
         }
-        AccessDescription[] ads = elements.toArray(new AccessDescription[elements.size()]);
-        AuthorityInformationAccess aia = new AuthorityInformationAccess(ads);
+
         return aia;
     }
 }

@@ -166,7 +166,7 @@ public class ComponentIdentifierFactory {
                         componentRevision,
                         componentManufacturerId,
                         fieldReplaceable,
-                        componentAddress.toArray(new ComponentAddress[componentAddress.size()]));
+                        componentAddress);
         return component;
     }
     

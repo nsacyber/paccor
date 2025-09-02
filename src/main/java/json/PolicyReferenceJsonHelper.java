@@ -1,11 +1,15 @@
 package json;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.util.encoders.Base64;
 import tcg.credential.TCGPlatformSpecification;
 import tcg.credential.TCGSpecificationVersion;
 
+/**
+ * @deprecated see AttributesJsonHelper
+ */
 public class PolicyReferenceJsonHelper {
     public enum PolicyRefJson {
         TCGPLATFORMSPECIFICATION,
@@ -46,7 +50,10 @@ public class PolicyReferenceJsonHelper {
             JsonNode minorVersionNode = refNode.get(SpecificationVersionJson.MINORVERSION.name());
             JsonNode revisionNode = refNode.get(SpecificationVersionJson.REVISION.name());
             
-            version = new TCGSpecificationVersion(majorVersionNode.asInt(), minorVersionNode.asInt(), revisionNode.asInt());
+            version = TCGSpecificationVersion.builder()
+                        .majorVersion(new ASN1Integer(majorVersionNode.asInt()))
+                        .minorVersion(new ASN1Integer(minorVersionNode.asInt()))
+                        .revision(new ASN1Integer(revisionNode.asInt())).build();
         } else {
             // error for required fields
         }

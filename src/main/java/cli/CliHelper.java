@@ -74,7 +74,7 @@ public class CliHelper {
      * @param type {@link x509type} enumerated option
      * @return byte array of the file data in PEM format
      * @throws IOException If the file could not be read,
-     * or any other reason from {@link Files#readAllBytes(Path)}.
+     * or any other reason from Files#readAllBytes(Path).
      */
     public static final byte[] derToPem(final String filename, final x509type type) throws IOException {
         byte[] buffer = Files.readAllBytes(Paths.get(filename));

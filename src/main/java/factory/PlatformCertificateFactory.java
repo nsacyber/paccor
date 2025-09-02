@@ -3,6 +3,8 @@ package factory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Optional;
+import json.AttributesJsonHelper;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Sequence;
@@ -167,17 +169,14 @@ public class PlatformCertificateFactory {
      * @return The PlatformCertificateFactory object with the TCG certificate specification set.
      */
     public final PlatformCertificateFactory tcgCertificateSpecification(final TCGSpecificationVersion tcs) {
-        attributes.put(TCGObjectIdentifier.tcgAtTcgCertificateSpecification, tcs);
-        return this;
+        return tcgCredentialSpecification(tcs);
     }
     
     /**
-     * @deprecated Use tcgCertificateSpecification
      * Set the TCG Credential Specification attribute.
      * @param tcs {@link TCGSpecificationVersion}
      * @return The PlatformCertificateFactory object with the TCG certificate specification set.
      */
-    @Deprecated
     public final PlatformCertificateFactory tcgCredentialSpecification(final TCGSpecificationVersion tcs) {
         attributes.put(TCGObjectIdentifier.tcgAtTcgCredentialSpecification, tcs);
         return this;
@@ -298,7 +297,7 @@ public class PlatformCertificateFactory {
             attributes.remove(TCGObjectIdentifier.tcgAtTbbSecurityAssertions);
             attributes.remove(TCGObjectIdentifier.tcgAtTcgPlatformSpecification);
         }
-        attributes.put(TCGObjectIdentifier.tcgAtTcgCertificateType, new TCGCredentialType(credentialType));
+        attributes.put(TCGObjectIdentifier.tcgAtTcgCredentialType, new TCGCredentialType(credentialType));
         
         // add in all attributes
         for (final ASN1ObjectIdentifier oid : attributes.keySet()) {
@@ -352,6 +351,7 @@ public class PlatformCertificateFactory {
      * @param filename The filename of a file containing JSON data.
      * @return A new PlatformCertificateFactory filled out with information from the file.
      * @throws IOException If there is a problem reading the file or with the JSON data inside the file.
+     * @deprecated
      */
     public static final PlatformCertificateFactory loadIntermediateInfofromJson(final String filename) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
@@ -369,37 +369,28 @@ public class PlatformCertificateFactory {
      * in a file.
      * @param filename The filename of a file containing JSON data.
      * @return A new PlatformCertificateFactory filled out with information from the file.
+     * @deprecated see readAttributesJson
      */
     public static final PlatformCertificateFactory newPolicyRefJson(final String filename) {
+        return readAttributesJson(filename);
+    }
+    /**
+     * Creates a new PlatformCertificateFactory builder starting with policy reference data stored as JSON
+     * in a file.
+     * @param filename The filename of a file containing JSON data.
+     * @return A new PlatformCertificateFactory filled out with information from the file.
+     */
+    public static final PlatformCertificateFactory readAttributesJson(final String filename) {
         PlatformCertificateFactory pcf = PlatformCertificateFactory.create();
         
         try {
             final String jsonData = new String(Files.readAllBytes(Paths.get(filename)));
             ObjectMapper objectMapper = new ObjectMapper();
-            JsonNode root = objectMapper.readTree(jsonData);
-            if (root.has(PolicyRefJson.TCGPLATFORMSPECIFICATION.name())) {
-                JsonNode platformSpecNode = root.get(PolicyRefJson.TCGPLATFORMSPECIFICATION.name());
-                pcf.tcgPlatformSpecification(PolicyReferenceJsonHelper.platformSpec(platformSpecNode));
-            }
-            
-            if (root.has(PolicyRefJson.TCGCREDENTIALSPECIFICATION.name())) {
-                JsonNode credentialSpecNode = root.get(PolicyRefJson.TCGCREDENTIALSPECIFICATION.name());
-                pcf.tcgCertificateSpecification(PolicyReferenceJsonHelper.credentialSpec(credentialSpecNode));
-            }
-            
-            if (root.has(PolicyRefJson.TBBSECURITYASSERTIONS.name())) {
-                JsonNode tbbSecAssertNode = root.get(PolicyRefJson.TBBSECURITYASSERTIONS.name());
-                TBBSecurityAssertionsFactory tsaf = TBBSecurityAssertionsFactory
-                                                    .create()
-                                                    .fromJsonNode(tbbSecAssertNode);
-                pcf.tbbSecurityAssertions(tsaf.build());
-            }
-            
-            if (root.has(PolicyRefJson.PLATFORMCONFIGURI.name())) {
-                JsonNode platformConfigUriNode = root.get(PolicyRefJson.PLATFORMCONFIGURI.name());
-                URIReferenceFactory urf = URIReferenceFactory.fromJsonNode(platformConfigUriNode);
-                pcf.platformConfigUri(urf.build());
-            }
+            AttributesJsonHelper attr = objectMapper.readValue(jsonData, AttributesJsonHelper.class);
+            Optional.ofNullable(attr.getTCGPlatformSpecification()).ifPresent(pcf::tcgPlatformSpecification);
+            Optional.ofNullable(attr.getTCGCredentialSpecification()).ifPresent(pcf::tcgCredentialSpecification);
+            Optional.ofNullable(attr.getTBBSecurityAssertions()).ifPresent(pcf::tbbSecurityAssertions);
+            Optional.ofNullable(attr.getPlatformConfigUri()).ifPresent(pcf::platformConfigUri);
         } catch (IOException e) {
             // catch file read error
         }

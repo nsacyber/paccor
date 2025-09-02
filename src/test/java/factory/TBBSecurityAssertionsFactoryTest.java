@@ -21,7 +21,7 @@ public class TBBSecurityAssertionsFactoryTest {
         final String version = "1";
         final String iso9000Certified = "FALSE";
         final String ccVersion = "2.2";
-        final String assuranceLevel = "6";
+        final int assuranceLevel = 6;
         final String evaluationStatus = "evaluationInProgress";
         final String plus = "FALSE";
         final String sof = "high";
@@ -34,7 +34,7 @@ public class TBBSecurityAssertionsFactoryTest {
         final String targetAlg = "2.16.840.1.101.3.4.2.1";
         final String targetHash = "ERuruGz0beU6AjqOaLKX3RFRNLp8s88htnelUexPHHY=";
         final String fipsVersion = "140-2";
-        final String fipsLevel = "3";
+        final int fipsLevel = 3;
         final String fipsPlus = "FALSE";
         final String rtmType = "static";
         final String iso9000URI = "./referenceoptions.sh";
@@ -78,8 +78,8 @@ public class TBBSecurityAssertionsFactoryTest {
         Assertions.assertEquals(tbsa.getVersion(), new ASN1Integer(Integer.valueOf(version)));
         CommonCriteriaMeasures ccInfo = tbsa.getCcInfo();
         Assertions.assertEquals(ccVersion, ccInfo.getVersion().getString());
-        Assertions.assertEquals(new EvaluationAssuranceLevel(assuranceLevel), ccInfo.getAssuranceLevel());
-        Assertions.assertEquals(new EvaluationStatus(evaluationStatus), ccInfo.getEvaluationStatus());
+        Assertions.assertEquals(EvaluationAssuranceLevel.getInstance(assuranceLevel), ccInfo.getAssuranceLevel());
+        Assertions.assertEquals(EvaluationStatus.getInstance(evaluationStatus), ccInfo.getEvaluationStatus());
         Assertions.assertEquals(Boolean.valueOf(plus).booleanValue(), ccInfo.getPlus().isTrue());
         Assertions.assertEquals(profileOid, ccInfo.getProfileOid().getId());
         Assertions.assertEquals(profileURI, ccInfo.getProfileUri().getUniformResourceIdentifier().getString());
@@ -91,9 +91,9 @@ public class TBBSecurityAssertionsFactoryTest {
         Assertions.assertArrayEquals(targetHash.getBytes(), Base64.encode(ccInfo.getTargetUri().getHashValue().getBytes()));
         FIPSLevel fips = tbsa.getFipsLevel();
         Assertions.assertEquals(fipsVersion, fips.getVersion().getString());
-        Assertions.assertEquals(new SecurityLevel(fipsLevel), fips.getLevel());
+        Assertions.assertEquals(SecurityLevel.getInstance(fipsLevel), fips.getLevel());
         Assertions.assertEquals(Boolean.valueOf(fipsPlus).booleanValue(), fips.getPlus().isTrue());
-        Assertions.assertEquals(new MeasurementRootType(rtmType), tbsa.getRtmType());
+        Assertions.assertEquals(MeasurementRootType.getInstance(rtmType), tbsa.getRtmType());
         Assertions.assertEquals(Boolean.valueOf(iso9000Certified).booleanValue(), tbsa.getIso9000Certified().isTrue());
         Assertions.assertEquals(iso9000URI, tbsa.getIso9000Uri().getString());
     }    

@@ -1,5 +1,10 @@
 package tcg.credential;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Object;
@@ -10,66 +15,70 @@ import org.bouncycastle.asn1.DERSequence;
 /**
  * <pre>
  * -- tcpa tpm specification attribute (deprecated)
- * 
+ *
  * tCPASpecVersion ATTRIBUTE ::= {
  *      WITH SYNTAX TCPASpecVersion
  *      ID tcg-tcpaSpecVersion }
- * 
+ *
  * TCPASpecVersion ::= SEQUENCE {
  *      major INTEGER,
  *      minor INTEGER }
  * </pre>
  */
+@AllArgsConstructor
+@Builder(toBuilder = true)
+@Getter
+@NoArgsConstructor(force = true)
 public class TCPASpecVersion extends ASN1Object {
-	
-	//minimum 2, max 2
-	ASN1Integer major;
-	ASN1Integer minor;
-	
+	private static final int SEQUENCE_SIZE = 2;
+
+	@NonNull
+	private final ASN1Integer major;
+	@NonNull
+	private final ASN1Integer minor;
+
+	/**
+	 * Attempts to cast the provided object.
+	 * If the object is an ASN1Sequence, the object is parsed by fromASN1Sequence.
+	 * @param obj the object to parse
+	 * @return TCPASpecVersion
+	 */
 	public static TCPASpecVersion getInstance(Object obj) {
 		if (obj == null || obj instanceof TCPASpecVersion) {
 			return (TCPASpecVersion) obj;
 		}
-		if (obj instanceof ASN1Sequence) {
-			return new TCPASpecVersion((ASN1Sequence)obj);
+		if (obj instanceof ASN1Sequence seq) {
+			return TCPASpecVersion.fromASN1Sequence(seq);
 		}
 		throw new IllegalArgumentException("Illegal argument in getInstance: " + obj.getClass().getName());
 	}
-	
-	private TCPASpecVersion(ASN1Sequence seq) {
-		if (seq.size() != 3) {
+
+	/**
+	 * Attempts to parse the given ASN1Sequence.
+	 * @param seq An ASN1Sequence
+	 * @return TCPASpecVersion
+	 */
+	public static final TCPASpecVersion fromASN1Sequence(@NonNull ASN1Sequence seq) {
+		if (seq.size() != TCPASpecVersion.SEQUENCE_SIZE) {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}
+
 		ASN1Object[] elements = (ASN1Object[]) seq.toArray();
-		if (elements[0] instanceof ASN1Integer) {
-			major = (ASN1Integer) elements[0];
-		} else {
-			throw new IllegalArgumentException("Expected ASN1Integer, received " + elements[0].getClass().getName());
-		}
-		if (elements[1] instanceof ASN1Integer) {
-			minor = (ASN1Integer) elements[1];
-		} else {
-			throw new IllegalArgumentException("Expected ASN1Integer, received " + elements[0].getClass().getName());
-		}
+
+		TCPASpecVersion.TCPASpecVersionBuilder builder = TCPASpecVersion.builder()
+				.major(ASN1Integer.getInstance(elements[0]))
+				.minor(ASN1Integer.getInstance(elements[1]));
+
+		return builder.build();
 	}
 
-	public TCPASpecVersion(ASN1Integer major, ASN1Integer minor) {
-		this.major = major;
-		this.minor = minor;
-	}
-
+	/**
+	 * @return This object as an ASN1Sequence
+	 */
 	public ASN1Primitive toASN1Primitive() {
 		ASN1EncodableVector vec = new ASN1EncodableVector();
 		vec.add(major);
 		vec.add(minor);
 		return new DERSequence(vec);
-	}
-
-	public ASN1Integer getMajor() {
-		return major;
-	}
-
-	public ASN1Integer getMinor() {
-		return minor;
 	}
 }

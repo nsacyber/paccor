@@ -125,7 +125,7 @@ public class SigningCliTest {
     
     @Test
     public void testPKCS12() throws Exception {
-        try(MockedStatic<CliHelper> mockedStatic = Mockito.mockStatic(CliHelper.class)) {
+        try(MockedStatic<CliHelper> mockedStatic = Mockito.mockStatic(CliHelper.class, Mockito.CALLS_REAL_METHODS)) {
             mockedStatic.when(() -> CliHelper.getPassword(Mockito.anyString())).thenReturn(new KeyStore.PasswordProtection("password".toCharArray()));
 
             String[] args = {"-e", IN_EK, "-c", IN_DEV_JSON, "-p", IN_POL_JSON,
