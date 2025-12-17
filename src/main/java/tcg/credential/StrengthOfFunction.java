@@ -1,7 +1,9 @@
 package tcg.credential;
 
 import java.math.BigInteger;
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.bouncycastle.asn1.ASN1Enumerated;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1Primitive;
@@ -16,6 +18,7 @@ import org.bouncycastle.asn1.ASN1Primitive;
  */
 public class StrengthOfFunction extends ASN1Object {
 	
+    // Case taken from spec
 	public static final int basic = 0;
 	public static final int medium = 1;
 	public static final int high = 2;
@@ -27,8 +30,8 @@ public class StrengthOfFunction extends ASN1Object {
         medium(1),
         high(2);
         
-        private static final Hashtable<Integer, Enumerated> lookup =
-                new Hashtable<Integer, Enumerated>();
+        private static final Map<Integer, Enumerated> lookup =
+			new HashMap<>();
         
         static {
             for(Enumerated e : values()) {
@@ -61,8 +64,8 @@ public class StrengthOfFunction extends ASN1Object {
     }
 	
 	public static StrengthOfFunction getInstance(Object obj) {
-		if (obj instanceof StrengthOfFunction) {
-			return (StrengthOfFunction) obj;
+		if (obj instanceof StrengthOfFunction passThru) {
+			return passThru;
 		}
 		if (obj != null) {
 			return new StrengthOfFunction(ASN1Enumerated.getInstance(obj).getValue().intValue());
@@ -79,9 +82,10 @@ public class StrengthOfFunction extends ASN1Object {
 	}
 	
 	public StrengthOfFunction(Enumerated option) {
-	    value = (option != null) ? new ASN1Enumerated(option.ordinal()) : null;
+	    value = (option != null) ? new ASN1Enumerated(option.getValue()) : null;
 	}
 	
+    @Override
 	public String toString() {
 	    String str = "invalid";
         if (value != null) {
@@ -91,6 +95,7 @@ public class StrengthOfFunction extends ASN1Object {
         return str;
     }
 
+    @Override
 	public ASN1Primitive toASN1Primitive() {
 		return value;
 	}
