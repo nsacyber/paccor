@@ -25,8 +25,8 @@ public class AttributeCertificateIdentifier extends ASN1Object {
         if (obj == null || obj instanceof AttributeCertificateIdentifier) {
             return (AttributeCertificateIdentifier) obj;
         }
-        if (obj instanceof ASN1Sequence) {
-            return new AttributeCertificateIdentifier((ASN1Sequence)obj);
+        if (obj instanceof ASN1Sequence seq) {
+            return new AttributeCertificateIdentifier(seq);
         }
         throw new IllegalArgumentException("Illegal argument in getInstance: " + obj.getClass().getName());
     }
@@ -36,13 +36,13 @@ public class AttributeCertificateIdentifier extends ASN1Object {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
         }
         ASN1Object[] elements = (ASN1Object[]) seq.toArray();
-        if (elements[0] instanceof AlgorithmIdentifier) {
-            hashAlgorithm = (AlgorithmIdentifier) elements[0];
+        if (elements[0] instanceof AlgorithmIdentifier algId) {
+            hashAlgorithm = algId;
         } else {
             throw new IllegalArgumentException("Expected ASN1ObjectIdentifier, received " + elements[0].getClass().getName());
         }
-        if (elements[1] instanceof ASN1OctetString) {
-            hashOverSignatureValue = (ASN1OctetString) elements[1];
+        if (elements[1] instanceof ASN1OctetString octets) {
+            hashOverSignatureValue = octets;
         } else {
             throw new IllegalArgumentException("Expected ASN1OctetString, received " + elements[1].getClass().getName());
         }
@@ -53,6 +53,7 @@ public class AttributeCertificateIdentifier extends ASN1Object {
         this.hashOverSignatureValue = hashOverSignatureValue;
     }
 
+    @Override
     public ASN1Primitive toASN1Primitive() {
         ASN1EncodableVector vec = new ASN1EncodableVector();
         vec.add(hashAlgorithm);
