@@ -11,10 +11,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
+    - name: Create .NET global json file
+      run: |
+        echo '{"sdk": {"version": "8.0.416","rollForward": "latestFeature"}}' > global.json
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 8.0.x
+        ## dotnet-version: 8.0.x   ## Runners defaulting to .NET 10 and this flag is not setting it to 8 as expected. As of 20251217
+        global-json-file: global.json
     - name: Restore dependencies
       working-directory: dotnet/ComponentClassRegistry
       run: dotnet restore
