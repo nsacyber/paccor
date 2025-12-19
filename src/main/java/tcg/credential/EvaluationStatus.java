@@ -1,7 +1,9 @@
 package tcg.credential;
 
 import java.math.BigInteger;
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.bouncycastle.asn1.ASN1Enumerated;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1Primitive;
@@ -23,8 +25,8 @@ public class EvaluationStatus extends ASN1Object {
 	    evaluationInProgress(1),
 	    evaluationCompleted(2);
 	    
-	    private static final Hashtable<Integer, Enumerated> lookup =
-                new Hashtable<Integer, Enumerated>();
+	    private static final Map<Integer, Enumerated> lookup =
+			new HashMap<>();
         
         static {
             for(Enumerated e : values()) {
@@ -57,8 +59,8 @@ public class EvaluationStatus extends ASN1Object {
 	}
 	
 	public static EvaluationStatus getInstance(Object obj) {
-		if (obj instanceof EvaluationStatus) {
-			return (EvaluationStatus) obj;
+		if (obj instanceof EvaluationStatus good) {
+			return good;
 		}
 		if (obj != null) {
 			return new EvaluationStatus(ASN1Enumerated.getInstance(obj).getValue().intValue());
@@ -75,9 +77,10 @@ public class EvaluationStatus extends ASN1Object {
 	}
 	
 	public EvaluationStatus(Enumerated option) {
-	    value = (option != null) ? new ASN1Enumerated(option.ordinal()) : null;
+	    value = (option != null) ? new ASN1Enumerated(option.getValue()) : null;
 	}
 	
+    @Override
 	public String toString() {
 	    String str = "invalid";
         if (value != null) {
@@ -87,6 +90,7 @@ public class EvaluationStatus extends ASN1Object {
         return str;
     }
 
+    @Override
 	public ASN1Primitive toASN1Primitive() {
 		return value;
 	}

@@ -6,6 +6,7 @@ import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.DERTaggedObject;
 import org.bouncycastle.asn1.x509.IssuerSerial;
 
 /**
@@ -67,8 +68,12 @@ public class CertificateIdentifier extends ASN1Object {
 
     public ASN1Primitive toASN1Primitive() {
         ASN1EncodableVector vec = new ASN1EncodableVector();
-        vec.add(attributeCertIdentifier);
-        vec.add(genericCertIdentifier);
+        if (attributeCertIdentifier != null) {
+            vec.add(new DERTaggedObject(false, 0, attributeCertIdentifier));
+        }
+        if (genericCertIdentifier != null) {
+            vec.add(new DERTaggedObject(false, 1, genericCertIdentifier));
+        }
         return new DERSequence(vec);
     }
 

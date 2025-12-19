@@ -29,8 +29,8 @@ public class SecurityQualities extends ASN1Object {
 		if (obj == null || obj instanceof SecurityQualities) {
 			return (SecurityQualities) obj;
 		}
-		if (obj instanceof ASN1Sequence) {
-			return new SecurityQualities((ASN1Sequence)obj);
+		if (obj instanceof ASN1Sequence seq) {
+			return new SecurityQualities(seq);
 		}
 		throw new IllegalArgumentException("Illegal argument in getInstance: " + obj.getClass().getName());
 	}
@@ -41,13 +41,13 @@ public class SecurityQualities extends ASN1Object {
 		}
 		
 		ASN1Object[] elements = (ASN1Object[]) seq.toArray();
-		if (elements[0] instanceof ASN1Integer) {
-			version = (ASN1Integer) elements[0];
+		if (elements[0] instanceof ASN1Integer num) {
+			version = num;
 		} else {
 			throw new IllegalArgumentException("Array object not instance of ASN1Integer: " + elements[0].getClass().getName());
 		}
-		if (elements[1] instanceof DERUTF8String) {
-			statement = (DERUTF8String) elements[1];
+		if (elements[1] instanceof DERUTF8String str) {
+			statement = str;
 		} else {
 			throw new IllegalArgumentException("Array object not instance of DERUTF8String: " + elements[1].getClass().getName());
 		}
@@ -57,8 +57,8 @@ public class SecurityQualities extends ASN1Object {
 		this.version = version;
 		this.statement = statement;
 	}
-		
 
+	@Override
 	public ASN1Primitive toASN1Primitive() {
 		ASN1EncodableVector vec = new ASN1EncodableVector();
 		vec.add(version);

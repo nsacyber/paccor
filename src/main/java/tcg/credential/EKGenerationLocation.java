@@ -1,12 +1,12 @@
 package tcg.credential;
 
 import java.math.BigInteger;
-import java.util.Hashtable;
-import tcg.credential.EKGenerationType.Enumerated;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.bouncycastle.asn1.ASN1Enumerated;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.util.Integers;
 
 /**
  * <pre>
@@ -25,8 +25,8 @@ public class EKGenerationLocation extends ASN1Object {
 	    platformManufacturer(1),
 	    ekCertSigner(2);
 	    
-	    private static final Hashtable<Integer, Enumerated> lookup =
-                new Hashtable<Integer, Enumerated>();
+	    private static final Map<Integer, Enumerated> lookup =
+			new HashMap<>();
         
         static {
             for(Enumerated e : values()) {
@@ -50,8 +50,8 @@ public class EKGenerationLocation extends ASN1Object {
 	}
 	
 	public static EKGenerationLocation getInstance(Object obj) {
-		if (obj instanceof EKGenerationLocation) {
-			return (EKGenerationLocation) obj;
+		if (obj instanceof EKGenerationLocation good) {
+			return good;
 		}
 		if (obj != null) {
 			return new EKGenerationLocation(ASN1Enumerated.getInstance(obj).getValue().intValue());
@@ -67,6 +67,7 @@ public class EKGenerationLocation extends ASN1Object {
 	    value = (option != null) ? new ASN1Enumerated(option.ordinal()) : null;
 	}
 	
+	@Override
 	public String toString() {
 	    String str = "invalid";
         if (value != null) {
@@ -76,6 +77,7 @@ public class EKGenerationLocation extends ASN1Object {
         return str;
     }
 
+	@Override
 	public ASN1Primitive toASN1Primitive() {
 		return value;
 	}

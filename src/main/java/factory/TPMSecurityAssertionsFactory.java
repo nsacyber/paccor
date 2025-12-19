@@ -3,12 +3,12 @@ package factory;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.DERIA5String;
+
 import tcg.credential.CommonCriteriaMeasures;
 import tcg.credential.EKCertificateGenerationLocation;
 import tcg.credential.EKGenerationLocation;
 import tcg.credential.EKGenerationType;
 import tcg.credential.FIPSLevel;
-import tcg.credential.TBBSecurityAssertions;
 import tcg.credential.TPMSecurityAssertions;
 
 /**

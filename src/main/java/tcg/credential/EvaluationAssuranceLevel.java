@@ -1,7 +1,9 @@
 package tcg.credential;
 
 import java.math.BigInteger;
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.bouncycastle.asn1.ASN1Enumerated;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1Primitive;
@@ -31,8 +33,8 @@ public class EvaluationAssuranceLevel extends ASN1Object {
 	    level6(6),
 	    level7(7);
 	    
-	    private static final Hashtable<Integer, Enumerated> lookup =
-                new Hashtable<Integer, Enumerated>();
+	    private static final Map<Integer, Enumerated> lookup =
+			new HashMap<>();
         
         static {
             for(Enumerated e : values()) {
@@ -56,7 +58,7 @@ public class EvaluationAssuranceLevel extends ASN1Object {
         
         public static final Enumerated lookup(String value) {
             if (value.matches("-?\\d+")) {
-                return lookup(Integer.valueOf(value));
+                return lookup(Integer.parseInt(value));
             }
             
             for (Enumerated opt : lookup.values()) {
@@ -69,8 +71,8 @@ public class EvaluationAssuranceLevel extends ASN1Object {
 	}
 	
 	public static EvaluationAssuranceLevel getInstance(Object obj) {
-		if (obj instanceof EvaluationAssuranceLevel) {
-			return (EvaluationAssuranceLevel) obj;
+		if (obj instanceof EvaluationAssuranceLevel good) {
+			return good;
 		}
 		if (obj != null) {
 			return new EvaluationAssuranceLevel(ASN1Enumerated.getInstance(obj).getValue().intValue());
@@ -90,6 +92,7 @@ public class EvaluationAssuranceLevel extends ASN1Object {
 	    value = (option != null) ? new ASN1Enumerated(option.getValue()) : null;
 	}
 	
+    @Override
 	public String toString() {
 	    String str = "invalid";
         if (value != null) {
@@ -99,6 +102,7 @@ public class EvaluationAssuranceLevel extends ASN1Object {
         return str;
     }
 
+    @Override
 	public ASN1Primitive toASN1Primitive() {
 		return value;
 	}

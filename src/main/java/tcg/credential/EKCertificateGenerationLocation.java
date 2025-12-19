@@ -1,7 +1,9 @@
 package tcg.credential;
 
 import java.math.BigInteger;
-import java.util.Hashtable;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.bouncycastle.asn1.ASN1Enumerated;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1Primitive;
@@ -23,8 +25,8 @@ public class EKCertificateGenerationLocation extends ASN1Object {
 	    platformManufacturer(1),
 	    ekCertSigner(2);
 	    
-	    private static final Hashtable<Integer, Enumerated> lookup =
-                new Hashtable<Integer, Enumerated>();
+		private static final Map<Integer, Enumerated> lookup =
+			new HashMap<>();
         
         static {
             for(Enumerated e : values()) {
@@ -48,8 +50,8 @@ public class EKCertificateGenerationLocation extends ASN1Object {
 	}
 	
 	public static EKCertificateGenerationLocation getInstance(Object obj) {
-		if (obj instanceof EKCertificateGenerationLocation) {
-			return (EKCertificateGenerationLocation) obj;
+		if (obj instanceof EKCertificateGenerationLocation good) {
+			return good;
 		}
 		if (obj != null) {
 			return new EKCertificateGenerationLocation(ASN1Enumerated.getInstance(obj).getValue().intValue());
@@ -62,9 +64,10 @@ public class EKCertificateGenerationLocation extends ASN1Object {
 	}
 	
 	public EKCertificateGenerationLocation(Enumerated option) {
-	    value = (option != null) ? new ASN1Enumerated(option.ordinal()) : null;
+	    value = (option != null) ? new ASN1Enumerated(option.getValue()) : null;
 	}
 
+        @Override
 	public String toString() {
 	    String str = "invalid";
         if (value != null) {
@@ -74,6 +77,7 @@ public class EKCertificateGenerationLocation extends ASN1Object {
         return str;
     }
 
+	@Override
 	public ASN1Primitive toASN1Primitive() {
 		return value;
 	}

@@ -78,7 +78,7 @@ public class AttributeStatus extends ASN1Object {
     }
     
     public AttributeStatus(Enumerated option) {
-        value = (option != null) ? new ASN1Enumerated(option.ordinal()) : null;
+        value = (option != null) ? new ASN1Enumerated(option.getValue()) : null;
     }
     
     public String toString() {

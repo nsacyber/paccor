@@ -1,17 +1,23 @@
 package factory;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERUTF8String;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import tcg.credential.TCGObjectIdentifier;
 
 /**
@@ -35,7 +41,7 @@ public class SubjectAlternativeNameFactory {
         PLATFORMSERIAL(TCGObjectIdentifier.tcgAtPlatformSerial),
         PLATFORMMANUFACTURERID(TCGObjectIdentifier.tcgAtPlatformManufacturerId);
         
-        private ASN1ObjectIdentifier oid;
+        private final ASN1ObjectIdentifier oid;
         
         private ElementJson(final ASN1ObjectIdentifier oid) {
             this.oid = oid;
@@ -47,10 +53,10 @@ public class SubjectAlternativeNameFactory {
     }
     
     private GeneralNames san;
-    private Vector<RDN> names;
+    private final List<RDN> names;
     
     private SubjectAlternativeNameFactory() {
-        names = new Vector<RDN>();
+        names = new ArrayList<>();
         san = null;
     }
     
@@ -77,6 +83,19 @@ public class SubjectAlternativeNameFactory {
     /**
      * Add another descriptor.
      * @param oid {@link ASN1ObjectIdentifier}
+     * @param name {@link ASN1Sequence}
+     * @return The SubjectAlternativeNameFactory object with an RDN added.
+     */
+    public final SubjectAlternativeNameFactory addRDN(final ASN1ObjectIdentifier oid, final ASN1Sequence name) {
+        if (oid != null && name != null) {
+            addRDN(new RDN(oid, name));
+        }
+        return this;
+    }
+    
+    /**
+     * Add another descriptor.
+     * @param oid {@link ASN1ObjectIdentifier}
      * @param name {@link DERUTF8String}
      * @return The SubjectAlternativeNameFactory object with an RDN added.
      */
@@ -92,7 +111,7 @@ public class SubjectAlternativeNameFactory {
      * @return {@link GeneralNames}
      */
     public final GeneralNames build() {
-        X500Name name = new X500Name(names.toArray(new RDN[names.size()]));
+        X500Name name = new X500Name(names.toArray(RDN[]::new));
         GeneralName gn = new GeneralName(name);
         san = new GeneralNames(gn);
         return san;
@@ -141,7 +160,7 @@ public class SubjectAlternativeNameFactory {
                 addRDN(ElementJson.PLATFORMSERIAL.getOid(), new DERUTF8String(platformSerialNode.asText()));
             }
             if (platformManufacturerIdNode != null) {
-                addRDN(new RDN(ElementJson.PLATFORMMANUFACTURERID.getOid(), new ASN1ObjectIdentifier(platformManufacturerIdNode.asText())));
+                addRDN(ElementJson.PLATFORMMANUFACTURERID.getOid(), new DERSequence(new ASN1ObjectIdentifier(platformManufacturerIdNode.asText())));
             }
         }
         
