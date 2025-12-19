@@ -95,10 +95,9 @@ public class Pcie {
 
             // Read bytes from these files. If there's no config header, don't collect vpd.
             if (File.Exists(configFile)) {
-                FileInfo configFileInfo = new(configFile);
-                configBytes = File.ReadAllBytes(configFile);
+                configBytes = CatReadAllBytes(configFile);
                 if (File.Exists(vpdFile)) {
-                    vpdBytes = File.ReadAllBytes(vpdFile);
+                    vpdBytes = CatReadAllBytes(vpdFile);
                 }
             }
 
@@ -170,5 +169,21 @@ public class Pcie {
     }
     private static async Task<Tuple<int, string, string>> PowershellMAC(string interfaceId) {
         return await ShellHelper.Powershell("Get-NetAdapter | where PNPDeviceID -eq '" + interfaceId + "' | select MacAddress -ExpandProperty MacAddress");
+    }
+
+    public static byte[] CatReadAllBytes(string path) {
+        // Standard ReadAllBytes uses FileShare.Read that can block access to the file during read
+        // This can cause a race condition when the kernel attempts to update the system files I'm wanting to read.
+        // FileShare.ReadWrite | FileShare.Delete should allow full concurrent access
+        using FileStream fs = new(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        
+        byte[] buffer = new byte[fs.Length];
+        int bytesRead = fs.Read(buffer, 0, buffer.Length);
+
+        // If the file shrank during the read, resize the array
+        if (bytesRead < buffer.Length) {
+            Array.Resize(ref buffer, bytesRead);
+        }
+        return buffer;
     }
 }
