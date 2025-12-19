@@ -2,12 +2,11 @@
 # Gather descriptors for NVMe devices  
 nvmeParse () {
     str=$(nvme list -o json -v)
-    count=$(echo "$str" | jq '.Devices | length')
+    controllers=$(echo "$str" | jq -r '.Devices[].Subsystems[].Controllers[].Controller')
     nvmeDevices=()
 
-    for ((i = 0 ; i < count ; i++ )); do
-        elementJson=$(echo "$str" | jq -r .Devices["$i"].Subsystems[0].Controllers[0].Controller)
-        elementJson="/dev/$elementJson"
+    for path in $controllers; do
+        elementJson="/dev/$path"
         nvmeDevices+=("$elementJson") 
     done
 }
