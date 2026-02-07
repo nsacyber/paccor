@@ -82,7 +82,7 @@ public class OtherExtensionsJsonHelper {
                             final JsonNode methodNode = elementNode.get(ElementJson.ACCESSMETHOD.name());
                             final JsonNode locationNode = elementNode.get(ElementJson.ACCESSLOCATION.name());
                             
-                            aiaf.addElement(MethodJson.valueOf(methodNode.asText()), new GeneralName(new X500Name(locationNode.asText())));
+                            aiaf.addElement(MethodJson.valueOf(methodNode.asText()), parseGeneralName(locationNode.asText()));
                         }
                     }
                 }
@@ -115,10 +115,10 @@ public class OtherExtensionsJsonHelper {
                         final JsonNode typeNode = distNameNode.get(CrlJson.TYPE.name());
                         final JsonNode nameNode = distNameNode.get(CrlJson.NAME.name());
                         
-                        dpn = new DistributionPointName(typeNode.asInt(), new GeneralNames(new GeneralName(new X500Name(nameNode.asText()))));
+                        dpn = new DistributionPointName(typeNode.asInt(), new GeneralNames(parseGeneralName(nameNode.asText())));
                     }
                     
-                    cdf = new CRLDistPoint(new DistributionPoint[]{new DistributionPoint(dpn, new ReasonFlags(reasonNode.asInt()), new GeneralNames(new GeneralName(new X500Name(issuerNode.asText()))))});
+                    cdf = new CRLDistPoint(new DistributionPoint[]{new DistributionPoint(dpn, new ReasonFlags(reasonNode.asInt()), new GeneralNames(parseGeneralName(issuerNode.asText())))});
                 }
             }
         } catch (IOException e) {
@@ -126,6 +126,16 @@ public class OtherExtensionsJsonHelper {
         }
             
         return cdf;
+    }
+
+    private static GeneralName parseGeneralName(final String value) {
+        final String trimmed = value == null ? "" : value.trim();
+        final String lower = trimmed.toLowerCase();
+        if (lower.startsWith("http://") || lower.startsWith("https://")
+                || lower.startsWith("ldap://") || lower.startsWith("ldaps://")) {
+            return new GeneralName(GeneralName.uniformResourceIdentifier, trimmed);
+        }
+        return new GeneralName(new X500Name(trimmed));
     }
     
     public static final TargetingInformationFactory ekTargetsFromJsonFile(final String filename) {
