@@ -114,11 +114,17 @@ public class OtherExtensionsJsonHelper {
                     if (distNameNode.has(CrlJson.TYPE.name()) && distNameNode.has(CrlJson.NAME.name())) {
                         final JsonNode typeNode = distNameNode.get(CrlJson.TYPE.name());
                         final JsonNode nameNode = distNameNode.get(CrlJson.NAME.name());
-                        
-                        dpn = new DistributionPointName(typeNode.asInt(), new GeneralNames(parseGeneralName(nameNode.asText())));
+
+                        // TYPE=0 (fullName): URI or DN; TYPE=1 (nameRelativeToCRLIssuer): always RDN
+                        if (typeNode.asInt() == 0) {
+                            dpn = new DistributionPointName(0, new GeneralNames(parseGeneralName(nameNode.asText())));
+                        } else {
+                            dpn = new DistributionPointName(typeNode.asInt(), new GeneralNames(new GeneralName(new X500Name(nameNode.asText()))));
+                        }
                     }
-                    
-                    cdf = new CRLDistPoint(new DistributionPoint[]{new DistributionPoint(dpn, new ReasonFlags(reasonNode.asInt()), new GeneralNames(parseGeneralName(issuerNode.asText())))});
+
+                    // crlIssuer is always a directoryName per RFC 5280 §4.2.1.13
+                    cdf = new CRLDistPoint(new DistributionPoint[]{new DistributionPoint(dpn, new ReasonFlags(reasonNode.asInt()), new GeneralNames(new GeneralName(new X500Name(issuerNode.asText()))))});
                 }
             }
         } catch (IOException e) {
