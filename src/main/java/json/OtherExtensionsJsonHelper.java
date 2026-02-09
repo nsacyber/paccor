@@ -82,7 +82,7 @@ public class OtherExtensionsJsonHelper {
                             final JsonNode methodNode = elementNode.get(ElementJson.ACCESSMETHOD.name());
                             final JsonNode locationNode = elementNode.get(ElementJson.ACCESSLOCATION.name());
                             
-                            aiaf.addElement(MethodJson.valueOf(methodNode.asText()), new GeneralName(new X500Name(locationNode.asText())));
+                            aiaf.addElement(MethodJson.valueOf(methodNode.asText()), parseGeneralName(locationNode.asText()));
                         }
                     }
                 }
@@ -114,10 +114,16 @@ public class OtherExtensionsJsonHelper {
                     if (distNameNode.has(CrlJson.TYPE.name()) && distNameNode.has(CrlJson.NAME.name())) {
                         final JsonNode typeNode = distNameNode.get(CrlJson.TYPE.name());
                         final JsonNode nameNode = distNameNode.get(CrlJson.NAME.name());
-                        
-                        dpn = new DistributionPointName(typeNode.asInt(), new GeneralNames(new GeneralName(new X500Name(nameNode.asText()))));
+
+                        // TYPE=0 (fullName): URI or DN; TYPE=1 (nameRelativeToCRLIssuer): always RDN
+                        if (typeNode.asInt() == 0) {
+                            dpn = new DistributionPointName(0, new GeneralNames(parseGeneralName(nameNode.asText())));
+                        } else {
+                            dpn = new DistributionPointName(typeNode.asInt(), new GeneralNames(new GeneralName(new X500Name(nameNode.asText()))));
+                        }
                     }
-                    
+
+                    // crlIssuer is always a directoryName per RFC 5280 §4.2.1.13
                     cdf = new CRLDistPoint(new DistributionPoint[]{new DistributionPoint(dpn, new ReasonFlags(reasonNode.asInt()), new GeneralNames(new GeneralName(new X500Name(issuerNode.asText()))))});
                 }
             }
@@ -126,6 +132,16 @@ public class OtherExtensionsJsonHelper {
         }
             
         return cdf;
+    }
+
+    private static GeneralName parseGeneralName(final String value) {
+        final String trimmed = value == null ? "" : value.trim();
+        final String lower = trimmed.toLowerCase();
+        if (lower.startsWith("http://") || lower.startsWith("https://")
+                || lower.startsWith("ldap://") || lower.startsWith("ldaps://")) {
+            return new GeneralName(GeneralName.uniformResourceIdentifier, trimmed);
+        }
+        return new GeneralName(new X500Name(trimmed));
     }
     
     public static final TargetingInformationFactory ekTargetsFromJsonFile(final String filename) {
