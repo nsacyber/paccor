@@ -37,7 +37,8 @@ public class OtherExtensionsJsonHelper {
         TYPE,
         NAME,
         REASON,
-        ISSUER;
+        ISSUER,
+        CRLURI;
     }
     
     public enum TargetInformationJson {
@@ -111,15 +112,20 @@ public class OtherExtensionsJsonHelper {
                     final JsonNode issuerNode = crlNode.get(CrlJson.ISSUER.name());
                     
                     DistributionPointName dpn = null;
-                    if (distNameNode.has(CrlJson.TYPE.name()) && distNameNode.has(CrlJson.NAME.name())) {
+                    String nameNodeText = null;
+                    if (distNameNode.has(CrlJson.NAME.name())) {
+                        nameNodeText = distNameNode.get(CrlJson.NAME.name()).asText();
+                    } else if (distNameNode.has(CrlJson.CRLURI.name())) {
+                        nameNodeText = distNameNode.get(CrlJson.CRLURI.name()).asText();
+                    }
+                    if (distNameNode.has(CrlJson.TYPE.name()) && nameNodeText != null) {
                         final JsonNode typeNode = distNameNode.get(CrlJson.TYPE.name());
-                        final JsonNode nameNode = distNameNode.get(CrlJson.NAME.name());
 
                         // TYPE=0 (fullName): URI or DN; TYPE=1 (nameRelativeToCRLIssuer): always RDN
                         if (typeNode.asInt() == 0) {
-                            dpn = new DistributionPointName(0, new GeneralNames(parseGeneralName(nameNode.asText())));
+                            dpn = new DistributionPointName(0, new GeneralNames(parseGeneralName(nameNodeText)));
                         } else {
-                            dpn = new DistributionPointName(typeNode.asInt(), new GeneralNames(new GeneralName(new X500Name(nameNode.asText()))));
+                            dpn = new DistributionPointName(typeNode.asInt(), new GeneralNames(new GeneralName(new X500Name(nameNodeText))));
                         }
                     }
 
