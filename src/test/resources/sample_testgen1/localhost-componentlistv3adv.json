@@ -1,0 +1,31 @@
+{
+    
+    "PLATFORM": {
+        "PLATFORMMANUFACTURERSTR": "Dell Inc.","PLATFORMMODEL": "Latitude 5510","PLATFORMVERSION": "Not Specified","PLATFORMSERIAL": "DQXH253"
+    },
+    "COMPONENTS": [
+    [
+    	{
+    	 "traitId": "2.23.133.19.1.5", "traitCategory": "2.23.133.19.2.26", "traitRegistry": "2.23.133.19.3.1", "description": "SMBIOS-based Component Class Registry", "descriptionURI": "https://trustedcomputinggroup.org/wp-content/uploads/SMBIOS-Component-Class-Registry_v1.01_finalpublication.pdf", "traitValue": { "componentClass": { "componentClassRegistry": "2.23.133.18.3.3", "componentClassValue": { "base64": "AACDDw==" } }, "componentManufacturer": "Dell Inc.", "componentModel": "1.2.16", "componentRevision": "0102" }
+    	 }
+    ],
+    
+     [{ "traitId": "2.23.133.19.1.5", "traitCategory": "2.23.133.19.2.26", "traitRegistry": "2.23.133.19.3.1", "description": "SMBIOS-based Component Class Registry", "descriptionURI": "https://trustedcomputinggroup.org/wp-content/uploads/SMBIOS-Component-Class-Registry_v1.01_finalpublication.pdf", "traitValue": { "componentClass": { "componentClassRegistry": "2.23.133.18.3.3", "componentClassValue": { "base64": "AAEAAA==" } }, "componentManufacturer": "Dell Inc.", "componentModel": "Latitude 5510", "componentSerial": "DQXH253" } } ],
+     
+     [{ "traitId": "2.23.133.19.1.5", "traitCategory": "2.23.133.19.2.26", "traitRegistry": "2.23.133.19.3.1", "description": "PCIe-based Component Class Registry", "descriptionURI": "https://trustedcomputinggroup.org/wp-content/uploads/TCG_PCIe_Component_Class_Registry_v1_r18_pub10272021.pdf", "traitValue": { "COMPONENTCLASS": { "COMPONENTCLASSREGISTRY": "2.23.133.18.3.4", "COMPONENTCLASSVALUE": "00020000" }, "MANUFACTURER": "8086:1028:", "MODEL": "0D4E:09A1:", "REVISION": "00", "ADDRESSES": [ { "ETHERNETMAC": "CC483A4BEB00" } ] } }],
+     
+     [{ "traitId": "2.23.133.19.1.4", "traitCategory": "2.23.133.19.2.7", "traitRegistry": "2.23.133.18.3.5", "description": "Storage Component Class Registry", "descriptionURI": "https://trustedcomputinggroup.org/wp-content/uploads/Storage-Component-Class-Registry-Version-1.0-Revision-22_pub.pdf", "traitValue": { "base64": "AgEIAg==" } },{ "traitId": "2.23.133.19.1.18", "traitCategory": "2.23.133.19.2.8", "traitRegistry": "2.23.133.18.3.5", "traitValue": "1179:1179:8CE38E" }, { "traitId": "2.23.133.19.1.18", "traitCategory": "2.23.133.19.2.9", "traitRegistry": "2.23.133.18.3.5", "traitValue": "KXG6AZNV512G NVMe SED KIOXIA 512GB" }, { "traitId": "2.23.133.19.1.18", "traitCategory": "2.23.133.19.2.10", "traitRegistry": "2.23.133.18.3.5", "traitValue": "00000000000000000000000000000000:30OF304WF7SL:nqn.2017-03.jp.co.toshiba:KXG6AZNV512G NVMe SED KIOXIA 512GB:30OF304WF7SL" }, { "traitId": "2.23.133.19.1.18", "traitCategory": "2.23.133.19.2.13", "traitRegistry": "2.23.133.18.3.5", "traitValue": "00010300:10605105" }]
+     
+    ],
+    "PROPERTIES": [
+        {
+            "PROPERTYNAME": "uname -r",
+            "PROPERTYVALUE": "5.14.0-570.39.1.el9_6.x86_64"
+        },
+        {
+            "PROPERTYNAME": "OS Release",
+            "PROPERTYVALUE": "Rocky Linux 9.6 (Blue Onyx)"
+        }
+    ]
+}
+

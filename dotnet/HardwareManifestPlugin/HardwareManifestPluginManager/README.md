@@ -1,8 +1,10 @@
-paccor is a popular solution for creating the TCG Platform Certificate. The platform certificate enables traceability in the hardware supply chain of a computing device.
+# HardwareManifestPluginManager
 
+[paccor](https://github.com/nsacyber/paccor) is a solution for creating the TCG Platform Certificate. The platform certificate enables traceability in the hardware supply chain of a computing device.
 
-This HardwareManifestPluginManager is an experimental feature that is intended to allow multiple clients to utilize Hardware Manifest plugins. The [IHardwareManifestPlugin interface](https://www.nuget.org/packages/paccor.HardwareManifestPlugin), available on nuget.org, defines the interface used by the Provisioner to collect hardware evidence.
+## Overview
+[HardwareManifestPluginManager](https://github.com/nsacyber/paccor/tree/main/dotnet/HardwareManifestPlugin/HardwareManifestPluginManager) is intended to allow a program to utilize independent hardware evidence collectors via Hardware Manifest plugins. The [IHardwareManifestPlugin interface](https://www.nuget.org/packages/paccor.HardwareManifestPlugin) defines the interface used by the Provisioner to discover plugins.
 
-
-See the [HIRS .NET Provisioner](https://github.com/nsacyber/hirs/) code on github for an example implementation.
-
+## Related repositories
+- [HIRS .NET Provisioner](https://github.com/nsacyber/hirs/)
+- [paccor](https://github.com/nsacyber/paccor)

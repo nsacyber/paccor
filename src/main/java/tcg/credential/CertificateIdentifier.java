@@ -1,5 +1,19 @@
 package tcg.credential;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonClassDescription;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.ToString;
+import lombok.extern.jackson.Jacksonized;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1Primitive;
@@ -7,81 +21,127 @@ import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERTaggedObject;
+import org.bouncycastle.asn1.x509.AttCertIssuer;
+import org.bouncycastle.asn1.x509.AttributeCertificate;
+import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.asn1.x509.IssuerSerial;
+import org.bouncycastle.asn1.x509.V2Form;
+import org.bouncycastle.cert.X509AttributeCertificateHolder;
+import org.bouncycastle.cert.X509CertificateHolder;
+import json.schema.ComponentSchema;
 
 /**
- * <pre>
+ * <pre>{@code
  * CertificateIdentifier ::= SEQUENCE {
- *      attributeCertIdentifier [0] IMPLICIT AttributeCertificateIdentifier OPTIONAL,
+ *      hashedCertIdentifier [0] IMPLICIT HashedCertificateIdentifier OPTIONAL,
  *      genericCertIdentifier [1] IMPLICIT IssuerSerial OPTIONAL }
- * </pre>
+ * }</pre>
  */
+@AllArgsConstructor
+@Builder(toBuilder = true)
+@EqualsAndHashCode(callSuper = false)
+@Getter
+@Jacksonized
+@JsonClassDescription("Certificate identifier containing either a hashed certificate reference, an issuer/serial reference, or both.")
+@JsonFormat(with = JsonFormat.Feature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
+@JsonIgnoreProperties(ignoreUnknown = true)
+@NoArgsConstructor(force = true)
+@ToString
 public class CertificateIdentifier extends ASN1Object {
-    
-    // minimum 0, maximum 2
-    AttributeCertificateIdentifier attributeCertIdentifier = null; // optional, tagged 0
-    IssuerSerial genericCertIdentifier = null; // optional, tagged 1
-    
+    private static final int MIN_SEQUENCE_SIZE = 0;
+    private static final int MAX_SEQUENCE_SIZE = 2;
+
+    @JsonProperty(ComponentSchema.HASHED_CERT_IDENTIFIER)
+    @JsonAlias(ComponentSchema.ATTRIBUTE_CERT_IDENTIFIER)
+    @JsonPropertyDescription("Hashed certificate identifier form.")
+    private final HashedCertificateIdentifier hashedCertIdentifier; // optional, tagged 0
+    @JsonProperty(ComponentSchema.GENERIC_CERT_IDENTIFIER)
+    @JsonPropertyDescription("Issuer/serial form of certificate identification.")
+    private final IssuerSerial genericCertIdentifier; // optional, tagged 1
+
+    /**
+     * Attempts to cast the provided object to CertificateIdentifier.
+     * If the object is an ASN1Sequence, the object is parsed by fromASN1Sequence.
+     * @param obj the object to parse
+     * @return CertificateIdentifier
+     */
     public static CertificateIdentifier getInstance(Object obj) {
-        if (obj == null || obj instanceof ComponentClass) {
+        if (obj == null || obj instanceof CertificateIdentifier) {
             return (CertificateIdentifier) obj;
         }
-        if (obj instanceof ASN1Sequence) {
-            return new CertificateIdentifier((ASN1Sequence)obj);
+        if (obj instanceof ASN1Sequence || obj instanceof ASN1TaggedObject) {
+            return CertificateIdentifier.fromASN1Sequence(ASN1Utils.getSequence(obj));
         }
         throw new IllegalArgumentException("Illegal argument in getInstance: " + obj.getClass().getName());
     }
-    
-    private CertificateIdentifier(ASN1Sequence seq) {
-        if (seq.size() > 2) {
+
+    /**
+     * Attempts to read a CertificateIdentifier sequence from the given ASN1Sequence.
+     * @param seq An ASN1Sequence
+     * @return CertificateIdentifier
+     */
+    public static CertificateIdentifier fromASN1Sequence(@NonNull ASN1Sequence seq) {
+        if (seq.size() < CertificateIdentifier.MIN_SEQUENCE_SIZE) {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
         }
-        ASN1Object[] elements = (ASN1Object[]) seq.toArray();
-        int pos = 0;
-        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 0)) {
-            ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
-            if (elementObject instanceof AttributeCertificateIdentifier aci) {
-                attributeCertIdentifier = aci;
-            } else {
-                throw new IllegalArgumentException("Expected AttributeCertificateIdentifier object, but received " + elements[pos].getClass().getName());
+
+        CertificateIdentifier.CertificateIdentifierBuilder builder = CertificateIdentifier.builder();
+
+        ASN1Utils.parseTaggedElements(seq).forEach((key, value) -> {
+            switch (key) {
+                case 0 -> builder.hashedCertIdentifier(HashedCertificateIdentifier.getInstance(value));
+                case 1 -> builder.genericCertIdentifier(IssuerSerial.getInstance(ASN1Utils.getSequence(value)));
+                default -> {}
             }
-            pos++;
-        }
-        if (((elements.length - pos) > 0) && (elements[pos] instanceof ASN1TaggedObject taggedElement) && (taggedElement.getTagNo() == 1)) {
-            ASN1Object elementObject = taggedElement.getBaseUniversal(taggedElement.isExplicit(), taggedElement.getTagNo());
-            if (elementObject instanceof IssuerSerial is) {
-                genericCertIdentifier = is;
-            } else {
-                throw new IllegalArgumentException("Expected IssuerSerial object, but received " + elements[pos].getClass().getName());
-            }
-            pos++;
-        }
-        if ((elements.length - pos) > 0) {
-            throw new IllegalArgumentException("Too many elements in CertificateIdentifier");
-        }
+        });
+
+        return builder.build();
     }
 
-    public CertificateIdentifier(AttributeCertificateIdentifier attributeCertIdentifier, IssuerSerial genericCertIdentifier) {
-        this.attributeCertIdentifier = attributeCertIdentifier;
-        this.genericCertIdentifier = genericCertIdentifier;
+    /**
+     * Create a CertificateIdentifier from an X509AttributeCertificateHolder.
+     * @param ac X509AttributeCertificateHolder
+     * @return CertificateIdentifier
+     */
+    public static final CertificateIdentifier fromAC(X509AttributeCertificateHolder ac) {
+        AttributeCertificate structure = ac.toASN1Structure();
+        AttCertIssuer issuer = structure.getAcinfo().getIssuer();
+        GeneralNames issuerNames;
+        try {
+            issuerNames = ((V2Form)issuer.getIssuer()).getIssuerName();
+        } catch (Exception e) {
+            issuerNames = GeneralNames.getInstance(issuer.getIssuer());
+        }
+
+        return CertificateIdentifier.builder()
+                .hashedCertIdentifier(HashedCertificateIdentifier.fromAC(ac))
+                .genericCertIdentifier(new IssuerSerial(issuerNames, ac.getSerialNumber()))
+                .build();
     }
 
+    /**
+     * Create a CertificateIdentifier from an X509CertificateHolder.
+     * @param pkc X509CertificateHolder
+     * @return CertificateIdentifier
+     */
+    public static final CertificateIdentifier fromPKC(X509CertificateHolder pkc) {
+        return CertificateIdentifier.builder()
+                .hashedCertIdentifier(HashedCertificateIdentifier.fromPKC(pkc))
+                .genericCertIdentifier(new IssuerSerial(pkc.getIssuer(), pkc.getSerialNumber()))
+                .build();
+    }
+
+    /**
+     * @return this object as an ASN1Sequence
+     */
     public ASN1Primitive toASN1Primitive() {
         ASN1EncodableVector vec = new ASN1EncodableVector();
-        if (attributeCertIdentifier != null) {
-            vec.add(new DERTaggedObject(false, 0, attributeCertIdentifier));
+        if (hashedCertIdentifier != null) {
+            vec.add(new DERTaggedObject(false, 0, hashedCertIdentifier));
         }
         if (genericCertIdentifier != null) {
             vec.add(new DERTaggedObject(false, 1, genericCertIdentifier));
         }
         return new DERSequence(vec);
-    }
-
-    public AttributeCertificateIdentifier getAttributeCertIdentifier() {
-        return attributeCertIdentifier;
-    }
-
-    public IssuerSerial getGenericCertIdentifier() {
-        return genericCertIdentifier;
     }
 }

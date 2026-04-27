@@ -28,7 +28,6 @@ public sealed class PcieHardwareManifestPlugin : HardwareManifestPluginBase {
         }
 
         AddComponentsToManifestV2(pcie.Devices, ManifestV2);
-        ManifestV3 = HardwareManifestConverter.FromManifestV2(ManifestV2, TraitDescription, TraitDescriptionUri);
 
         result = pcie.Valid;
 
@@ -36,7 +35,7 @@ public sealed class PcieHardwareManifestPlugin : HardwareManifestPluginBase {
     }
 
     public static void AddComponentsToManifestV2(IDictionary<int, IList<PcieDevice>> devices, ManifestV2 manifest) {
-        string pcieRegistryOid = OidsUtils.Find(TCG_REGISTRY_COMPONENTCLASS_NODE.TcgRegistryComponentclassPcie).Oid;
+        string pcieRegistryOid = OidsUtils.Find(TCG_REGISTRY_COMPONENTCLASS_NODE.TcgRegistryComponentclassPcie);
 
         foreach (int type in devices.Keys) {
             foreach (PcieDevice device in devices[type]) {

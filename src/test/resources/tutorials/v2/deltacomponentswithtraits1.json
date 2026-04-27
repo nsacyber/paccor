@@ -1,0 +1,106 @@
+{
+  "PLATFORM": {
+    "TRAITS": [
+      {
+        "traitCategory": "2.23.133.19.2.1",
+        "traitRegistry": "2.23.133.18.3.3",
+        "utf8": "ASUSTeK COMPUTER INC."
+      },
+      {
+        "traitCategory": "2.23.133.19.2.2",
+        "traitRegistry": "2.23.133.18.3.3",
+        "utf8": "Zenbook UP6502ZA_Q529ZA"
+      },
+      {
+        "traitCategory": "2.23.133.19.2.3",
+        "traitRegistry": "2.23.133.18.3.3",
+        "utf8": "1.0"
+      },
+      {
+        "traitCategory": "2.23.133.19.2.4",
+        "traitRegistry": "2.23.133.18.3.3",
+        "utf8": "A3A2PI88M1789543"
+      }
+    ]
+  },
+  "COMPONENTS": [
+    {
+      "COMPONENTCLASS": {
+        "COMPONENTCLASSREGISTRY": "2.23.133.18.3.3",
+        "COMPONENTCLASSVALUE": "0000810D"
+      },
+      "MANUFACTURER": "American Megatrends International, LLC.",
+      "MODEL": "UP6502ZA.305",
+      "REVISION": "05NO",
+      "STATUS": "modified"
+    },
+    {
+      "TRAITS": [
+        {
+          "TRAITREGISTRY": "2.23.133.18.3.5",
+          "COMPONENTCLASS": "02010400"
+        },
+        {
+          "traitCategory": "2.23.133.19.2.8",
+          "traitRegistry": "2.23.133.18.3.5",
+          "UTF8": "1C5C:1C5C:ACE42E"
+        },
+        {
+          "traitCategory": "2.23.133.19.2.9",
+          "traitRegistry": "2.23.133.18.3.5",
+          "utf8": "HFM512GD3JX013N"
+        },
+        {
+          "traitCategory": "2.23.133.19.2.10",
+          "traitRegistry": "2.23.133.18.3.5",
+          "utf8": "00000000000000000000000000000000:ABC8X8734533462B33:nqn.2022-03.com.skhynix:nvme:nvm-subsystem-sn-ABC8X8734533462B33"
+        },
+        {
+          "traitCategory": "2.23.133.19.2.13",
+          "traitRegistry": "2.23.133.18.3.5",
+          "utf8": "00010300:41000C20"
+        },
+        {
+          "STATUS": "removed"
+        }
+      ]
+    },
+    {
+      "TRAITS": [
+        {
+          "traitRegistry": "2.23.133.18.3.3",
+          "COMPONENTCLASS": "00040003"
+        },
+        {
+          "traitCategory": "2.23.133.19.2.8",
+          "traitRegistry": "2.23.133.18.3.3",
+          "utf8": "Intel(R) Corporation"
+        },
+        {
+          "traitCategory": "2.23.133.19.2.9",
+          "traitRegistry": "2.23.133.18.3.3",
+          "utf8": "C6"
+        },
+        {
+          "traitCategory": "2.23.133.19.2.10",
+          "traitRegistry": "2.23.133.18.3.3",
+          "utf8": " "
+        },
+        {
+          "traitCategory": "2.23.133.19.2.13",
+          "traitRegistry": "2.23.133.18.3.3",
+          "utf8": "Intel(R) Core(TM) i7-10810U CPU @ 1.10GHz"
+        },
+        {
+          "traitCategory": "2.23.133.19.2.14",
+          "traitRegistry": "2.23.133.18.3.3",
+          "bool": "true"
+        },
+        {
+          "STATUS": "ADDED"
+        }
+      ]
+    }
+  ],
+  "PROPERTIES": []
+}

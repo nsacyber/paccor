@@ -10,8 +10,8 @@ namespace HardwareManifestPlugin {
         }
 
         public const int PluginMajorVersion = 2;
-        public const int PluginMinorVersion = 0;
-        public const int PluginRevision = 1;
+        public const int PluginMinorVersion = 1;
+        public const int PluginRevision = 0;
 
         /// <summary>
         /// Will this plugin collect hardware information into structures defined under tcg-at-platformConfiguration-v2?
@@ -29,10 +29,6 @@ namespace HardwareManifestPlugin {
         }
 
         ManifestV2 ManifestV2 {
-            get;
-        }
-
-        ManifestV3 ManifestV3 {
             get;
         }
 

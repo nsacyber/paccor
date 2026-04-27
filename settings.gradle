@@ -1,1 +1,3 @@
 rootProject.name = 'paccor'
+include('doc-tools')
+project(':doc-tools').projectDir = file('docs/doc-tools')

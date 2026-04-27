@@ -1,41 +1,99 @@
-# Platform Attribute Certificate Creator (paccor)
-This program can create platform credentials according to the Platform Certificate Profile v1.0. A platform certificate (PC) is a X.509v2 Attribute Certificate which encapsulates details about components on a host and the security standards met by the platform manufacturer.
+# paccor
 
-This program can assist in gathering all of the data that can go into a PC and produce a signed attribute certificate.
+`paccor` creates, signs, inspects, and validates TCG Platform Certificates from documented JSON inputs and collected platform data.
 
-The device component information gathering aspect of the program is platform-dependent.  That aspect has been written and tested for CentOS 7.  Support for additional platforms is coming soon.  This platform dependency is limited to bash scripts.  An advanced user may customize the scripts to their own purpose.  The User Guide contains details regarding which scripts are platform dependent, and the data format expected as their output.
+The project supports the TCG Platform Certificate profile families currently documented in this repository, including v2.1, v1.1, and v1.0 workflows where the profile applies.
 
-This source code contains our attempts at capturing ASN.1 definitions from TCG Credential specification documents in Java. The idea is to use the BouncyCastle style for parsing/building ASN.1 elements. The coding style is our own twist on what we found in the source code of BouncyCastle's provider library, especially those classes in org.bouncycastle.asn1.x509.
+## Documentation
 
-## Getting started:
-Head to the [Releases](https://github.com/nsacyber/paccor/releases) page and download the package relevant to your OS to begin using paccor.
+The primary documentation entry point is the GitHub Pages site:
 
-To build the project yourself, paccor uses Gradle to manage build tasks. paccor has been tested with ```Gradle 4.5.1```. Later versions of Gradle may also work.
-* If you already have gradle installed on your system, you can run:<br/> 
-```gradle clean build```
-  * The following arguments can be added to build the relevant package:<br/>
-  ```gradle clean build buildRpm buildDeb distZip```
-* If you don't have gradle installed, use the included gradle wrapper.<br/>
-```gradlew clean build buildRpm buildDeb distZip```
-  * On Windows use:<br/>
-  ```gradlew.bat clean build buildRpm buildDeb distZip```
-  * Validation of the gradle wrapper jar file is performed by a GitHub Action maintained by Gradle:<br/>
-  https://github.com/marketplace/actions/gradle-wrapper-validation<br/>
-  Instructions to verify the Gradle Wrapper JAR locally are available [here](https://docs.gradle.org/current/userguide/gradle_wrapper.html#wrapper_checksum_verification).
+- https://nsacyber.github.io/paccor/
 
-## Minimum software requirements:
-* Gradle 4.5.1
-* Java 1.8.0
+Recommended starting points:
 
-## See the User Guide for more information
-[Platform Credential Creator User Guide (PDF)](docs/platformCertificateCreator.pdf)
+- [Getting Started](https://nsacyber.github.io/paccor/getting-started/)
+- [Certificate Tutorials](https://nsacyber.github.io/paccor/tutorials/paccor/)
+- [CLI Commands](https://nsacyber.github.io/paccor/reference/cli-commands/)
+- [Signing Algorithms](https://nsacyber.github.io/paccor/reference/signing-algorithms/)
+- [Build and Docs Setup](https://nsacyber.github.io/paccor/setup/build/)
 
-## References:
-### Platform Attribute Certificate Profile
-https://trustedcomputinggroup.org/resource/tcg-platform-attribute-credential-profile/
+The Markdown source for the published site lives under `docs/`.
 
-### The private enterprise numbers list came from:
-http://www.iana.org/assignments/enterprise-numbers
+## What paccor does
 
+- Builds platform-certificate data from hardware manifests, policy JSON, and extension inputs
+- Generates to-be-signed certificate envelopes with `certgen`
+- Assembles signed certificates with `assemble`
+- Verifies output with `validate`
+- Inspects certificate contents with `view`
 
+Current top-level CLI commands:
 
+```text
+paccor certgen
+paccor assemble
+paccor validate
+paccor view
+```
+
+## Quick Start
+
+If you want the shortest path through the project, use the guided documentation:
+
+1. Open the GitHub Pages site.
+2. Follow the [Getting Started](https://nsacyber.github.io/paccor/getting-started/) guide.
+3. Use the profile-specific tutorials when you need a reproducible certificate flow.
+
+Release packages are published on the GitHub Releases page:
+
+- https://github.com/nsacyber/paccor/releases
+
+## Build From Source
+
+Prerequisites:
+
+- Java 25
+- Gradle-compatible environment using the included wrapper
+- .NET 10 SDK if you need to build the ComponentClassRegistry tools from source
+
+Build the Java project:
+
+```bash
+./gradlew clean build
+```
+
+Build packaged distributions when needed:
+
+```bash
+./gradlew clean build buildRpm buildDeb distZipLinux distZipWin
+```
+
+Generate the documentation inputs consumed by the site:
+
+```bash
+./gradlew generateDocs
+```
+
+Build the documentation site locally if you have MkDocs installed:
+
+```bash
+mkdocs build
+```
+
+## Repository Layout
+
+- `docs/` - GitHub Pages and MkDocs documentation source
+- `src/` - Java implementation
+- `dotnet/` - hardware collection and ComponentClassRegistry tooling
+- `scripts/` - helper flows, including guided certificate-generation scripts
+
+## Legacy Reference
+
+The original PDF user guide remains available in the published docs:
+
+- https://nsacyber.github.io/paccor/_assets/platformCertificateCreator.pdf
+
+## Project Status
+
+This repository is maintained by the NSA Cybersecurity Directorate.

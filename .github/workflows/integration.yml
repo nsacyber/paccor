@@ -1,0 +1,182 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  remote-and-cli:
+    name: Remote signer and CLI integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+      - name: Run signing paths CLI tests
+        run: ./gradlew --no-daemon test --tests "*AssembleCmdSigningPathsTest*"
+
+  pkcs11-softHSM:
+    name: PKCS#11 (SoftHSM2) integration
+    runs-on: ubuntu-latest
+    env:
+      SOFTHSM2_CONF: /tmp/softhsm2.conf
+      PKCS11_PIN: 1234
+      # Embedded test certificate and key (base64 encoded)
+      # From paccor/src/test/resources/TestCA.cert.example.pem and paccor/src/test/resources/TestCA.private.example.pem
+      TEST_CERT_B64: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURPekNDQWlPZ0F3SUJBZ0lKQUxGc0pEQndyaTFYTUEwR0NTcUdTSWIzRFFFQkN3VUFNRFF4Q3pBSkJnTlYKQkFZVEFsVlRNUlF3RWdZRFZRUUtEQXRsZUdGdGNHeGxMbU52YlRFUE1BMEdBMVVFQ3d3R1VFTlVaWE4wTUI0WApEVEU0TURjek1URTBNemt5T0ZvWERUSTRNRGN6TURFME16a3lPRm93TkRFTE1Ba0dBMVVFQmhNQ1ZWTXhGREFTCkJnTlZCQW9NQzJWNFlXMXdiR1V1WTI5dE1ROHdEUVlEVlFRTERBWlFRMVJsYzNRd2dnRWlNQTBHQ1NxR1NJYjMKRFFFQkFRVUFBNElCRHdBd2dnRUtBb0lCQVFEaTVSY3N2YzN0aTBuMStyUytib3p4MWZzQS9lR1NZUW1qSXpuQwpLSVJEeTVnZGpNUnpnWTBHMXFoUWxYYUErMmVWVXNsK29ISUp0Lyt2TTYvUzJrK0Zsa1NWbEdFc0hUWGFxTHhJClZTNFUya2w3cCtiY05uMTdNRE5VMmJnaDlCMjlvalN6Z0J1Qzk4TkxiRy9RT1I5UjlpbmZTdS9HVW5uWGp6blMKMjBjN2pNY3dtSDlxUFJiQ213SXBLa29qNDlUZkVTbmkwNTA2VUwvN0FVZlVWWEQyVnZiTWJzQys3dldhRXFwVAo1VXdUK2ZUWnA2b1EwTWdLMEhsRDV5dkhnRGlQYVh0cmdkb0dhS2JaOUhQeDc5ZkxmM3BPVU5NQlFQRUZJazlVCkhkTEdlMmpvU0VtVVU5SWZoc2dNemY4SEJoV1lsSS8za3JHVnZrcHpjeWE0azhnREFnTUJBQUdqVURCT01CMEcKQTFVZERnUVdCQlJXcnpvSmtLYmJKbGxaUXIvUVFtSFE3MEpSaURBZkJnTlZIU01FR0RBV2dCUldyem9Ka0tiYgpKbGxaUXIvUVFtSFE3MEpSaURBTUJnTlZIUk1FQlRBREFRSC9NQTBHQ1NxR1NJYjNEUUVCQ3dVQUE0SUJBUUJhCjRPWll3YTlseUROL3pWTXpCZFBVeGd5RDdobGZadDc5QW5XRGRVV1lhNkZSSHNSQjFFUjJMQ2JMdER6Q3lGajYKZ3Q2bzZwYUdhem0yM2NsZUFGY2htZ3BjVklKNEtzd2U5TVhTamZnVHpoaWpiU3ZVUGVYdjc1QWZqSmhPWXVjZQp2WDB5a0tFRHJSdWVHczg0MDJMNWkxZmh2WGs2QXppMFR3Nm5tZlFGTWtnM2k2dkN6Vm9nSmxhSlF5MXpEaG1VCjF5SXBFb0JFMmdkbTlQZmYwVWJFYTE2QmEwRTRSeGlHVVVCNkx4SVBLRVNvVit2bG9mZCtqa0JQdjdUUjAyeEcKamZaNE5PZ002elJ5eTZDWUtnVDVGYmxNWTJKSzFsV082Ty9kOXR5WDRrRTNSS1p2d2R1ZkJQZzNYTFBPTGdaRApiUDFJTTZjeUFBRlNxc0QxYXBqYQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      TEST_KEY_B64: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2d0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktrd2dnU2xBZ0VBQW9JQkFRRGk1UmNzdmMzdGkwbjEKK3JTK2JvengxZnNBL2VHU1lRbWpJem5DS0lSRHk1Z2RqTVJ6Z1kwRzFxaFFsWGFBKzJlVlVzbCtvSElKdC8rdgpNNi9TMmsrRmxrU1ZsR0VzSFRYYXFMeElWUzRVMmtsN3ArYmNObjE3TUROVTJiZ2g5QjI5b2pTemdCdUM5OE5MCmJHL1FPUjlSOWluZlN1L0dVbm5YanpuUzIwYzdqTWN3bUg5cVBSYkNtd0lwS2tvajQ5VGZFU25pMDUwNlVMLzcKQVVmVVZYRDJWdmJNYnNDKzd2V2FFcXBUNVV3VCtmVFpwNm9RME1nSzBIbEQ1eXZIZ0RpUGFYdHJnZG9HYUtiWgo5SFB4NzlmTGYzcE9VTk1CUVBFRklrOVVIZExHZTJqb1NFbVVVOUlmaHNnTXpmOEhCaFdZbEkvM2tyR1Z2a3B6CmN5YTRrOGdEQWdNQkFBRUNnZ0VBQmZtK21JRVBNVmhmeEVpc0JlL25hbDhXVXpwY2ZIeHR3b3drODBZWjVhY3gKQkdZMnJrd1ZLTDd5Zzl6TDJDM0cxcG50a0pZdEtyQmIzWU5nK0E2ajFZTFZuNUxlMUVpWXFIK1ZKZHFJY2lnbAprMG9pdkYzN0JBbUs4SXNqWEZHUGp2VDhxbFdQWSsyZWlSZjhBZUhmUDB0YVl2VVlSNExZanFMSkJSS2RWNllhCnp2NEFwazFpMkY1YUg0cHNxSnQzK2w1THBKR1dhVmVqaXp2MVV0blVSUFdMb01EdWdXZ29MTndzVTE0YjFSdjYKZXU0QUdNSDhwQk5kcUVkUkVUUTI0UE1FT3VBY3dkQVNjU245amdNcVV4Uk1URXUveXlEWWVtTFhNUTdKQVZ3SAp4ZHpTL2ZGRzYrbmFhWTVDU1hwUXovOVlQVG1TUG5MSnBuSm9EaVV1QVFLQmdRRHlDVktNa2QyZ0hXeUZ6MnlhCkZYY2pFRFFnb3F3UFVWSlcrVFgxdE5QVWEyUDRzclB5SWxMUy9sQ3pocDNRR1g2OG5FM0s5TUtXT1p1R3p3WGgKWkZ5Ynl2K3hIUHl1b1grOXFJSlRCVWlLMlhNYW5GbDQwZmhKUXlvTEh4djVlWmdlNGtsdGp6YmFmUmtDMzh6QgpSODRWZnh0ZjBjTjBTSWZ3a2NGWVIyNEVnUUtCZ1FEdi9DUGpYKzZSK1BQNWpHS1cvRStKZlQ4NDRhUC9ZcHZMClhLUEk5SjZFR2ZUN1l1cXRDcENnMDNsb2U2T1ByREpPcGtwTFJVYWxNMlMrNU4ySUF0WjVTMlphTVdZVHJKTFkKL2NRdzhVcis1SnR5UzU1WTNqVFd2WjhLWUozZk5qQ0xUTTNKZzcwR1NqWkFFb0VkdjdqKzNkTlUyTFlhbDRRTwpXaDh4SkNKNmd3S0JnUUMzLzdwUHZ2dzdJdU5EZm9MVFNJby9qNnZ4TzNtT1U0WkRORVYvT3k3bWg1V0NsV2dUCkpXRE5vaVI3dGxUMnhNc0NXOWtQOTY2T1FkRW9WTzNsZ1VTZDgxOGFxQ3k0SFhKZEhtT2s5WmxHWlRVSi85NU0KNldMVlgwZnhHSDlOMHRDQWVnclVUVkdvRy80Tm4xR3JoZ2ozY3ArKzRscXlaZ2xpSzR4T3JrN0hBUUtCZ1FERAo5WFV3a3dMeGV3RnRRZTYzTHl1Ykx3UlM1QnpQeXF0QWNWTGtJcXJWWDRTbFNPNHJnamI2dS9PbEYyQkZUdXg5ClFGZm1BcGxmQ0FvNXZoUU9uWktYMUxPczdpMVYzMUxCa09XRXVXTHRvNm95dUFDQ3ZGOFZBaDA5a2dzWFd0NWsKd01CQXppdXBXU3ZYUWNUZ2o4NzFmaGkwYllpMVNnZHcyTElqcEVmckZRS0JnUUM5TkFudzZJMWRsbmFIeGV6Sgo5a1dPempDN1RwelEvdmRZTHhvSmJ2eDZKUmJrYnh4RExKR0VYYlhYMmRzVnVoOW1IMXhjMkMxa3dQVnRBMGdjCkVHSnB6UFF6bTlVZnpjZXJqUmYxbUNPQWhaSGJIeUswUTFFQjlzb0FoVWtCOFA4cG9Sc1V0RzQzbUZmdWhjemwKSzBzUEFkTzdEL0dJSTFSYjQ1R0xDMXdXV1E9PQotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tCg==
+      SIMPLE_PKC_TBS_ENV: ewogICJraW5kIiA6ICJQS0MiLAogICJ0YnNEZXJCNjQiIDogIk1BQT0iLAogICJzaWdBbGdEZXJCNjQiIDogIk1BMEdDU3FHU0liM0RRRUJDd1VBIiwKICAic2hhMjU2T2ZUYnMiIDogbnVsbCwKICAibWV0YSIgOiBudWxsLAogICJwY2ZTdGF0ZUpzb24iIDogbnVsbCwKICAiaXNzdWVyTmFtZURlckI2NCIgOiBudWxsLAogICJzdWJqZWN0TmFtZURlckI2NCIgOiBudWxsLAogICJzdWJqZWN0UHVibGljS2V5SW5mb0RlckI2NCIgOiBudWxsLAogICJob2xkZXJEZXJCNjQiIDogbnVsbAp9Cg==
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install SoftHSM2
+        run: sudo apt-get update && sudo apt-get install -y softhsm2 opensc
+      - name: Configure and initialize SoftHSM2
+        run: |
+          mkdir -p /tmp/softhsm/tokens
+          cat > $SOFTHSM2_CONF << EOF
+          directories.tokendir = /tmp/softhsm/tokens
+          objectstore.backend = file
+          EOF
+          softhsm2-util --init-token --free --label paccor --pin $PKCS11_PIN --so-pin 0000
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+      - name: Import test credentials into SoftHSM
+        run: |
+          # Decode embedded test credentials
+          echo "$TEST_KEY_B64" | base64 -d > /tmp/test-key.pem
+          echo "$TEST_CERT_B64" | base64 -d > /tmp/test-cert.pem
+
+          # Find SoftHSM library (platform-agnostic)
+          PKCS11_LIB=$(find /usr/lib* -name "libsofthsm2.so" 2>/dev/null | head -1)
+          if [ -z "$PKCS11_LIB" ]; then
+            echo "ERROR: SoftHSM library not found"
+            exit 1
+          fi
+          echo "Using SoftHSM library: $PKCS11_LIB"
+          echo "PKCS11_LIB=$PKCS11_LIB" >> $GITHUB_ENV
+
+          # Get token slot
+          SLOT=$(softhsm2-util --show-slots | awk '/^Slot / {slot=$2} /Label:.*paccor/ {print slot; exit}')
+
+          # Import key and certificate with matching CKA_ID
+          # SunPKCS11 requires both objects with same CKA_ID to enumerate entries
+          softhsm2-util --import /tmp/test-key.pem --slot $SLOT --pin $PKCS11_PIN \
+            --id aabbccdd --label "aabbccdd"
+
+          openssl x509 -in /tmp/test-cert.pem -outform DER -out /tmp/test-cert.cer
+          pkcs11-tool --module $PKCS11_LIB --token-label paccor --pin $PKCS11_PIN --login \
+            --write-object /tmp/test-cert.cer --type cert --id aabbccdd --label "aabbccdd"
+      - name: Build paccor
+        run: |
+          ./gradlew --no-daemon assemble distZip
+      - name: Run PKCS#11 validation tests
+        run: |
+          ./gradlew --no-daemon test --tests "*AssembleCmdSigningPathsTest.testPkcs11Validation*"
+      - name: Deploy Zip
+        run: |
+          ls build/distributions/paccor-*.zip
+          mkdir -p paccor-dist
+          unzip -d paccor-dist build/distributions/paccor-*.zip
+          mv paccor-dist/paccor*/* paccor-dist/ &> /dev/null
+          ls paccor-dist
+      - name: Test PKCS#11 CKA_ID lookup with lowercase
+        run: |
+          # Create test envelope
+          echo "$SIMPLE_PKC_TBS_ENV" | base64 -d > /tmp/envelope.json
+
+          # Decode test certificate for issuer-cert parameter
+          echo "$TEST_CERT_B64" | base64 -d > /tmp/test-cert.pem
+
+          # Run paccor assemble with lowercase CKA_ID
+          paccor-dist/bin/paccor assemble \
+            --in /tmp/envelope.json \
+            --out /tmp/signed-lowercase.cer \
+            --issuer-cert /tmp/test-cert.pem \
+            --pkcs11-module $PKCS11_LIB \
+            --pkcs11-slot 0 \
+            --pkcs11-key-id aabbccdd \
+            --pkcs11-pin $PKCS11_PIN
+
+          # Verify output file was created
+          if [ ! -s /tmp/signed-lowercase.cer ]; then
+            echo "ERROR: Output file not created or empty"
+            exit 1
+          fi
+          echo "SUCCESS: Lowercase CKA_ID lookup succeeded"
+
+      - name: Test PKCS#11 CKA_ID lookup with uppercase
+        run: |
+          # Reuse envelope and certificate from previous step
+          echo "$TEST_CERT_B64" | base64 -d > /tmp/test-cert.pem
+
+          # Run paccor assemble with uppercase CKA_ID
+          paccor-dist/bin/paccor assemble \
+            --in /tmp/envelope.json \
+            --out /tmp/signed-uppercase.cer \
+            --issuer-cert /tmp/test-cert.pem \
+            --pkcs11-module $PKCS11_LIB \
+            --pkcs11-slot 0 \
+            --pkcs11-key-id AABBCCDD \
+            --pkcs11-pin $PKCS11_PIN
+
+          # Verify output file was created
+          if [ ! -s /tmp/signed-uppercase.cer ]; then
+            echo "ERROR: Output file not created or empty"
+            exit 1
+          fi
+          echo "SUCCESS: Uppercase CKA_ID lookup succeeded"
+      - name: Test PKCS#11 end to end paccor creation and validation
+        run: |
+          # Run paccor certgen
+          paccor-dist/bin/paccor certgen \
+            --serial 1 \
+            --not-before 20240101 \
+            --not-after 20300101 \
+            --issuer-cert /tmp/test-cert.pem \
+            --holder-cert src/test/resources/bare-bones-config/TCG_EK_ecc_p384_P-384_Test.pem \
+            --attributes-json src/test/resources/bare-bones-config/base-bare-bones-policyreference.json \
+            --components-json src/test/resources/bare-bones-config/base-bare-bones-componentlist.json \
+            --extensions-json src/test/resources/tutorials/base-bare-bones-extentions-no-ti.json \
+            --sig-profile rsa-sha256 \
+            --finalize \
+            --out /tmp/envelope-bb.json
+          
+          # Verify output file was created
+          if [ ! -s /tmp/envelope-bb.json ]; then
+            echo "ERROR: Output file not created or empty"
+            exit 1
+          fi
+          
+          # Run paccor assemble
+          paccor-dist/bin/paccor assemble \
+            --in /tmp/envelope-bb.json \
+            --out /tmp/signed-bb.cer \
+            --issuer-cert /tmp/test-cert.pem \
+            --pkcs11-module $PKCS11_LIB \
+            --pkcs11-slot 0 \
+            --pkcs11-key-id AABBCCDD \
+            --pkcs11-pin $PKCS11_PIN
+          
+          # Verify output file was created
+          if [ ! -s /tmp/signed-bb.cer ]; then
+            echo "ERROR: Output file not created or empty"
+            exit 1
+          fi
+          
+          # Run paccor validate
+          paccor-dist/bin/paccor validate \
+            --x509v2AttrCert /tmp/signed-bb.cer \
+            --publicKeyCert /tmp/test-cert.pem \
+            --components-json src/test/resources/bare-bones-config/base-bare-bones-componentlist.json

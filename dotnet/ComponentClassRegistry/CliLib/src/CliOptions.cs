@@ -1,16 +1,11 @@
 ﻿using CommandLine;
-using System.Data;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 
 namespace CliLib;
 public class CliOptions {
-    [Option("print-v2", SetName = "print", Default = false, HelpText = "Print hardware manifest data in JSON format according to Platform Certificate v1.1.")]
+    [Option("print-v2", SetName = "print", Default = true, HelpText = "Print hardware manifest data in JSON format.")]
     public bool PrintV2 {
-        get; set;
-    }
-    [Option("print-v3", SetName = "print", Default = false, HelpText = "Print hardware manifest data in JSON format according to Platform Certificate v2.0 with component identifiers wrapped in ComponentIdentifierV11Traits.")]
-    public bool PrintV3 {
         get; set;
     }
     [Option("components-only", Default = false, HelpText = "Only output the JSON elements within the COMPONENTS array.")]
@@ -20,13 +15,13 @@ public class CliOptions {
 
     private static void HandleParseError(IEnumerable<Error> errs) {
         //handle errors
-        Console.WriteLine("There was a command line error: " + errs.ToString());
+        Console.WriteLine("There was a command line error: " + errs);
     }
 
     public static CliOptions? ParseArguments(string[] args) {
         CliOptions? cli = new();
         ParserResult<CliOptions> cliParseResult =
-            CommandLine.Parser.Default.ParseArguments<CliOptions>(args)
+            Parser.Default.ParseArguments<CliOptions>(args)
                 .WithParsed(parsed => cli = parsed)
                 .WithNotParsed(HandleParseError);
         if (cliParseResult.Tag == ParserResultType.NotParsed) {

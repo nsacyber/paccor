@@ -27,16 +27,10 @@ public class SmbiosCli {
         }
 
         // All smbios data should be validated at this point.
-        if (cli.PrintV2 || (!cli.PrintV2 && !cli.PrintV3)) {
-            // V2 should be printed by default not matter what
+        if (cli.PrintV2) {
             Console.WriteLine(cli.ComponentsOnly
                 ? plugin.ManifestV2.COMPONENTS.ToString().Trim('[', ']', ' ')
                 : plugin.ManifestV2.ToString());
-        }
-        if (cli.PrintV3) {
-            Console.WriteLine(cli.ComponentsOnly
-                ? plugin.ManifestV3.PlatformConfiguration.PlatformComponents.ToString().Trim('[', ']', ' ')
-                : plugin.ManifestV3.ToString());
         }
 
         return (int)ClientExitCodes.SUCCESS;

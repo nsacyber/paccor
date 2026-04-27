@@ -1,0 +1,32 @@
+{
+  "CERTIFICATEPOLICIES": [
+    {
+      "POLICYIDENTIFIER": "1.2.840.113741.1.5.2.4",
+      "POLICYQUALIFIERS": [
+        {
+          "POLICYQUALIFIERID": "USERNOTICE",
+          "QUALIFIER": "TCG Trusted Platform Endorsement"
+        }
+      ]
+    }
+  ],
+  "AUTHORITYINFOACCESS": [
+    {
+      "ACCESSMETHOD": "OCSP",
+      "ACCESSLOCATION": "C=US, ST=MS, L=Test City, O=Test Company, OU=Test Public Sector, CN=www.example.com"
+    }
+  ],
+  "CRLDISTRIBUTION": {
+    "DISTRIBUTIONNAME": {
+      "TYPE": "0",
+      "NAME": "C=US, ST=MS, L=Test City 2, O=Test Company 2, OU=Test Public Sector 2, CN=www.example.com"
+    },
+    "REASON": "8",
+    "ISSUER": "C=US, ST=TX, L=Test City 3, O=Test Company 3, OU=Test Public Sector 3, CN=www.example.com"
+  },
+  "TARGETINGINFORMATION": [
+    {
+      "FILE": "https://www.example.com/ekcert.crl"
+    }
+  ]
+}

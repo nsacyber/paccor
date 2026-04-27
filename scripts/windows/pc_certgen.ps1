@@ -1,3 +1,11 @@
+
+#############################################################################
+#  Platform Certificate Test generator 
+# 
+#
+#
+###########################################################################
+
 $toolpath=(Split-Path -parent $PSCommandPath)
 $timestamp=(Get-Date -UFormat "%Y%m%d%H%M%S")
 #### Scripts and executable
@@ -5,21 +13,21 @@ $componentlister_script="$toolpath" + "/allcomponents.ps1"
 $policymaker_script="$toolpath" + "/referenceoptions.ps1"
 $get_ek_script="$toolpath" + "/get_ek.ps1"
 $extensions_script="$toolpath" + "/otherextensions.ps1"
-$signer_bin="$toolpath" + "/../../bin/signer.bat"
-$validator_bin="$toolpath" + "/../../bin/validator.bat"
+$paccor_bin="$toolpath" + "/../../bin/paccor.bat"
 #### Files
 $workspace="$toolpath" + "/../pc_testgen"
 $componentlist="$workspace" + "/localhost-componentlist.json"
 $policyreference="$workspace" + "/localhost-policyreference.json"
 $ekcert="$workspace" + "/ek.pem"
-$pccert="$workspace" + "/platform_cert." + "$timestamp" + ".crt"
+$pccert="$workspace" + "/platform_cert." + "$timestamp" + ".cer"
 $sigkey="$workspace" + "/CAcert.p12"
 $pcsigncert="$workspace" + "/PCTestCA.example.com.cer"
-$extsettings="$workspace" + "/extentions.json"
+$extsettings="$workspace" + "/extensions.json"
+$tbsout="$workspace" + "/tbs.json"
 ### Certificate params
 $serialnumber="0001"
 $dateNotBefore="20180101"
-$dateNotAfter="20280101"
+$dateNotAfter="20380101"
 ### Key Pair params
 $subjectDN="C=US,O=example.com,OU=PCTest"
 $daysValid=(Get-Date).AddYears(10)
@@ -27,6 +35,7 @@ $sigalg="RSA"
 $sigalgbits="2048"
 $certStoreLocation="Cert:\CurrentUser\My\"
 $pfxpassword="password"
+$paccor_sigalg="rsa-sha256"
 
 if (!(Test-Path -Path $workspace )) {
     if( (New-Object Security.Principal.WindowsPrincipal(
@@ -90,7 +99,9 @@ if (!(Test-Path "$extsettings" -PathType Leaf)) {
     powershell -ExecutionPolicy Bypass "$extensions_script" "$extsettings"
     if (!$?) {
         echo "Failed to create the extensions file, exiting"
-        Remove-Item "$extsettings" -Confirm:$false -Force
+	    if (Test-Path "$extsettings" -PathType Leaf) {
+	        Remove-Item "$extsettings" -Confirm:$false -Force
+	    }
         exit 1
     }
 } else {
@@ -150,21 +161,25 @@ if (!(Test-Path "$pcsigncert" -PathType Leaf)) {
 
 # Step 7 create and sign the new platform credential
 echo "Generating a signed Platform Credential"
-& $signer_bin -x "$extsettings" -c "$componentlist" -e "$ekcert" -p "$policyreference" -k "$sigkey" -N "$serialnumber" -b "$dateNotBefore" -a "$dateNotAfter" -f "$pccert" 
+& $paccor_bin certgen -x "$extsettings" -c "$componentlist" -e "$ekcert" -p "$policyreference" -P "$pcsigncert" -N "$serialnumber" -b "$dateNotBefore" -a "$dateNotAfter" --sig-profile "$paccor_sigalg" -f "$tbsout" --finalize
 if (!$?) {
-    echo "The signer could not produce a Platform Credential, exiting"
+    echo "The Platform Certificate data could not be gathered, exiting"
+    exit 1
+}
+
+& $paccor_bin assemble --in "$tbsout" -k "$sigkey" --local-key-password "$pfxpassword" -P "$pcsigncert" -f "$pccert" --pem
+if (!$?) {
+    echo "The Platform Certificate data could not be signed, exiting"
     exit 1
 }
 
 # Step 8 validate the signature
 echo "Validating the signature"
-& $validator_bin -P "$pcsigncert" -X "$pccert"
-
+& $paccor_bin validate -P "$pcsigncert" -X "$pccert" -c "$componentlist"
 if ($?) {
-    echo "PC Credential Creation Complete."
-    echo "Platform Credential has been placed in ""$pccert"
+    echo "PC Creation Complete."
+    echo "Platform Certificate has been placed in ""$pccert"
 } else {
     Remove-Item "$pccert" -Confirm:$false -Force
     echo "Error with signature validation of the credential."
 }
-

@@ -2,6 +2,7 @@ name: .NET build paccor_scripts
 
 on:
   push:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -10,11 +11,15 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Setup .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
+    - name: Remove problem matcher for now
+      run: |
+        echo "::remove-matcher owner=csc::"
+        echo "::remove-matcher owner=dotnet::"
     - name: Restore dependencies
       working-directory: dotnet/paccor_scripts
       run: dotnet restore
@@ -38,7 +43,8 @@ jobs:
         sha256sum dotnet/paccor_scripts/paccor_scripts/bin/Release/*nupkg
         ls -go --full-time dotnet/paccor_scripts/paccor_scripts/bin/Release/*nupkg
     - name: Nuget Packages
-      uses: actions/upload-artifact@v4
+      if: github.event_name == 'workflow_dispatch' || !contains(github.event.head_commit.message, '[skip artifacts]')
+      uses: actions/upload-artifact@v7
       with:
         name: nuget.rc.builton_${{ matrix.os }}
         retention-days: 1

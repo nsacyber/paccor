@@ -1,0 +1,141 @@
+{
+    "PLATFORM": {
+        "PLATFORMMANUFACTURERSTR": "Sample Platform Manufacturer",
+        "PLATFORMMANUFACTURERID": "1.3.6.1.4.1.32473",
+        "PLATFORMMODEL": "Sample Platform Model",
+        "PLATFORMVERSION": "Sample Platform Version",
+        "PLATFORMSERIAL": "Sample Platform Serial"
+    },
+    "COMPONENTS": [
+        {
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00020002"
+            },
+            "MANUFACTURER": "Sample Chassis Manufacturer",
+            "MODEL": "Sample Chassis Model",
+            "SERIAL": "Sample Chassis Serial Number",
+            "REVISION": "Sample Chassis Revision",
+            "MANUFACTURERID": "1.3.6.1.4.1.32473",
+            "FIELDREPLACEABLE": "true",
+            "PLATFORMCERT": {
+                "ATTRIBUTECERTIDENTIFIER": {
+                    "HASHALGORITHM": "1.3.6.1.4.1.22554.1.2.1",
+                    "HASH": "NjAwM0EzMzQzMkZEOTE0QjYwMDNBMzM0MzJGRDkxNEI2MDAzQTMzNDMyRkQ5MTRCNjAwM0EzMzQzMkZEOTE0Qg=="
+                },
+                "GENERICCERTIDENTIFIER": {
+                    "ISSUER": "C=US, ST=FL, L=Sample City 1, O=Sample Corporation 1, OU=Platform Certificate Issuer, CN=www.example.com",
+                    "SERIAL": "00001"
+                }
+            },
+            "PLATFORMCERTURI": {
+                "UNIFORMRESOURCEIDENTIFIER": "https://www.example.com/certs/00000.cer"
+            }
+        },
+        {
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00030003"
+            },
+            "MANUFACTURER": "Sample Baseboard Manufacturer",
+            "MODEL": "Sample Baseboard Model",
+            "SERIAL": "Sample Baseboard Serial Number",
+            "REVISION": "Sample Baseboard Revision",
+            "MANUFACTURERID": "1.3.6.1.4.1.32473",
+            "FIELDREPLACEABLE": "false",
+            "ADDRESSES": [
+                { "ETHERNETMAC": "8289FAD361" },
+                { "WLANMAC": "D483B4F278" },
+                { "BLUETOOTHMAC": "B27E046620" }
+            ],
+            "PLATFORMCERT": {
+                "ATTRIBUTECERTIDENTIFIER": {
+                    "HASHALGORITHM": "1.3.6.1.4.1.22554.1.2.1",
+                    "HASH": "MzQzMkUxNDE0QjYwOTczNDM0MzIzNDMyRTE0MTRCNjA5NzM0MzQzMg=="
+                },
+                "GENERICCERTIDENTIFIER": {
+                    "ISSUER": "C=US, ST=AZ, L=Sample City 2, O=Sample Corporation 2, OU=Platform Certificate Issuer, CN=www.example.com",
+                    "SERIAL": "00001"
+                }
+            },
+            "PLATFORMCERTURI": {
+                "UNIFORMRESOURCEIDENTIFIER": "https://www.example.com/certs/00001.cer"
+            }
+        },
+        {
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00010002"
+            },
+            "MANUFACTURER": "Sample CPU Manufacturer",
+            "MODEL": "Sample CPU Model",
+            "SERIAL": "Sample CPU Serial Number",
+            "REVISION": "Sample CPU Revision",
+            "MANUFACTURERID": "1.3.6.1.4.1.32473",
+            "FIELDREPLACEABLE": "true",
+            "PLATFORMCERT": {
+                "ATTRIBUTECERTIDENTIFIER": {
+                    "HASHALGORITHM": "1.3.6.1.4.1.22554.1.2.1",
+                    "HASH": "YWYyYmRiZTFhNGY3ZThmNDcyNGNlOTRmMWNmY2Y1ZjMwZjdkNGVjYWU1YjVhNWYwNmIwYzdmN2U1Zjk0YjA3YQ=="
+                },
+                "GENERICCERTIDENTIFIER": {
+                    "ISSUER": "C=US, ST=AZ, L=Sample City 3, O=Sample Corporation 3, OU=Platform Certificate Issuer, CN=www.example.com",
+                    "SERIAL": "00002"
+                }
+            },
+            "PLATFORMCERTURI": {
+                "UNIFORMRESOURCEIDENTIFIER": "https://www.example.com/certs/00002.cer"
+            }
+        },
+        {
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00040009"
+            },
+            "MANUFACTURER": "Sample TPM Manufacturer",
+            "MODEL": "Sample TPM Model",
+            "SERIAL": "Sample TPM Serial Number",
+            "REVISION": "Sample TPM Revision",
+            "MANUFACTURERID": "1.3.6.1.4.1.32473",
+            "FIELDREPLACEABLE": "false",
+            "PLATFORMCERT": {
+                "ATTRIBUTECERTIDENTIFIER": {
+                    "HASHALGORITHM": "1.3.6.1.4.1.22554.1.2.1",
+                    "HASH": "OWY4NmQwODE4ODRjN2Q2NTlhMmZlYWEwYzU1YWQwMTVhM2JmNGYxYjJiMGI4MjJjZDE1ZDZjMTViMGYwMGEwOA=="
+                },
+                "GENERICCERTIDENTIFIER": {
+                    "ISSUER": "C=US, ST=CA, L=Sample City 4, O=Sample Corporation 4, OU=Platform Certificate Issuer, CN=www.example.com",
+                    "SERIAL": "00003"
+                }
+            },
+            "PLATFORMCERTURI": {
+                "UNIFORMRESOURCEIDENTIFIER": "https://www.example.com/certs/00003.cer"
+            }
+        },
+        {
+            "COMPONENTCLASS": {
+                "COMPONENTCLASSREGISTRY": "2.23.133.18.3.1",
+                "COMPONENTCLASSVALUE": "00050012"
+            },
+            "MANUFACTURER": "Sample BMC Manufacturer",
+            "MODEL": "Sample BMC Model",
+            "SERIAL": "Sample BMC Serial Number",
+            "REVISION": "Sample BMC Revision",
+            "MANUFACTURERID": "1.3.6.1.4.1.32473",
+            "FIELDREPLACEABLE": "false",
+            "PLATFORMCERT": {
+                "ATTRIBUTECERTIDENTIFIER": {
+                    "HASHALGORITHM": "1.3.6.1.4.1.22554.1.2.1",
+                    "HASH": "YjU5YzY3YmYxOTZhNDc1ODE5MWU0MmY3NjZiYjQ4MjZkNmUwZTQyOWQ1ZGY5ZmNlZWE1YzZkMWI1M2M3NmU0MQ=="
+                },
+                "GENERICCERTIDENTIFIER": {
+                    "ISSUER": "C=US, ST=MI, L=Sample City 5, O=Sample Corporation 5, OU=Platform Certificate Issuer, CN=www.example.com",
+                    "SERIAL": "00004"
+                }
+            },
+            "PLATFORMCERTURI": {
+                "UNIFORMRESOURCEIDENTIFIER": "https://www.example.com/certs/00004.cer"
+            }
+        }
+    ]
+}

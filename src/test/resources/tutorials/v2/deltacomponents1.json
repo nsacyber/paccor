@@ -1,0 +1,45 @@
+{
+  "PLATFORM": {
+    "PLATFORMMANUFACTURERSTR": "ASUSTeK COMPUTER INC.",
+    "PLATFORMMODEL": "Zenbook UP6502ZA_Q529ZA",
+    "PLATFORMVERSION": "1.0",
+    "PLATFORMSERIAL": "A3A2PI88M1789543"
+  },
+  "COMPONENTS": [
+    {
+      "COMPONENTCLASS": {
+        "COMPONENTCLASSREGISTRY": "2.23.133.18.3.3",
+        "COMPONENTCLASSVALUE": "0000810D"
+      },
+      "MANUFACTURER": "American Megatrends International, LLC.",
+      "MODEL": "UP6502ZA.305",
+      "REVISION": "05NO",
+      "STATUS": "modified"
+    },
+    {
+      "COMPONENTCLASS": {
+        "COMPONENTCLASSREGISTRY": "2.23.133.18.3.5",
+        "COMPONENTCLASSVALUE": "02010400"
+      },
+      "MANUFACTURER": "1C5C:1C5C:ACE42E",
+      "MODEL": "HFM512GD3JX013N",
+      "SERIAL": "00000000000000000000000000000000:ABC8X8734533462B33:nqn.2022-03.com.skhynix:nvme:nvm-subsystem-sn-ABC8X8734533462B33",
+      "REVISION": "00010300:41000C20",
+      "STATUS": "removed"
+    },
+    {
+      "COMPONENTCLASS": {
+        "COMPONENTCLASSREGISTRY": "2.23.133.18.3.3",
+        "COMPONENTCLASSVALUE": "00040003"
+      },
+      "MANUFACTURER": "Intel(R) Corporation",
+      "MODEL": "C6",
+      "SERIAL": " ",
+      "REVISION": "Intel(R) Core(TM) i7-10810U CPU @ 1.10GHz",
+      "FIELDREPLACEABLE": "true",
+      "STATUS": "added"
+    }
+  ],
+  "PROPERTIES": []
+}
+

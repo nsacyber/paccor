@@ -1,0 +1,64 @@
+name: Generate JSON Schema Documentation
+
+on:
+  push:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Generate schemas, ASN.1 blocks, and project docs
+        run: |
+          ./gradlew generateDocs
+          ls -al build/schema/*.json
+          jq -e . build/schema/*.json
+          find build/schema/fragments -name '*.json' -print -exec jq -e . {} \;
+          test -s build/schema/docs/global-asn1-types.md
+          test -s build/schema/asn1-blocks.json
+          jq -e . build/schema/asn1-blocks.json > /dev/null
+          find docs/reference/_generated -name '*.md' -print
+          find docs/reference/_generated/graphs -name '*.mmd' -print
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Install mkdocs
+        run: |
+          python -m pip install --upgrade pip
+          pip install "mkdocs<2" "mkdocs-material<10" mkdocs-include-markdown-plugin
+
+      - name: Build mkdocs site
+        env:
+          NO_MKDOCS_2_WARNING: "1"
+        run: mkdocs build --strict
+
+      - name: Upload schema artifacts
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'v') || contains(github.event.head_commit.message, '[save artifacts]') || contains(github.event.head_commit.message, '[save schema artifacts]')
+        uses: actions/upload-artifact@v7
+        with:
+          name: json-schema-artifacts
+          path: |
+            build/schema
+            docs/reference/_generated
+
+      - name: Upload mkdocs site
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'v') || contains(github.event.head_commit.message, '[save artifacts]') || contains(github.event.head_commit.message, '[save schema artifacts]')
+        uses: actions/upload-artifact@v7
+        with:
+          name: paccor-docs-site
+          path: site

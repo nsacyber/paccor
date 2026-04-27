@@ -10,7 +10,7 @@
     },
     "TCGCREDENTIALSPECIFICATION": {
         "MAJORVERSION": "1",
-        "MINORVERSION": "0",
+        "MINORVERSION": "1",
         "REVISION": "16"
     },
     "TBBSECURITYASSERTIONS": {

@@ -1,0 +1,20 @@
+{
+    
+    "TCGPLATFORMSPECIFICATION": {
+        "VERSION": {
+            "MAJORVERSION": "1",
+            "MINORVERSION": "3",
+            "REVISION": "22"
+        },
+        "PLATFORMCLASS": "AAAAAQ=="
+    },
+    "TCGCREDENTIALSPECIFICATION": {
+        "MAJORVERSION": "1",
+        "MINORVERSION": "1",
+        "REVISION": "17"
+    },
+    "TBBSECURITYASSERTIONS": {
+        "VERSION": "1",
+        "ISO9000CERTIFIED": "false"
+    }
+}

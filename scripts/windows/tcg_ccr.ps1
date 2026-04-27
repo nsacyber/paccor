@@ -344,7 +344,7 @@ function parseRamData() {
 
 function parseNicData() {
 	Write-Progress -Id 2 -ParentId 1 -Activity "Gathering NIC information" -CurrentOperation "Collecting data from Powershell" -PercentComplete 0
-    $RS=(Get-NetAdapter | Select-Object MacAddress,PhysicalMediaType,PNPDeviceID | Where-Object {($_.PhysicalMediaType -eq "Native 802.11" -or "802.3") -and ($_.PNPDeviceID -Match "^(PCI)\\.*$")})
+    $RS=@(Get-NetAdapter | Select-Object MacAddress,PhysicalMediaType,PNPDeviceID | Where-Object {($_.PhysicalMediaType -eq "Native 802.11" -or "802.3") -and ($_.PNPDeviceID -Match "^(PCI)\\.*$")})
     $component=""
     $replaceable=$(jsonFieldReplaceable "true")
     $numRows=$RS.Count
@@ -430,17 +430,10 @@ function parseNicData() {
 function parseHddData() {
 	Write-Progress -Id 2 -ParentId 1 -Activity "Gathering Hard Disk information" -CurrentOperation "Collecting data from Powershell" -PercentComplete 0
     #$RS=(Get-CimInstance -ClassName CIM_DiskDrive | select serialnumber,mediatype,pnpdeviceid,manufacturer,model | where mediatype -eq "Fixed hard disk media")
-    $RS=(Get-PhysicalDisk | Select-Object serialnumber,mediatype,manufacturer,model,bustype | Where-Object BusType -ne NVMe)
+    $RS=@(Get-PhysicalDisk | Select-Object serialnumber,mediatype,manufacturer,model,bustype | Where-Object BusType -ne NVMe)
     $component=""
     $replaceable=$(jsonFieldReplaceable "true")
-    $numRows=0
-    if ($null -ne $RS) { # powershell $null should be left operand
-		if ($RS -is [array]) {
-			$numRows=($RS.Count)
-		} else {
-			$numRows=1
-        }
-    }
+    $numRows=$RS.Count
 	
 	$hddClass=$(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_HDD")
 	
@@ -510,7 +503,7 @@ function parseHddData() {
 
 function parseNvmeData() {
 	Write-Progress -Id 2 -ParentId 1 -Activity "Gathering NVMe Disk information" -CurrentOperation "Collecting data from Powershell and Windows" -PercentComplete 0
-    $RS=((Get-PhysicalDisk | Where-Object BusType -eq NVMe).DeviceID)
+    $RS=@((Get-PhysicalDisk | Where-Object BusType -eq NVMe).DeviceID)
     $component=""
     $replaceable=(jsonFieldReplaceable "true") # Looking for reliable indicator
 
@@ -572,13 +565,10 @@ function parseNvmeData() {
 
 function parseGfxData() {
 	Write-Progress -Id 2 -ParentId 1 -Activity "Gathering GFX information" -CurrentOperation "Collecting data from Powershell" -PercentComplete 0
-    $RS=(Get-CimInstance -ClassName CIM_VideoController | Select-Object pnpdeviceid )
+    $RS=@(Get-CimInstance -ClassName CIM_VideoController | Select-Object pnpdeviceid )
     $component=""
     $replaceable=(jsonFieldReplaceable "true")
-    $numRows=1
-    if ($RS.Count -gt 1) {
-        $numRows=($RS.Count)
-    }
+    $numRows=$RS.Count
 	
 	$gfxClass=(jsonComponentClass "$COMPCLASS_REGISTRY_TCG" "$COMPCLASS_GFX")
 	

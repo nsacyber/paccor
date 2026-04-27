@@ -90,14 +90,15 @@ $JSON_TARGETING_INFORMATION_FILE_TEMPLATE="
 ### JSON Constructor Aides
 function toCSV() {
     if ($args.Length -ne 0) {
-        for ($i=0; $i -lt $args[0].Length; $i++) {
-            $item=($args[0].Get($i))
+	        $value = @()
+	        for ($i = 0; $i -lt $args[0].Length; $i++) {
+	            $item = $args[0][$i]
 
-            if ($item) {
-	            $value="$value,$($args[0].Get($i))"
-            }
-        }
-        echo "$value".Trim(" ", ",")
+	            if ($null -ne $item -and "$item" -ne "") {
+	                $value += $item
+	            }
+	        }
+	        echo ($value -join ",")
     }
 }
 function jsonCertificatePolicies() {

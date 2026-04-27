@@ -6,33 +6,33 @@
 #
 ###########################################################################
 
-toolpath="`dirname "$0"`"
+toolpath=$(dirname "$0")
 timestamp=$(date +%Y%m%d%H%M%S)
 #### Scripts and executable
-componentlister_script="$toolpath""/allcomponents.sh"
-policymaker_script="$toolpath""/referenceoptions.sh"
-get_ek_script="$toolpath""/get_ek.sh"
-extensions_script="$toolpath""/otherextensions.sh"
-signer_bin="$toolpath""/../bin/signer"
-validator_bin="$toolpath""/../bin/validator"
+componentlister_script="$toolpath/allcomponents.sh"
+policymaker_script="$toolpath/referenceoptions.sh"
+get_ek_script="$toolpath/get_ek.sh"
+extensions_script="$toolpath/otherextensions.sh"
+paccor_bin="$toolpath/../bin/paccor"
 #### Files
-workspace=$toolpath"/pc_testgen"
-tmpspace="/tmp"
-componentlist="$workspace""/localhost-componentlist.json"
-policyreference="$workspace""/localhost-policyreference.json"
-ekcert="$workspace""/ek.crt"
-pccert="$workspace""/platform_cert.""$timestamp"".crt"
-sigkey="$workspace""/private.pem"
-pcsigncert="$workspace""/PCTestCA.example.com.pem"
-extsettings="$workspace""/extentions.json"
+workspace="$toolpath/pc_testgen"
+componentlist="$workspace/localhost-componentlist.json"
+policyreference="$workspace/localhost-policyreference.json"
+ekcert="$workspace/ek.cer"
+pccert="$workspace/platform_cert.$timestamp.cer"
+sigkey="$workspace/private.pem"
+pcsigncert="$workspace/PCTestCA.example.com.pem"
+extsettings="$workspace/extensions.json"
+tbsout="$workspace/tbs.json"
 ### Certificate params
 serialnumber="0001"
 dateNotBefore="20180101"
-dateNotAfter="20280101"
+dateNotAfter="20380101"
 ### Key Pair params
 subjectDN="/C=US/O=example.com/OU=PCTest"
 daysValid="3652"
-sigalg="rsa:2048"
+openssl_sigalg="rsa:2048"
+paccor_sigalg="rsa-sha256"
 
 if [ ! -d "$workspace" ]; then
     if [ "$EUID" -ne 0 ]
@@ -120,9 +120,8 @@ printf "...OK\n"
 
 # Step 6 create a sample signing key pair
 if ! [ -e "$pcsigncert" ]; then
-    echo "Creating a signing key for signing platform credentials"
-    $(openssl req -x509 -nodes -days "$daysValid" -newkey "$sigalg" -keyout "$sigkey" -out "$pcsigncert" -subj "$subjectDN" >> /dev/null)
-    if [ $? -ne 0 ]; then
+    echo "Creating a signing key for signing platform certificates"
+    if ! openssl req -x509 -nodes -days "$daysValid" -newkey "$openssl_sigalg" -keyout "$sigkey" -out "$pcsigncert" -subj "$subjectDN" &> /dev/null; then
         echo "Failed to create the key pair, exiting"
         exit 1
     fi
@@ -130,23 +129,24 @@ else
     echo "Platform Signing file exists, skipping"
 fi
 
-# Step 7 create and sign the new platform credential
-echo "Generating a signed Platform Credential"
-bash $signer_bin -x "$extsettings" -c "$componentlist" -e "$ekcert" -p "$policyreference" -k "$sigkey" -P "$pcsigncert" -N "$serialnumber" -b "$dateNotBefore" -a "$dateNotAfter" -f "$pccert" 
-if [ $? -ne 0 ]; then
-    echo "The signer could not produce a Platform Credential, exiting"
+# Step 7 create and sign the new platform certificate
+echo "Generating a signed Platform Certificate"
+if ! bash "$paccor_bin" certgen -x "$extsettings" -c "$componentlist" -e "$ekcert" -p "$policyreference" -P "$pcsigncert" -N "$serialnumber" -b "$dateNotBefore" -a "$dateNotAfter" --sig-profile "$paccor_sigalg" -f "$tbsout" --finalize; then
+    echo "The Platform Certificate data could not be gathered, exiting"
+    exit 1
+fi
+if ! bash "$paccor_bin" assemble --in "$tbsout" -k "$sigkey" -P "$pcsigncert" -f "$pccert" --pem; then
+    echo "The Platform Certificate could not be signed, exiting"
     exit 1
 fi
 
 # Step 8 validate the signature
 echo "Validating the signature"
-bash $validator_bin -P "$pcsigncert" -X "$pccert"
-
-if [ $? -eq 0 ]; then
-    echo "PC Credential Creation Complete."
-    echo "Platform Credential has been placed in ""$pccert"
+if bash "$paccor_bin" validate -P "$pcsigncert" -X "$pccert" -c "$componentlist"; then
+    echo "PC Creation Complete."
+    echo "Platform Certificate has been placed in ""$pccert"
 else
     rm -f "$pccert"
-    echo "Error with signature validation of the credential."
+    echo "Error with signature validation of the certificate."
 fi
 
