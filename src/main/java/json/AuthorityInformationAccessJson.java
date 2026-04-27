@@ -2,6 +2,7 @@ package json;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.bouncycastle.asn1.DERIA5String;
 import json.schema.AuthorityInformationAccessSchema;
 import json.schema.JsonSchemaValue;
 import org.bouncycastle.asn1.DERSequence;
@@ -37,9 +38,17 @@ public final class AuthorityInformationAccessJson {
                     }
                     AuthorityInformationAccessSchema.Method method =
                             JsonSchemaValue.lookup(methodText, AuthorityInformationAccessSchema.Method.class);
-                    elements.add(new AccessDescription(method.oid(), new GeneralName(new X500Name(locationText))));
+                    elements.add(new AccessDescription(method.oid(), toGeneralName(locationText)));
                 });
 
         return AuthorityInformationAccess.getInstance(new DERSequence(ASN1Utils.toASN1EncodableVector(elements)));
+    }
+
+    private static GeneralName toGeneralName(String locationText) {
+        try {
+            return new GeneralName(new X500Name(locationText));
+        } catch (IllegalArgumentException e) {
+            return new GeneralName(GeneralName.uniformResourceIdentifier, new DERIA5String(locationText));
+        }
     }
 }

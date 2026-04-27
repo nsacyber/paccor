@@ -90,6 +90,28 @@ public class ExtensionsJsonHelperTest {
     }
 
     @Test
+    public void testReadAuthorityInfoAccessUriLocation() throws Exception {
+        String json = """
+            {
+              "AUTHORITYINFOACCESS": [
+                { "ACCESSMETHOD": "OCSP", "ACCESSLOCATION": "http://ocsp.example.com" }
+              ]
+            }
+            """;
+
+        ExtensionsJsonHelper expected = ExtensionsJsonHelper.builder()
+                .authorityInformationAccess(authorityInfoAccess(
+                        new AccessDescription(AccessDescription.id_ad_ocsp,
+                                new GeneralName(GeneralName.uniformResourceIdentifier, "http://ocsp.example.com"))))
+                .build();
+
+        ObjectMapper mapper = JsonMapper.builder().build();
+        ExtensionsJsonHelper actual = mapper.readValue(json, ExtensionsJsonHelper.class);
+
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
     public void testCrlDistAliasAndCase() throws Exception {
         String json = """
             {
