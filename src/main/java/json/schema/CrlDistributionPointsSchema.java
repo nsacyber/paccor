@@ -1,6 +1,7 @@
 package json.schema;
 
 import java.util.List;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.bouncycastle.asn1.x509.DistributionPointName;
@@ -12,11 +13,13 @@ public final class CrlDistributionPointsSchema {
     public static final String DISTRIBUTION_NAME = "distributionName";
     public static final String TYPE = "type";
     public static final String NAME = "name";
+    public static final String CRL_URI = "crlUri";
     public static final String REASON = "reason";
     public static final String ISSUER = "issuer";
 
     private CrlDistributionPointsSchema() {}
 
+    @AllArgsConstructor
     @Getter
     public enum RootField implements JsonSchemaField {
         CRL_DISTRIBUTION_POINTS_FIELD(CrlDistributionPointsSchema.CRL_DISTRIBUTION_POINTS,
@@ -25,12 +28,12 @@ public final class CrlDistributionPointsSchema {
         private final String jsonName;
         private final List<String> aliases;
 
-        RootField(String jsonName, List<String> aliases) {
-            this.jsonName = jsonName;
-            this.aliases = aliases;
+        RootField(String jsonName) {
+            this(jsonName, List.of());
         }
     }
 
+    @AllArgsConstructor
     @Getter
     public enum DistributionPointField implements JsonSchemaField {
         DISTRIBUTION_NAME_FIELD(CrlDistributionPointsSchema.DISTRIBUTION_NAME),
@@ -38,21 +41,19 @@ public final class CrlDistributionPointsSchema {
         ISSUER_FIELD(CrlDistributionPointsSchema.ISSUER);
 
         private final String jsonName;
-
-        DistributionPointField(String jsonName) {
-            this.jsonName = jsonName;
-        }
     }
 
+    @AllArgsConstructor
     @Getter
     public enum DistributionNameField implements JsonSchemaField {
         TYPE_FIELD(CrlDistributionPointsSchema.TYPE),
-        NAME_FIELD(CrlDistributionPointsSchema.NAME);
+        NAME_FIELD(CrlDistributionPointsSchema.NAME, JsonSchemaField.aliasList(CrlDistributionPointsSchema.CRL_URI));
 
         private final String jsonName;
+        private final List<String> aliases;
 
         DistributionNameField(String jsonName) {
-            this.jsonName = jsonName;
+            this(jsonName, List.of());
         }
     }
 
