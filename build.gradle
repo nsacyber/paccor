@@ -150,6 +150,10 @@ tasks.register("generateDocs") {
             from(schemaDir.get().dir("graphs"))
             into stagedDir.dir("graphs")
         }
+        copy {
+            from(schemaDir.get().dir("schema-json"))
+            into stagedDir.dir("schema-json")
+        }
     }
 }
 

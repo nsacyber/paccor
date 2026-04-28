@@ -29,7 +29,7 @@ See [Global ASN.1 Types](../reference/global-asn1-types.md).
 
 ## Diagrams
 
-Each field-set and vocabulary page includes a generated Mermaid diagram. These diagrams are intended to provide a fast visual answer to questions such as “which aliases still exist for this field?” or “which field owns this vocabulary?” They are not a replacement for the tables; they are a quick orientation aid before you drop into the exact mapping.
+Each field-set and vocabulary page includes a generated diagram. These diagrams are intended to provide a fast visual answer to questions such as “which aliases still exist for this field?” or “which field owns this vocabulary?” They are not a replacement for the tables; they are a quick orientation aid before you drop into the exact mapping.
 
 ```mermaid
 graph TD

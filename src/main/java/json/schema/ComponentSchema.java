@@ -28,6 +28,7 @@ public final class ComponentSchema {
     public static final String COMPONENT_PLATFORM_CERT = "componentPlatformCert";
     public static final String PLATFORM_CERT_URI = "platformCertUri";
     public static final String COMPONENT_PLATFORM_CERT_URI = "componentPlatformCertUri";
+    public static final String TRAITS = "traits";
     public static final String STATUS = "status";
     public static final String ADDRESS_TYPE = "addressType";
     public static final String ADDRESS_VALUE = "addressValue";
@@ -69,6 +70,8 @@ public final class ComponentSchema {
                 "Component certificate identifier."),
         PLATFORM_CERT_URI_FIELD(ComponentSchema.PLATFORM_CERT_URI, List.of(ComponentSchema.COMPONENT_PLATFORM_CERT_URI),
                 "Platform configuration URI."),
+        TRAITS_FIELD(ComponentSchema.TRAITS, List.of(),
+                "Trait collection accepted for explicit or supplemental component traits."),
         STATUS_FIELD(ComponentSchema.STATUS, List.of(),
                 "Status: ADDED, MODIFIED, or REMOVED. For delta credentials.");
 
@@ -90,25 +93,43 @@ public final class ComponentSchema {
 
     @Getter
     public enum ComponentClassField implements JsonSchemaField {
-        COMPONENT_CLASS_REGISTRY_FIELD(ComponentSchema.COMPONENT_CLASS_REGISTRY),
-        COMPONENT_CLASS_VALUE_FIELD(ComponentSchema.COMPONENT_CLASS_VALUE);
+        COMPONENT_CLASS_REGISTRY_FIELD(ComponentSchema.COMPONENT_CLASS_REGISTRY,
+                "OID identifying the component class registry."),
+        COMPONENT_CLASS_VALUE_FIELD(ComponentSchema.COMPONENT_CLASS_VALUE,
+                "Registry-defined component class value.");
 
         private final String jsonName;
+        private final String descriptionText;
 
-        ComponentClassField(String jsonName) {
+        ComponentClassField(String jsonName, String descriptionText) {
             this.jsonName = jsonName;
+            this.descriptionText = descriptionText;
+        }
+
+        @Override
+        public String description() {
+            return descriptionText;
         }
     }
 
     @Getter
     public enum AddressField implements JsonSchemaField {
-        ADDRESS_TYPE_FIELD(ComponentSchema.ADDRESS_TYPE),
-        ADDRESS_VALUE_FIELD(ComponentSchema.ADDRESS_VALUE);
+        ADDRESS_TYPE_FIELD(ComponentSchema.ADDRESS_TYPE,
+                "Address type selector for the canonical address object."),
+        ADDRESS_VALUE_FIELD(ComponentSchema.ADDRESS_VALUE,
+                "Normalized address value.");
 
         private final String jsonName;
+        private final String descriptionText;
 
-        AddressField(String jsonName) {
+        AddressField(String jsonName, String descriptionText) {
             this.jsonName = jsonName;
+            this.descriptionText = descriptionText;
+        }
+
+        @Override
+        public String description() {
+            return descriptionText;
         }
     }
 
@@ -135,14 +156,24 @@ public final class ComponentSchema {
 
     @Getter
     public enum PropertyField implements JsonSchemaField {
-        PROPERTY_NAME_FIELD(ComponentSchema.PROPERTY_NAME),
-        PROPERTY_VALUE_FIELD(ComponentSchema.PROPERTY_VALUE),
-        PROPERTY_STATUS_FIELD(ComponentSchema.PROPERTY_STATUS);
+        PROPERTY_NAME_FIELD(ComponentSchema.PROPERTY_NAME,
+                "Property name."),
+        PROPERTY_VALUE_FIELD(ComponentSchema.PROPERTY_VALUE,
+                "Property value."),
+        PROPERTY_STATUS_FIELD(ComponentSchema.PROPERTY_STATUS,
+                "Optional attribute status indicating whether the property was added, modified, or removed.");
 
         private final String jsonName;
+        private final String descriptionText;
 
-        PropertyField(String jsonName) {
+        PropertyField(String jsonName, String descriptionText) {
             this.jsonName = jsonName;
+            this.descriptionText = descriptionText;
+        }
+
+        @Override
+        public String description() {
+            return descriptionText;
         }
     }
 

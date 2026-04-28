@@ -23,7 +23,7 @@ In the codebase, 2.0 and 2.1 are treated as the same `V2_0` family because they 
 
 ## Generating each version
 
-paccor produces certificates for any of the three profiles. See the per-version tutorials:
+paccor produces certificates for any of the three profiles. See the version-target tutorials:
 
 - [v2.1 tutorial](../tutorials/by-spec-version/v2.1.md)
 - [v1.1 tutorial](../tutorials/by-spec-version/v1.1.md)

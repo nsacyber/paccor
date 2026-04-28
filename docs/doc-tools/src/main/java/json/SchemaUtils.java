@@ -285,11 +285,16 @@ public class SchemaUtils {
         Files.createDirectories(outputPath);
 
         Files.writeString(outputPath.resolve(GLOBAL_DEFINITIONS_FILE), mergedDefs.toPrettyString());
+        Map<String, JsonNode> publishedSchemas = new LinkedHashMap<>();
         for (Map.Entry<String, JsonNode> entry : helperSchemas.entrySet()) {
             String fileName = entry.getKey().toLowerCase().replace("jsonhelper", "") + "-schema.json";
             Files.writeString(outputPath.resolve(fileName), entry.getValue().toPrettyString());
+            publishedSchemas.put(fileName, entry.getValue());
         }
-        new ProjectDocRenderer().writeArtifacts(outputPath);
+        publishedSchemas.put(GLOBAL_DEFINITIONS_FILE, mergedDefs);
+        ProjectDocRenderer renderer = new ProjectDocRenderer();
+        renderer.writeArtifacts(outputPath);
+        renderer.writeSchemaDocs(outputPath, publishedSchemas);
     }
 
     private Path resolveOutputPath() {
