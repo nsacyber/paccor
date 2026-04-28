@@ -1,17 +1,19 @@
 # JSON Schemas
 
-paccor publishes JSON Schema artifacts for the same helper classes the CLI reads at runtime. These schemas are useful for editor validation, CI guardrails, pre-flight checks in manufacturing pipelines, and for readers who want a machine-readable counterpart to the human-focused field-set tables.
+paccor publishes JSON Schema artifacts for the same helper classes the CLI reads at runtime. These schemas are useful for editor validation and for readers who want a slightly more detailed view.
 
-## Schemas
+{% 
+  include-markdown "./_generated/json-schemas.md"
+%}
 
-| Helper | Schema | Description |
-| --- | --- | --- |
-| `AttributesJsonHelper` | `attributes-schema.json` | Policy and platform assertions used to build the non-component portions of the credential. |
-| `ExtensionsJsonHelper` | `extensions-schema.json` | Extension-oriented JSON for AIA, certificate policies, CRL distribution points, and related fields. |
-| `HardwareManifestJsonHelper` | `hardwaremanifest-schema.json` | Hardware manifest input for platform facts, component lists, and property lists. |
-| Global definitions | `global-definitions.json` | Shared `$defs` collected from ASN.1-backed leaf types and reused across the helper schemas. |
+---
 
-The files are generated into `build/schema/` during `./gradlew generateSchemas` and are also included in the `json-schema-artifacts` workflow artifact when the workflow is configured to upload artifacts.
+## Detail pages
+
+- [Attributes Schema](_generated/schemas/attributes-schema.md)
+- [Extensions Schema](_generated/schemas/extensions-schema.md)
+- [Hardware Manifest Schema](_generated/schemas/hardwaremanifest-schema.md)
+- [Global Definitions](_generated/schemas/global-definitions.md)
 
 ## Generation
 
@@ -21,4 +23,4 @@ The schemas are produced by `json.SchemaUtils` in `docs/doc-tools/` using [victo
 ./gradlew generateSchemas
 ```
 
-Outputs to `build/schema/`.
+Outputs to `build/schema/`, and `./gradlew generateDocs` stages the JSON plus the rendered schema pages under `docs/reference/_generated/` for MkDocs publication.

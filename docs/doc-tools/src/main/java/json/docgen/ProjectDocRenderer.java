@@ -48,14 +48,18 @@ public final class ProjectDocRenderer {
         Path fieldFragmentDir = outputRoot.resolve("fragments/fields");
         Path vocabularyFragmentDir = outputRoot.resolve("fragments/values");
         Path docsFieldDir = outputRoot.resolve("docs/fields");
+        Path docsSchemaDir = outputRoot.resolve("docs/schemas");
         Path docsVocabularyDir = outputRoot.resolve("docs/values");
         Path graphDir = outputRoot.resolve("graphs");
+        Path schemaJsonDir = outputRoot.resolve("schema-json");
 
         Files.createDirectories(fieldFragmentDir);
         Files.createDirectories(vocabularyFragmentDir);
         Files.createDirectories(docsFieldDir);
+        Files.createDirectories(docsSchemaDir);
         Files.createDirectories(docsVocabularyDir);
         Files.createDirectories(graphDir);
+        Files.createDirectories(schemaJsonDir);
 
         loadAsn1Blocks(outputRoot.resolve(ASN1_BLOCKS_FILE));
 
@@ -76,6 +80,24 @@ public final class ProjectDocRenderer {
         Files.writeString(outputRoot.resolve("docs/field-sets.md"), renderFieldSetIndex());
         Files.writeString(outputRoot.resolve("docs/value-vocabularies.md"), renderVocabularyIndex());
         Files.writeString(outputRoot.resolve("docs/global-asn1-types.md"), renderGlobalAsn1TypesPage());
+    }
+
+    public void writeSchemaDocs(Path outputRoot, Map<String, JsonNode> schemas) throws IOException {
+        Path docsSchemaDir = outputRoot.resolve("docs/schemas");
+        Path schemaJsonDir = outputRoot.resolve("schema-json");
+
+        Files.createDirectories(docsSchemaDir);
+        Files.createDirectories(schemaJsonDir);
+
+        for (Map.Entry<String, JsonNode> entry : schemas.entrySet()) {
+            String fileName = entry.getKey();
+            JsonNode schema = entry.getValue();
+            Files.writeString(schemaJsonDir.resolve(fileName), schema.toPrettyString() + "\n");
+            Files.writeString(docsSchemaDir.resolve(fileName.replace(".json", ".md")),
+                    renderSchemaMarkdown(fileName, schema));
+        }
+
+        Files.writeString(outputRoot.resolve("docs/json-schemas.md"), renderSchemaIndex(schemas));
     }
 
     private ObjectNode createFieldFragment(JsonSchemaFieldSet fieldSet) {
@@ -215,7 +237,13 @@ public final class ProjectDocRenderer {
                     .append(renderText(description))
                     .append(" |\n");
         }
-        builder.append("\n## Mermaid\n\n```mermaid\n")
+        builder.append("\n## Mermaid\n\n")
+                .append("Source: [`")
+                .append(fieldSet.id())
+                .append(".mmd`](../graphs/")
+                .append(fieldSet.id())
+                .append(".mmd)\n\n")
+                .append("```mermaid\n")
                 .append(buildFieldSetGraph(fieldSet).toMermaid())
                 .append("```\n");
         return builder.toString();
@@ -285,9 +313,59 @@ public final class ProjectDocRenderer {
                     .append(renderText(value.description()))
                     .append(" |\n");
         }
-        builder.append("\n## Mermaid\n\n```mermaid\n")
+        builder.append("\n## Mermaid\n\n")
+                .append("Source: [`")
+                .append(vocabulary.id())
+                .append(".mmd`](../graphs/")
+                .append(vocabulary.id())
+                .append(".mmd)\n\n")
+                .append("```mermaid\n")
                 .append(buildVocabularyGraph(vocabulary).toMermaid())
                 .append("```\n");
+        return builder.toString();
+    }
+
+    private String renderSchemaIndex(Map<String, JsonNode> schemas) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("# JSON Schemas\n\n")
+                .append("| Schema | Title | Description |\n")
+                .append("| --- | --- | --- |\n");
+        for (Map.Entry<String, JsonNode> entry : schemas.entrySet()) {
+            String fileName = entry.getKey();
+            JsonNode schema = entry.getValue();
+            builder.append("| [")
+                    .append(fileName)
+                    .append("](./schemas/")
+                    .append(fileName.replace(".json", ".md"))
+                    .append(") / [json](./schema-json/")
+                    .append(fileName)
+                    .append(") | ")
+                    .append(renderText(textOrNull(schema.get("title"))))
+                    .append(" | ")
+                    .append(renderText(textOrNull(schema.get("description"))))
+                    .append(" |\n");
+        }
+        return builder.toString();
+    }
+
+    private String renderSchemaMarkdown(String fileName, JsonNode schema) {
+        String title = textOrNull(schema.get("title"));
+        String description = textOrNull(schema.get("description"));
+        StringBuilder builder = new StringBuilder();
+        builder.append("# ")
+                .append(title != null ? title : fileName)
+                .append("\n\n")
+                .append("Source: [`")
+                .append(fileName)
+                .append("`](../schema-json/")
+                .append(fileName)
+                .append(")\n\n");
+        if (description != null) {
+            builder.append(description).append("\n\n");
+        }
+        builder.append("```json\n")
+                .append(schema.toPrettyString())
+                .append("\n```\n");
         return builder.toString();
     }
 
@@ -329,18 +407,8 @@ public final class ProjectDocRenderer {
         nodes.add(new SchemaGraph.Node(rootId, fieldSet.jsonPath(), "path"));
         for (JsonSchemaField field : fieldSet.fields()) {
             String fieldId = graphId(fieldSet.id() + "-" + field.jsonName());
-            nodes.add(new SchemaGraph.Node(fieldId, field.jsonName(), "field"));
-            edges.add(new SchemaGraph.Edge(rootId, fieldId, "field"));
-            for (String alias : field.aliases()) {
-                String aliasId = graphId(fieldSet.id() + "-" + field.jsonName() + "-alias-" + alias);
-                nodes.add(new SchemaGraph.Node(aliasId, alias, "alias"));
-                edges.add(new SchemaGraph.Edge(fieldId, aliasId, "alias"));
-            }
-            if (field instanceof JsonSchemaValue value && value.asn1Value() != null) {
-                String asn1Id = graphId(fieldSet.id() + "-" + field.jsonName() + "-asn1");
-                nodes.add(new SchemaGraph.Node(asn1Id, value.asn1Value(), "asn1"));
-                edges.add(new SchemaGraph.Edge(fieldId, asn1Id, "asn1"));
-            }
+            nodes.add(new SchemaGraph.Node(fieldId, formatFieldNodeLabel(field), "field"));
+            edges.add(new SchemaGraph.Edge(rootId, fieldId, null));
         }
         return new SchemaGraph(fieldSet.title(), nodes, edges);
     }
@@ -352,20 +420,32 @@ public final class ProjectDocRenderer {
         nodes.add(new SchemaGraph.Node(rootId, vocabulary.field().jsonName(), "path"));
         for (JsonSchemaValue value : vocabulary.values()) {
             String valueId = graphId(vocabulary.id() + "-" + value.jsonValue());
-            nodes.add(new SchemaGraph.Node(valueId, value.jsonValue(), "value"));
-            edges.add(new SchemaGraph.Edge(rootId, valueId, "value"));
-            for (String alias : value.aliases()) {
-                String aliasId = graphId(vocabulary.id() + "-" + value.jsonValue() + "-alias-" + alias);
-                nodes.add(new SchemaGraph.Node(aliasId, alias, "alias"));
-                edges.add(new SchemaGraph.Edge(valueId, aliasId, "alias"));
-            }
-            if (value.asn1Value() != null) {
-                String asn1Id = graphId(vocabulary.id() + "-" + value.jsonValue() + "-asn1");
-                nodes.add(new SchemaGraph.Node(asn1Id, value.asn1Value(), "asn1"));
-                edges.add(new SchemaGraph.Edge(valueId, asn1Id, "asn1"));
-            }
+            nodes.add(new SchemaGraph.Node(valueId, formatVocabularyNodeLabel(value), "value"));
+            edges.add(new SchemaGraph.Edge(rootId, valueId, null));
         }
         return new SchemaGraph(vocabulary.title(), nodes, edges);
+    }
+
+    private String formatFieldNodeLabel(JsonSchemaField field) {
+        StringBuilder label = new StringBuilder(field.jsonName());
+        if (!field.aliases().isEmpty()) {
+            label.append("<br/>alias: ").append(String.join(", ", field.aliases()));
+        }
+        if (field instanceof JsonSchemaValue value && value.asn1Value() != null) {
+            label.append("<br/>ASN.1: ").append(value.asn1Value());
+        }
+        return label.toString();
+    }
+
+    private String formatVocabularyNodeLabel(JsonSchemaValue value) {
+        StringBuilder label = new StringBuilder(value.jsonValue());
+        if (!value.aliases().isEmpty()) {
+            label.append("<br/>alias: ").append(String.join(", ", value.aliases()));
+        }
+        if (value.asn1Value() != null) {
+            label.append("<br/>ASN.1: ").append(value.asn1Value());
+        }
+        return label.toString();
     }
 
     private String resolveDescription(JsonSchemaField field) {

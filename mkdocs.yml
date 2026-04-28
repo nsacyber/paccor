@@ -87,6 +87,9 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/nsacyber/paccor
 
+extra_css:
+  - stylesheets/reference-diagrams.css
+
 nav:
   - Home: index.md
   - Getting Started: getting-started.md
