@@ -26,8 +26,16 @@ public interface JsonSchemaField {
      * Optional non-case aliases accepted on input.
      * @return supported alias list
      */
-    default List<String> aliases() {
+    default List<String> getAliases() {
         return List.of();
+    }
+
+    /**
+     * Optional non-case aliases accepted on input.
+     * @return supported alias list
+     */
+    default List<String> aliases() {
+        return getAliases();
     }
 
     /**

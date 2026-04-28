@@ -2,6 +2,7 @@ package json;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.bouncycastle.asn1.DERIA5String;
 import json.schema.CrlDistributionPointsSchema;
 import json.schema.JsonSchemaValue;
 import org.bouncycastle.asn1.DERSequence;
@@ -45,7 +46,7 @@ public final class CrlDistributionPointsJson {
             String name = JsonUtils.get(distNameNode, false, CrlDistributionPointsSchema.DistributionNameField.NAME_FIELD)
                     .flatMap(JsonUtils::trimmedIfText)
                     .orElse("");
-            distributionPointName = new DistributionPointName(type, new GeneralNames(new GeneralName(new X500Name(name))));
+            distributionPointName = new DistributionPointName(type, new GeneralNames(toDistributionPointName(type, name)));
         }
 
         int reason = JsonUtils.get(node, false, CrlDistributionPointsSchema.DistributionPointField.REASON_FIELD)
@@ -59,5 +60,20 @@ public final class CrlDistributionPointsJson {
                 distributionPointName,
                 new ReasonFlags(reason),
                 new GeneralNames(new GeneralName(new X500Name(issuer))));
+    }
+
+    private static GeneralName toDistributionPointName(int type, String name) {
+        if (type == DistributionPointName.FULL_NAME) {
+            return toGeneralName(name);
+        }
+        return new GeneralName(new X500Name(name));
+    }
+
+    private static GeneralName toGeneralName(String locationText) {
+        try {
+            return new GeneralName(new X500Name(locationText));
+        } catch (IllegalArgumentException e) {
+            return new GeneralName(GeneralName.uniformResourceIdentifier, new DERIA5String(locationText));
+        }
     }
 }

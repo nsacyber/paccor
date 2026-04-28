@@ -5,7 +5,26 @@ on:
   workflow_dispatch:
 
 jobs:
+  artifact-policy:
+    runs-on: ubuntu-latest
+    outputs:
+      save_artifacts: ${{ steps.decide.outputs.save_artifacts }}
+    steps:
+      - name: Decide artifact upload
+        id: decide
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref }}
+          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message || '' }}
+        run: |
+          save_artifacts=false
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] || [ "$REF_NAME" = "refs/heads/main" ] || [[ "$HEAD_COMMIT_MESSAGE" == *"[save artifacts]"* ]]; then
+            save_artifacts=true
+          fi
+          echo "save_artifacts=$save_artifacts" >> "$GITHUB_OUTPUT"
   build:
+    needs: artifact-policy
     runs-on: ubuntu-latest
     env:
       DOTNET_ROLL_FORWARD: LatestMajor
@@ -78,7 +97,7 @@ jobs:
           sha256sum dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/**/**/**/*.{deb,rpm,zip} 2> /dev/null
           ls -go --full-time dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/**/**/**/*.{deb,rpm,zip} 2> /dev/null
       - name: Artifacts
-        if: github.event_name == 'workflow_dispatch' || startsWith(github.event.release.tag_name, 'v') || contains(github.event.head_commit.message, '[save artifacts]') || contains(github.event.head_commit.message, '[save dist artifacts]')
+        if: needs.artifact-policy.outputs.save_artifacts == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: dists

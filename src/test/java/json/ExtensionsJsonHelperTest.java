@@ -139,6 +139,62 @@ public class ExtensionsJsonHelperTest {
     }
 
     @Test
+    public void testCrlDistFullNameUriLocation() throws Exception {
+        String json = """
+            {
+              "CRLDISTRIBUTION": [
+                {
+                  "DISTRIBUTIONNAME": { "TYPE": 0, "NAME": "http://crl.example.com/platform.crl" },
+                  "REASON": 0,
+                  "ISSUER": "CN=CRL Issuer"
+                }
+              ]
+            }
+            """;
+
+        ExtensionsJsonHelper expected = ExtensionsJsonHelper.builder()
+                .crlDistPoint(crlDistPoint(new DistributionPoint(
+                        new DistributionPointName(0, new GeneralNames(
+                                new GeneralName(GeneralName.uniformResourceIdentifier, "http://crl.example.com/platform.crl"))),
+                        new ReasonFlags(0),
+                        new GeneralNames(new GeneralName(new X500Name("CN=CRL Issuer"))))))
+                .build();
+
+        ObjectMapper mapper = JsonMapper.builder().build();
+        ExtensionsJsonHelper actual = mapper.readValue(json, ExtensionsJsonHelper.class);
+
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testCrlDistAcceptsCrlUriAlias() throws Exception {
+        String json = """
+            {
+              "CRLDISTRIBUTION": [
+                {
+                  "DISTRIBUTIONNAME": { "TYPE": "fullName", "CRLURI": "http://crl.example.com/platform.crl" },
+                  "REASON": 0,
+                  "ISSUER": "CN=CRL Issuer"
+                }
+              ]
+            }
+            """;
+
+        ExtensionsJsonHelper expected = ExtensionsJsonHelper.builder()
+                .crlDistPoint(crlDistPoint(new DistributionPoint(
+                        new DistributionPointName(0, new GeneralNames(
+                                new GeneralName(GeneralName.uniformResourceIdentifier, "http://crl.example.com/platform.crl"))),
+                        new ReasonFlags(0),
+                        new GeneralNames(new GeneralName(new X500Name("CN=CRL Issuer"))))))
+                .build();
+
+        ObjectMapper mapper = JsonMapper.builder().build();
+        ExtensionsJsonHelper actual = mapper.readValue(json, ExtensionsJsonHelper.class);
+
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
     public void testCertificatePoliciesMultiplePoliciesAndQualifiers() throws Exception {
         String json = """
             {
