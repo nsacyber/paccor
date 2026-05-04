@@ -98,7 +98,7 @@ nav:
       - Requirements: setup/requirements.md
       - Install: setup/install.md
       - Build: setup/build.md
-      - GitHub Access: setup/github-access.md
+      - GitHub Access: setup/github.md
   - Concepts:
       - concepts/index.md
       - JSON Model: concepts/json-model.md

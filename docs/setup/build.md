@@ -1,21 +1,10 @@
 # Build
 
-## Build ComponentClassRegistry tools
-
-Notes:
-
-- This build needs the .NET 10 SDK
-- The SDK is only needed to build the tools from source. It is not needed to run the tools.
-
-```bash or powershell
-dotnet build dotnet/ComponentClassRegistry/ComponentClassRegistry.sln
-```
-
 ## Build paccor
 
 Notes: 
 
-- `distZipLinux` and `distZipWin` will only work if the component class tools are built. Omit them to just build and test the java code.
+- `distZipLinux` and `distZipWin` will only work if the [component class tools are built](#build-componentclassregistry-tools). Omit them to just build and test the java code.
 - `buildRpm` and `buildDeb` are only necessary to build Linux distribution packages.
 
 ```bash
@@ -31,17 +20,19 @@ Notes:
 Key outputs:
 
 - `build/libs/` for jars
-- `build/distributions/` for packaged archives
+- `build/distributions/` for packaged archives. Unpack the version that meets your system environment.
 
-If you want a runnable local install layout from source, build an archive and unpack it:
+## Build ComponentClassRegistry tools
 
-```bash
-./gradlew clean build distZip
-mkdir -p local-install
-unzip build/distributions/paccor-*.zip -d local-install
+Notes:
+
+- This build needs the .NET 10 SDK
+- The SDK is only needed to build the tools from source. It is not needed to run the tools.
+
 ```
-
-Then run `bin/paccor` from the unpacked directory instead of relying on an in-tree build path.
+bash or powershell
+dotnet build dotnet/ComponentClassRegistry/ComponentClassRegistry.sln
+```
 
 ## Build generated docs inputs
 

@@ -12,11 +12,11 @@ The primary documentation entry point is the GitHub Pages site:
 
 Recommended starting points:
 
-- [Getting Started](https://nsacyber.github.io/paccor/getting-started/)
-- [Certificate Tutorials](https://nsacyber.github.io/paccor/tutorials/paccor/)
-- [CLI Commands](https://nsacyber.github.io/paccor/reference/cli-commands/)
-- [Signing Algorithms](https://nsacyber.github.io/paccor/reference/signing-algorithms/)
-- [Build and Docs Setup](https://nsacyber.github.io/paccor/setup/build/)
+- [Getting Started](https://nsacyber.github.io/paccor/getting-started.html)
+- [Certificate Tutorials](https://nsacyber.github.io/paccor/tutorials/index.html)
+- [CLI Commands](https://nsacyber.github.io/paccor/reference/cli-commands.html)
+- [Signing Algorithms](https://nsacyber.github.io/paccor/reference/signing-algorithms.html)
+- [Build and Docs Setup](https://nsacyber.github.io/paccor/setup/build.html)
 
 The Markdown source for the published site lives under `docs/`.
 
