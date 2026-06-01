@@ -30,6 +30,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
+    - name: Force Git to use LF line endings
+      run: |
+        git config --global core.autocrlf false
+        git config --global core.eol lf
     - uses: actions/checkout@v6
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
