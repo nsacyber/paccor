@@ -5,7 +5,7 @@
 1. Download the package for your platform from the GitHub Releases page.
      * __Linux__: Install the `.deb` or `.rpm` package. Alternatively, the `.zip` package can be unpacked anywhere you like.
      * __Windows__: Unpack the `.zip` package anywhere you like.
-2. Run the launcher from `bin/paccor`.
+2. Run the executable `bin/paccor`.
 3. Run the tutorial commands from any directory that has access to `bin/paccor`. Download the linked input files into your working directory, or substitute any local paths that fit your environment.
 
 This is the right path if you already have issuer certificates, holder certificates, and manifest JSON from your own environment.

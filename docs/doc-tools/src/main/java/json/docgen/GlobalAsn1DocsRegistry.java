@@ -12,10 +12,10 @@ import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1UTF8String;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.KeyUsage;
-import tcg.credential.Trait;
-import tcg.credential.TraitCollection;
-import tcg.credential.TraitId;
-import tcg.credential.TraitMap;
+import paccor.tcg.credential.Trait;
+import paccor.tcg.credential.TraitCollection;
+import paccor.tcg.credential.TraitId;
+import paccor.tcg.credential.TraitMap;
 
 /**
  * Documentation registry for ASN.1-backed Java types. Replaces the static

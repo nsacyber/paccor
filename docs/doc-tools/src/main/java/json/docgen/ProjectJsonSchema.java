@@ -1,15 +1,15 @@
 package json.docgen;
 
 import java.util.List;
-import json.schema.AttributesSchema;
-import json.schema.AuthorityInformationAccessSchema;
-import json.schema.CertificatePoliciesSchema;
-import json.schema.ComponentSchema;
-import json.schema.CrlDistributionPointsSchema;
-import json.schema.ExtensionsSchema;
-import json.schema.HardwareManifestSchema;
-import json.schema.SubjectAlternativeNameSchema;
-import json.schema.TargetingInformationSchema;
+import paccor.json.schema.AttributesSchema;
+import paccor.json.schema.AuthorityInformationAccessSchema;
+import paccor.json.schema.CertificatePoliciesSchema;
+import paccor.json.schema.ComponentSchema;
+import paccor.json.schema.CrlDistributionPointsSchema;
+import paccor.json.schema.ExtensionsSchema;
+import paccor.json.schema.HardwareManifestSchema;
+import paccor.json.schema.SubjectAlternativeNameSchema;
+import paccor.json.schema.TargetingInformationSchema;
 
 /**
  * Central registry for project-owned JSON schema field and value metadata used by doc generation.

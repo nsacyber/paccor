@@ -1,8 +1,8 @@
 package json.docgen;
 
 import java.util.List;
-import json.schema.JsonSchemaField;
-import json.schema.JsonSchemaValue;
+import paccor.json.schema.JsonSchemaField;
+import paccor.json.schema.JsonSchemaValue;
 
 /**
  * Documented set of allowed JSON values for a specific field.

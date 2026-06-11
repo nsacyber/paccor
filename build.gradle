@@ -8,7 +8,7 @@ plugins {
 
 // version number
 def major_minor_version = '2.0'
-def revision = '1'
+def revision = '2'
 def release_version = "${major_minor_version}r${revision}"
 
 version = release_version
@@ -83,7 +83,7 @@ def docToolsMainRuntimeClasspath = docToolsProject.extensions
         .runtimeClasspath
 
 // Extract ASN.1 notation blocks and member-level Javadoc from concrete classes
-// (default scope: tcg.credential.*) into build/schema/asn1-blocks.json.
+// (default scope: paccor.tcg.credential.*) into build/schema/asn1-blocks.json.
 tasks.register("extractAsn1Blocks", JavaExec) {
     description = "Run AsnDoclet to extract ASN.1 blocks from class Javadoc."
     group = "documentation"
@@ -96,7 +96,7 @@ tasks.register("extractAsn1Blocks", JavaExec) {
     classpath = files(docToolsMainRuntimeClasspath, sourceSets.main.output, sourceSets.main.runtimeClasspath)
     args "--asn1-output", asn1Output.absolutePath,
             "--source-root", layout.projectDirectory.dir("src/main/java").asFile.absolutePath,
-            "--package-filter", "tcg.credential"
+            "--package-filter", "paccor.tcg.credential"
 }
 
 // Dedicated JavaExec invocation that runs the doc-tools schema generator so it
@@ -261,7 +261,7 @@ def createScript(Project project, String mainClassName, String name) {
 startScripts.enabled = false
 run.enabled = false
 
-createScript(project, 'cli.RootCmd', 'paccor')
+createScript(project, 'paccor.cli.RootCmd', 'paccor')
 
 // Include files into a ZIP
 distributions.main.contents {
