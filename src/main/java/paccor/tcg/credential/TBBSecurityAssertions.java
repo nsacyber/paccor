@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import java.util.List;
 import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -59,9 +60,9 @@ public class TBBSecurityAssertions extends ASN1Object {
 	private static final int ASN1STRING_MAX_POSITION_IN_SEQUENCE = 5;
 
 	@Builder.Default
-	@JsonPropertyDescription("Assertion version. Defaults to 1.")
+	@JsonPropertyDescription("Assertion version. Defaults to v1.")
 	@NonNull
-	private final ASN1Integer version = new ASN1Integer(1); // default = 1
+	private final ASN1Integer version = new ASN1Integer(0); // default = 0
 	@JsonPropertyDescription("Optional Common Criteria assertions.")
 	private final CommonCriteriaMeasures ccInfo; // optional, tagged 0
 	@JsonPropertyDescription("Optional FIPS level statement.")
@@ -104,12 +105,15 @@ public class TBBSecurityAssertions extends ASN1Object {
 
 		TBBSecurityAssertions.TBBSecurityAssertionsBuilder builder = TBBSecurityAssertions.builder();
 
+		List<ASN1Object> untaggedElements = ASN1Utils.listUntaggedElements(seq);
+		ASN1Sequence untaggedSequence = new DERSequence(ASN1Utils.toASN1EncodableVector(untaggedElements));
+
 		// version can only be in the first position
-		builder.version(ASN1Utils.safeGetDefaultElementFromSequence(seq, 0, new ASN1Integer(1), ASN1Utils::getInteger));
-		// iso9000Certified could be in any position 0 through 4
-		builder.iso9000Certified(ASN1Utils.safeGetFirstInstanceFromSequenceGivenRange(seq, 0, 4, ASN1Boolean.FALSE, ASN1Utils::getBoolean));
-		// iso9000Uri could be in any position 0 through 5, and if not present, don't give anything to the builder
-		Optional.ofNullable(ASN1Utils.safeGetFirstInstanceFromSequenceGivenRange(seq, 0, 5, null, ASN1Utils::getIA5String))
+		builder.version(ASN1Utils.safeGetDefaultElementFromSequence(untaggedSequence, 0, new ASN1Integer(0), ASN1Utils::getInteger));
+		// iso9000Certified could be in any position 0 through 4, 0 to 1 in the untaggedSequence
+		builder.iso9000Certified(ASN1Utils.safeGetFirstInstanceFromSequenceGivenRange(untaggedSequence, 0, 4, ASN1Boolean.FALSE, ASN1Utils::getBoolean));
+		// iso9000Uri could be in any position 0 through 5, 0 to 2 in the untaggedSequence. If not present, don't give anything to the builder
+		Optional.ofNullable(ASN1Utils.safeGetFirstInstanceFromSequenceGivenRange(untaggedSequence, 0, 5, null, ASN1Utils::getIA5String))
 				.ifPresent(builder::iso9000Uri);
 
 		ASN1Utils.parseTaggedElements(seq).forEach((key, value) -> {
@@ -129,7 +133,7 @@ public class TBBSecurityAssertions extends ASN1Object {
 	 */
 	public ASN1Primitive toASN1Primitive() {
 		ASN1EncodableVector vec = new ASN1EncodableVector();
-		if (version.getValue().longValue() != 1) {
+		if (version.getValue().longValue() != 0) {
 			vec.add(version);
 		}
 		if (ccInfo != null) {

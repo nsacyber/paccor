@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.function.Function;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1GeneralizedTime;
+import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1OctetString;
 import org.bouncycastle.asn1.ASN1Sequence;
@@ -129,7 +130,7 @@ public class ASN1UtilsTest {
         List<ASN1Object> result = ASN1Utils.listUntaggedElements((ASN1Sequence)tbb.toASN1Primitive());
 
         Assertions.assertNotNull(result);
-        Assertions.assertEquals(0, result.size());
+        Assertions.assertEquals(0, result.size()); // 0 because rtmType is tagged [2]
     }
 
     @Test

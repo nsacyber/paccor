@@ -84,7 +84,7 @@ public class FIPSLevel extends ASN1Object {
 				.version(ASN1IA5String.getInstance(untaggedElements.get(0)))
 				.level(SecurityLevel.getInstance(untaggedElements.get(1)));
 
-		builder.plus(ASN1Utils.safeGetDefaultElementFromSequence(seq, 3, ASN1Boolean.FALSE, ASN1Utils::getBoolean));
+		builder.plus(ASN1Utils.safeGetDefaultElementFromSequence(seq, 2, ASN1Boolean.FALSE, ASN1Utils::getBoolean));
 
 		return builder.build();
 	}
