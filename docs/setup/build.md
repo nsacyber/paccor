@@ -29,8 +29,7 @@ Notes:
 - This build needs the .NET 10 SDK
 - The SDK is only needed to build the tools from source. It is not needed to run the tools.
 
-```
-bash or powershell
+```text
 dotnet build dotnet/ComponentClassRegistry/ComponentClassRegistry.sln
 ```
 
