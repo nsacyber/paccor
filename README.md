@@ -4,6 +4,8 @@
 
 The project supports the TCG Platform Certificate profile families currently documented in this repository, including v2.1, v1.1, and v1.0 workflows where the profile applies.
 
+__By default, paccor v2.0r2 will generate a v1.1 Platform Attribute Certificate__. You can generate learn how to target a different version [here](tutorials/change-target-version.md). Follow the tutorials to learn how to select between Attribute Certificate and Public Key Certificate.
+
 ## Documentation
 
 The primary documentation entry point is the GitHub Pages site:
