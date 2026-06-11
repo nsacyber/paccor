@@ -4,6 +4,11 @@
 
 > Source: [`dotnet/HardwareManifestPlugin/HardwareManifestPlugin/Resources/HardwareManifest.proto`](https://github.com/nsacyber/paccor/blob/main/dotnet/HardwareManifestPlugin/HardwareManifestPlugin/Resources/HardwareManifest.proto)
 
+## Automatic conversion of hardware data based on the target specification version
+
+PACCOR will automatically convert COMPONENTS and PLATFORM to or from TRAITS as necessary to meet the v2.X or v1.1
+Platform Certificate requirements.
+
 ## ManifestV2
 
 At the top level, the protobuf carries platform identifiers, component entries, optional platform properties, and optional URI indirections for hosted component or property lists.

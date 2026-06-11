@@ -8,7 +8,7 @@ plugins {
 
 // version number
 def major_minor_version = '2.0'
-def revision = '1'
+def revision = '2'
 def release_version = "${major_minor_version}r${revision}"
 
 version = release_version

@@ -9,6 +9,8 @@ Create, sign, inspect, and validate TCG Platform Certificates from documented JS
 
 paccor is built around the TCG Platform Certificate specifications and supports the v2.1, v1.1, and v1.0 families, including both attribute-certificate and public-key-certificate flows where the profile allows them.
 
+__By default, paccor will generate a v1.1 Platform Attribute Certificate__. You can generate learn how to target a different version [here](tutorials/change-target-version.md). Follow the tutorials to learn how to select between Attribute Certificate and Public Key Certificate.
+
 The docs are organized around one practical question: how do you get from hardware facts and policy JSON to a certificate you can inspect and trust?
 
 ## Start Here

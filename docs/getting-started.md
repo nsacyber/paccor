@@ -1,6 +1,16 @@
 # Getting Started
 
-Run these commands from an unpacked paccor install folder. The main learning path, and the intended golden path through the docs, is `scripts/pc_certgen.sh` on Linux or `scripts/windows/pc_certgen.ps1` on Windows.
+**NOTE:**
+
+    All of the paths below are relative to the root of the paccor install folder.
+    
+    If you installed with an RPM or DEB package, the install folder is `/opt/paccor`.
+    If you unpacked a distributable zip file, the install folder is the root of the unpacked folder.
+    
+    Run these commands from an unpacked paccor install folder. Follow the link below to learn how to install paccor.
+
+The main learning path is to use a demo script that will guide you through the creation of your first platform
+certificate. The script can be reviewed to learn how to use paccor. There is a version for Linux and Windows.
 
 Before you start:
 
@@ -18,7 +28,7 @@ paccor/
   scripts/pc_testgen/          # created by the helper scripts
 ```
 
-## Golden path
+## Learning path
 
 On Linux:
 
@@ -43,7 +53,7 @@ The script is intentionally linear. Each stage leaves behind files you can inspe
 The script starts by defining:
 
 - where the helper scripts live
-- where the `bin/paccor` launcher lives
+- where the `bin/paccor` executable lives
 - the working directory under `scripts/pc_testgen`
 - default certificate dates, serial number, and demo signing settings
 
