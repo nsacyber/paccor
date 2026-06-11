@@ -1,7 +1,7 @@
 package json.docgen;
 
 import java.util.List;
-import json.schema.JsonSchemaField;
+import paccor.json.schema.JsonSchemaField;
 
 /**
  * Group of related JSON fields documented together.

@@ -33,7 +33,7 @@ import jdk.javadoc.doclet.Reporter;
  * <pre>{@code
  * {
  *   "ComponentIdentifierV2": {
- *     "fqcn": "tcg.credential.ComponentIdentifierV2",
+ *     "fqcn": "paccor.tcg.credential.ComponentIdentifierV2",
  *     "asn1": "ComponentIdentifier ::= SEQUENCE { ... }",
  *     "classDoc": "Trimmed plain-text class doc.",
  *     "members": {
@@ -56,7 +56,7 @@ public class AsnDoclet implements Doclet {
             Pattern.DOTALL);
 
     private String outputPath;
-    private String packageFilter = "tcg.credential";
+    private String packageFilter = "paccor.tcg.credential";
     private Reporter reporter;
 
     public static void main(String[] args) throws Exception {
