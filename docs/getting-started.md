@@ -30,6 +30,8 @@ paccor/
 
 ## Learning path
 
+__By default, this tutorial will create a v1.1 Platform Attribute Certificate__. You can learn how to target a different version [here](tutorials/change-target-version.md).
+
 On Linux:
 
 ```bash
