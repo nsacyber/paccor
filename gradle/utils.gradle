@@ -1,0 +1,29 @@
+ext {
+
+    ccrTools = ["SmbiosCli", "PcieCli", "StorageCli"]
+
+    dotnetConfig = "Release"
+    dotnetNetVersion = "net10.0"
+
+    dotnetRuntime = { os ->
+        os == "win" ? "win-x64" : "linux-x64"
+    }
+
+    dotnetExeExt = { os ->
+        os == "win" ? ".exe" : ""
+    }
+
+    dotnetOutputFile = { tool, os ->
+        def runtime = dotnetRuntime(os)
+        def ext = dotnetExeExt(os)
+
+        def base = "${rootDir}/dotnet/ComponentClassRegistry/${tool}/bin/${dotnetConfig}/${dotnetNetVersion}/${runtime}/publish/${tool}${ext}"
+        file(base)
+    }
+
+    dotnetFiles = { os ->
+        ccrTools.collect { tool ->
+            dotnetOutputFile(tool, os)
+        }.findAll { it.exists() }
+    }
+}

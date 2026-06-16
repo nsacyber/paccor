@@ -1,0 +1,70 @@
+def baseDistribution = {
+    from("$projectDir/scripts") {
+        include "**/*.sh"
+        into "scripts"
+        filePermissions { unix(0755) }
+    }
+
+    from("$projectDir/docs/_assets") {
+        into "docs"
+    }
+
+    from(projectDir) {
+        include "**/*.md"
+    }
+}
+
+distributions {
+    main {
+        contents {
+            with baseDistribution
+        }
+    }
+}
+
+tasks.register("distZipLinux", Zip) {
+    group = "distribution"
+
+    dependsOn "dotnetPublish"
+    dependsOn "generateDocs"
+
+    archiveFileName.set("${project.name}.${version}.linux-x64.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+
+    into("${project.name}-${version}") {
+        with baseDistribution
+    }
+
+    from(dotnetFiles("linux")) {
+        into "scripts"
+        filePermissions { unix(0755) }
+        exclude "**/*.exe"
+    }
+}
+
+tasks.register("distZipWin", Zip) {
+    group = "distribution"
+
+    dependsOn "dotnetPublish"
+    dependsOn "generateDocs"
+
+    archiveFileName.set("${project.name}.${version}.win-x64.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("distributions"))
+
+    into("${project.name}-${version}") {
+        with baseDistribution
+    }
+
+    from(dotnetFiles("win")) {
+        into "scripts"
+    }
+}
+
+tasks.register("stageUtilsForDebRpm", Copy) {
+    group = "packaging"
+
+    dependsOn "dotnetPublish"
+
+    from(dotnetFiles("linux"))
+    into layout.buildDirectory.dir("tmp/staging")
+}

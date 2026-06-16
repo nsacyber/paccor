@@ -1,0 +1,55 @@
+tasks.register("cleanInstall") {
+    group = "install"
+
+    doLast {
+        delete "$projectDir/bin"
+        delete "$projectDir/lib"
+        dotnetFiles("linux").each{ file -> delete file }
+        dotnetFiles("win").each{ file -> delete file }
+    }
+}
+
+tasks.register("installBin", Copy) {
+    dependsOn "cleanInstall"
+    dependsOn "paccor"
+
+    from(layout.buildDirectory.dir("scripts")) {
+        exclude { it.file.name.endsWith(".bat") }
+    }
+
+    into "$projectDir/bin"
+
+    filePermissions { unix(0755) }
+}
+
+tasks.register("installLib", Copy) {
+    dependsOn "cleanInstall"
+    dependsOn "jar"
+
+    from(jar.outputs.files)
+    from(configurations.runtimeClasspath)
+
+    into "$projectDir/lib"
+}
+
+tasks.register("installDotnetScripts", Copy) {
+    dependsOn "cleanInstall"
+    dependsOn "dotnetPublish"
+
+    from(dotnetFiles("linux") + dotnetFiles("win"))
+
+    into "$projectDir/scripts"
+
+    filePermissions { unix(0755) }
+}
+
+tasks.register("installToSource") {
+    group = "install"
+    description = "Install runnable app into source tree"
+
+    dependsOn "installBin"
+    dependsOn "installLib"
+    dependsOn "installDotnetScripts"
+}
+
+clean.dependsOn "cleanInstall"

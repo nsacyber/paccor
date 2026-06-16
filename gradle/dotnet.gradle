@@ -1,0 +1,38 @@
+ccrTools.each { tool ->
+    ["linux", "win"].each { os ->
+
+        tasks.register("publishDotnet${tool}${os.capitalize()}", Exec) {
+            group = "dotnet"
+
+            commandLine "dotnet", "publish",
+                    "dotnet/ComponentClassRegistry/${tool}/${tool}.csproj",
+                    "-c", dotnetConfig,
+                    "-r", dotnetRuntime(os)
+        }
+    }
+}
+
+tasks.register("dotnetPublish") {
+    group = "dotnet"
+
+    dependsOn ccrTools.collectMany { tool ->
+        ["linux", "win"].collect { os ->
+            tasks.named("publishDotnet${tool}${os.capitalize()}")
+        }
+    }
+}
+
+tasks.register("verifyDotnetArtifacts") {
+    dependsOn "dotnetPublish"
+
+    doLast {
+        ccrTools.each { tool ->
+            ["linux", "win"].each { os ->
+                def f = dotnetOutputFile(tool, os)
+                if (!f.exists()) {
+                    throw new GradleException("Missing artifact: $f")
+                }
+            }
+        }
+    }
+}
