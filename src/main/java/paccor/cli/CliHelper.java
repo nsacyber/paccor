@@ -196,6 +196,14 @@ public class CliHelper {
         }
         return readObject;
     }
+
+    public static Object readPemObjectSafe(byte[] bytes) {
+        try {
+            return readPemObject(bytes);
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
     
     public static final String bytesToPem(final byte[] array, final x509type type) {
         return type.getPemHeader()

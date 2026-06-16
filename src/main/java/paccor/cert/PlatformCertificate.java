@@ -1,5 +1,6 @@
 package paccor.cert;
 
+import jakarta.validation.constraints.NotNull;
 import paccor.cli.CliHelper;
 import java.io.File;
 import java.math.BigInteger;
@@ -86,6 +87,15 @@ public final class PlatformCertificate {
         return null;
     }
 
+    public static PlatformCertificate load(@NotNull byte[] bytes) {
+        PlatformCertificate ac = fromAttributeCertificate(bytes);
+        if (ac != null) {
+            return ac;
+        }
+
+        return fromPublicKeyCertificate(bytes);
+    }
+
     public static PlatformCertificate loadSafe(@NonNull File file) {
         try {
             return load(file);
@@ -93,16 +103,51 @@ public final class PlatformCertificate {
         return null;
     }
 
+    public static PlatformCertificate loadSafe(@NotNull byte[] bytes) {
+        try {
+            return load(bytes);
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    public static PlatformCertificate fromAttributeCertificate(@NotNull byte[] bytes) {
+        X509AttributeCertificateHolder ac = readAttributeCertificate(bytes);
+        return ac != null ? fromAttributeCertificate(null, ac) : null;
+    }
+
     private static PlatformCertificate fromAttributeCertificate(
-            @NonNull File file,
+            File file,
             @NonNull X509AttributeCertificateHolder ac) {
         return inspect(file, CertKind.AC, ac, null);
     }
 
+    public static PlatformCertificate fromPublicKeyCertificate(@NotNull byte[] bytes) {
+        X509CertificateHolder pkc = readPublicKeyCertificate(bytes);
+        return pkc != null ? fromPublicKeyCertificate(null, pkc) : null;
+    }
+
     private static PlatformCertificate fromPublicKeyCertificate(
-            @NonNull File file,
+            File file,
             @NonNull X509CertificateHolder pkc) {
         return inspect(file, CertKind.PKC, null, pkc);
+    }
+
+    private static X509AttributeCertificateHolder readAttributeCertificate(byte[] bytes) {
+        try {
+            return new X509AttributeCertificateHolder(bytes);
+        } catch (Exception ignored) {}
+
+        Object object = CliHelper.readPemObjectSafe(bytes);
+        return object instanceof X509AttributeCertificateHolder ac ? ac : null;
+    }
+
+    private static X509CertificateHolder readPublicKeyCertificate(byte[] bytes) {
+        try {
+            return new X509CertificateHolder(bytes);
+        } catch (Exception ignored) {}
+
+        Object object = CliHelper.readPemObjectSafe(bytes);
+        return object instanceof X509CertificateHolder pkc ? pkc : null;
     }
 
     public boolean isAttributeCertificate() {
