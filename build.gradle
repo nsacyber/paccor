@@ -8,7 +8,7 @@ plugins {
 
 // version number
 def major_minor_version = '2.0'
-def revision = '2'
+def revision = '3'
 def release_version = "${major_minor_version}r${revision}"
 
 version = release_version
@@ -311,6 +311,10 @@ def static getDotnetRuntimeWin() {
     return "win-x64"
 }
 
+def static getComponentClassRegistryCliNames() {
+    return ["SmbiosCli", "PcieCli", "StorageCli"]
+}
+
 def getZipOutputPath() {
     return layout.buildDirectory.dir("distributions")
 }
@@ -322,21 +326,43 @@ def getStagingPathForUtilities() {
 def createLinuxZipFileList() {
     def config = getDotnetConfig()
     def runtime = getDotnetRuntimeLinux()
-    def smbios = file(createCcrPathString("SmbiosCli", config, runtime))
-    def pcie = file(createCcrPathString("PcieCli", config, runtime))
-    def storage = file(createCcrPathString("StorageCli", config, runtime))
+    def list = getComponentClassRegistryCliNames().collect {tool ->
+        file(createCcrPathString(tool, config, runtime))
+    }
 
-    return [smbios, pcie, storage]
+    return list
 }
 
 def createWinZipFileList() {
     def config = getDotnetConfig()
     def runtime = getDotnetRuntimeWin()
-    def smbios = file(createCcrPathString("SmbiosCli", config, runtime) + ".exe")
-    def pcie = file(createCcrPathString("PcieCli", config, runtime) + ".exe")
-    def storage = file(createCcrPathString("StorageCli", config, runtime) + ".exe")
+    def list = getComponentClassRegistryCliNames().collect {tool ->
+        file(createCcrPathString(tool, config, runtime) + ".exe")
+    }
 
-    return [smbios, pcie, storage]
+    return list
+}
+
+getComponentClassRegistryCliNames().each { tool ->
+    tasks.register("publishDotnet${tool}Linux", Exec) {
+        commandLine "dotnet", "publish", "dotnet/ComponentClassRegistry/${tool}/${tool}.csproj", "-c", getDotnetConfig(), "-r", getDotnetRuntimeLinux()
+    }
+    tasks.register("publishDotnet${tool}Win", Exec) {
+        commandLine "dotnet", "publish", "dotnet/ComponentClassRegistry/${tool}/${tool}.csproj", "-c", getDotnetConfig(), "-r", getDotnetRuntimeWin()
+    }
+}
+
+def runDotnetPublish(Task task) {
+    getComponentClassRegistryCliNames().each { tool ->
+        task.dependsOn tasks.named("publishDotnet${tool}Linux")
+        task.dependsOn tasks.named("publishDotnet${tool}Win")
+    }
+}
+
+tasks.register("dotnetPublish") {
+    group = "build"
+    description = "Publish ComponentClassRegistry CLI tools for Linux and Windows."
+    runDotnetPublish(it)
 }
 
 def static checkFilesExist(ArrayList<File> fileList, String destinationIfExists) {
@@ -358,6 +384,8 @@ tasks.register("distZipWin", Zip) {
     def runtime = getDotnetRuntimeWin()
     def archiveName = "${archiveBaseName}.${version}.${runtime}.zip"
 
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
     def fileList = createWinZipFileList()
 
     into(rootDirInZip) {
@@ -366,6 +394,9 @@ tasks.register("distZipWin", Zip) {
 
     from(fileList.findAll { it.exists() }) {
         into "${destinationInZip}"
+        exclude 'scripts/PcieCli'
+        exclude 'scripts/SmbiosCli'
+        exclude 'scripts/StorageCli'
     }
 
     archiveFileName.set(archiveName)
@@ -387,6 +418,8 @@ tasks.register("distZipLinux", Zip) {
 
     def fileList = createLinuxZipFileList()
 
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
     into(rootDirInZip) {
         with distributions.main.contents
     }
@@ -396,6 +429,7 @@ tasks.register("distZipLinux", Zip) {
         filePermissions {
             unix(0755)
         }
+        exclude '**/*.exe'
     }
 
     archiveFileName.set(archiveName)
@@ -419,6 +453,81 @@ tasks.register("stageUtilsForDebRpm", Copy) {
     }
 }
 
+tasks.register("cleanSourceBin", Delete) {
+    delete layout.projectDirectory.dir("bin")
+}
+
+tasks.register("cleanSourceLib", Delete) {
+    delete layout.projectDirectory.dir("lib")
+}
+
+tasks.register("cleanSourceDotnetScripts", Delete) {
+    delete getComponentClassRegistryCliNames().collect { tool ->
+        layout.projectDirectory.file("scripts/${tool}")
+    }
+    delete getComponentClassRegistryCliNames().collect { tool ->
+        layout.projectDirectory.file("scripts/${tool}.exe")
+    }
+}
+
+clean.dependsOn("cleanSourceBin")
+clean.dependsOn("cleanSourceLib")
+clean.dependsOn("cleanSourceDotnetScripts")
+
+tasks.register("installSourceBin", Copy) {
+    dependsOn tasks.named("cleanSourceBin")
+    dependsOn tasks.named("paccor")
+
+    from("build/scripts") {
+        exclude {
+            FileTreeElement details ->
+            details.file.name.endsWith(".bat")
+        }
+    }
+    into layout.projectDirectory.dir("bin")
+    filePermissions {
+        unix(0755)
+    }
+}
+
+tasks.register("installSourceLib", Copy) {
+    dependsOn tasks.named("cleanSourceLib")
+    dependsOn tasks.named("jar")
+
+    from(jar.outputs.files)
+    from(configurations.runtimeClasspath)
+    into layout.projectDirectory.dir("lib")
+}
+
+tasks.register("installSourceDotnetScripts", Copy) {
+    dependsOn tasks.named("cleanSourceDotnetScripts")
+    dependsOn tasks.named("dotnetPublish")
+
+    from(createLinuxZipFileList()) {
+        filePermissions {
+            unix(0755)
+        }
+    }
+    from(createWinZipFileList())
+    into layout.projectDirectory.dir("scripts")
+}
+
+tasks.register("installToSource") {
+    group = "build"
+    description = "Install runnable paccor into the source repository."
+    dependsOn tasks.named("installSourceBin")
+    dependsOn tasks.named("installSourceLib")
+    dependsOn tasks.named("installSourceDotnetScripts")
+}
+
+distTar {
+    dependsOn tasks.named("installToSource")
+}
+
+distZip {
+    dependsOn tasks.named("installToSource")
+}
+
 tasks.named("buildDeb") {
     dependsOn tasks.named("stageUtilsForDebRpm")
 }
@@ -433,6 +542,14 @@ ospackage {
     os=LINUX
     version="${project.version}"
     release=null
+
+    buildRpm {
+        arch = 'X86_64' // Set RPM architecture to x86_64
+    }
+
+    buildDeb {
+        arch = 'amd64' // Set DEB architecture to amd64
+    }
 
     into '/opt/paccor'
     user 'root'
