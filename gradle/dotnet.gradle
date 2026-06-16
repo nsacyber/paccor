@@ -1,37 +1,65 @@
-ccrTools.each { tool ->
-    ["linux", "win"].each { os ->
+def dotnetConfig = "Release"
+def dotnetRuntimeLinux = "linux-x64"
+def dotnetRuntimeWin = "win-x64"
 
-        tasks.register("publishDotnet${tool}${os.capitalize()}", Exec) {
-            group = "dotnet"
+def static dotnetProject(String tool) {
+    "dotnet/ComponentClassRegistry/${tool}/${tool}.csproj"
+}
 
-            commandLine "dotnet", "publish",
-                    "dotnet/ComponentClassRegistry/${tool}/${tool}.csproj",
-                    "-c", dotnetConfig,
-                    "-r", dotnetRuntime(os)
-        }
+def dotnetOutput(String tool, String runtime) {
+    def base = "${rootDir}/dotnet/ComponentClassRegistry/${tool}/bin/${dotnetConfig}/${runtime}/publish/${tool}"
+    return runtime.contains("win") ? file(base + ".exe") : file(base)
+}
+
+// dotnetPublish{Linux|Win}
+tools.each { tool ->
+    tasks.register("dotnetPublishLinux${tool}", Exec) {
+        commandLine "dotnet", "publish",
+                dotnetProject(tool),
+                "-c", dotnetConfig,
+                "-r", dotnetRuntimeLinux
+    }
+
+    tasks.register("dotnetPublishWin${tool}", Exec) {
+        commandLine "dotnet", "publish",
+                dotnetProject(tool),
+                "-c", dotnetConfig,
+                "-r", dotnetRuntimeWin
     }
 }
 
+// dotnetPublish
 tasks.register("dotnetPublish") {
-    group = "dotnet"
+    group = "build"
 
-    dependsOn ccrTools.collectMany { tool ->
-        ["linux", "win"].collect { os ->
-            tasks.named("publishDotnet${tool}${os.capitalize()}")
-        }
-    }
+    dependsOn tools.collect { tool ->
+        [
+                "dotnetPublishLinux${tool}",
+                "dotnetPublishWin${tool}"
+        ]
+    }.flatten()
 }
 
-tasks.register("verifyDotnetArtifacts") {
+// stageDotnet
+tasks.register("stageDotnet") {
     dependsOn "dotnetPublish"
 
     doLast {
-        ccrTools.each { tool ->
-            ["linux", "win"].each { os ->
-                def f = dotnetOutputFile(tool, os)
-                if (!f.exists()) {
-                    throw new GradleException("Missing artifact: $f")
-                }
+        def outDir = file("$buildDir/staged/dotnet")
+        delete outDir
+        outDir.mkdirs()
+
+        tools.each { tool ->
+
+            def linux = file("${rootDir}/dotnet/ComponentClassRegistry/${tool}/bin/Release/linux-x64/publish/${tool}")
+            def win   = file("${rootDir}/dotnet/ComponentClassRegistry/${tool}/bin/Release/win-x64/publish/${tool}.exe")
+
+            if (linux.exists()) {
+                copy { from linux; into outDir }
+            }
+
+            if (win.exists()) {
+                copy { from win; into outDir }
             }
         }
     }

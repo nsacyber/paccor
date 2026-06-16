@@ -1,51 +1,41 @@
 java {
-    withJavadocJar()
     withSourcesJar()
+    withJavadocJar()
 }
 
 dependencies {
-    // Versions and module coordinates in
-    // <project>/gradle/libs.versions.toml
-    api libs.bouncycastle.pkix // Bouncy Castle license
-    api libs.bouncycastle.prov // Bouncy Castle license
-    api libs.jackson.annotations // Apache 2.0
-    api libs.jackson.core // Apache 2.0
-    api libs.jackson.databind // Apache 2.0
-    implementation libs.jakarta.validation // Apache 2.0
-    api libs.picocli // Apache 2.0
-    compileOnly libs.lombok // MIT
+    api libs.bouncycastle.pkix
+    api libs.bouncycastle.prov
+    api libs.jackson.annotations
+    api libs.jackson.core
+    api libs.jackson.databind
+    api libs.picocli
 
-    annotationProcessor libs.lombok // MIT
+    implementation libs.jakarta.validation
 
-    // Test dependencies
-    testImplementation libs.junit // EPL 2.0
-    testImplementation libs.mockito.junit // MIT
+    compileOnly libs.lombok
+    annotationProcessor libs.lombok
 
-    testRuntimeOnly libs.junit.platform.launcher // EPL 2.0
+    testImplementation libs.junit
+    testImplementation libs.mockito.junit
+    testRuntimeOnly libs.junit.platform.launcher
 }
 
 test {
     useJUnitPlatform()
 }
 
-tasks.withType(AbstractArchiveTask).configureEach {
-    preserveFileTimestamps = true
-    reproducibleFileOrder = true
-}
-
 startScripts.enabled = false
 run.enabled = false
 
-def createScript(Project project, String mainClassName, String name) {
-    project.tasks.register(name, CreateStartScripts) {
-        outputDir = project.layout.buildDirectory.dir("scripts").get().asFile
-        mainClass = mainClassName
-        applicationName = name
-        classpath = project.tasks.named(JavaPlugin.JAR_TASK_NAME).get().outputs.files + project.configurations.runtimeClasspath
-    }
 
-    project.tasks.named(name).configure {
-        dependsOn(project.tasks.named(JavaPlugin.JAR_TASK_NAME))
+// CLI launcher
+def createScript = { Project project, String mainClassName, String name ->
+    project.tasks.register(name, CreateStartScripts) {t ->
+        t.outputDir = project.layout.buildDirectory.dir("scripts").get().asFile
+        t.applicationName = name
+        t.mainClass.set(mainClassName)
+        t.classpath = project.tasks.named(JavaPlugin.JAR_TASK_NAME).get().outputs.files + project.configurations.runtimeClasspath
     }
 
     project.distributions.main.contents {
@@ -57,18 +47,6 @@ def createScript(Project project, String mainClassName, String name) {
             duplicatesStrategy = DuplicatesStrategy.EXCLUDE // IMPORTANT: eliminates duplicate files within the ZIP
         }
     }
-
-    tasks.named("buildDeb") {
-        dependsOn tasks.named(name)
-    }
-
-    tasks.named("buildRpm") {
-        dependsOn tasks.named(name)
-    }
 }
 
-// Suppress standard application plugin behavior in favor of easier to read program declarations below
-startScripts.enabled = false
-run.enabled = false
-
-createScript(project, 'paccor.cli.RootCmd', 'paccor')
+createScript(project, "paccor.cli.RootCmd", "paccor")

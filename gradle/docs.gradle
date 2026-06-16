@@ -1,82 +1,50 @@
-evaluationDependsOn(':doc-tools')
-def docToolsProject = project(':doc-tools')
-def docToolsMainRuntimeClasspath = docToolsProject.extensions
-        .getByType(SourceSetContainer)
-        .named('main')
-        .get()
-        .runtimeClasspath
+evaluationDependsOn(":doc-tools")
 
-// Extract ASN.1 notation blocks and member-level Javadoc from concrete classes
-// (default scope: paccor.tcg.credential.*) into build/schema/asn1-blocks.json.
+def docToolsProject = project(":doc-tools")
+def docClasspath = docToolsProject.sourceSets.main.runtimeClasspath
+
 tasks.register("extractAsn1Blocks", JavaExec) {
-    description = "Run AsnDoclet to extract ASN.1 blocks from class Javadoc."
-    group = "documentation"
+    group = "docs"
+
     dependsOn docToolsProject.tasks.named("classes")
-    def asn1Output = layout.buildDirectory.file("schema/asn1-blocks.json").get().asFile
-    inputs.files(sourceSets.main.allJava, sourceSets.main.compileClasspath, docToolsMainRuntimeClasspath)
-    inputs.dir("docs/doc-tools/src/main/java")
-    outputs.file(asn1Output)
+
     mainClass = "paccor.docgen.AsnDoclet"
-    classpath = files(docToolsMainRuntimeClasspath, sourceSets.main.output, sourceSets.main.runtimeClasspath)
-    args "--asn1-output", asn1Output.absolutePath,
-            "--source-root", layout.projectDirectory.dir("src/main/java").asFile.absolutePath,
+    classpath = files(docClasspath, sourceSets.main.runtimeClasspath)
+
+    def out = layout.buildDirectory.file("schema/asn1-blocks.json").get().asFile
+
+    inputs.files(sourceSets.main.allJava)
+    outputs.file(out)
+
+    args "--asn1-output", out.absolutePath,
+            "--source-root", "${projectDir}/src/main/java",
             "--package-filter", "paccor.tcg.credential"
 }
 
-// Dedicated JavaExec invocation that runs the doc-tools schema generator so it
-// writes JSON Schema artifacts and reference Markdown into build/schema/.
-tasks.register("generateSchemas", JavaExec) {
-    description = "Run json.SchemaUtils from docs/doc-tools to write JSON Schema and reference artifacts."
-    group = "documentation"
-    mainClass = "json.SchemaUtils"
-    classpath = files(docToolsMainRuntimeClasspath, sourceSets.main.output, sourceSets.main.runtimeClasspath)
-    def outputDir = layout.buildDirectory.dir("schema").get().asFile
-    systemProperty "schema.output.dir", outputDir.absolutePath
-    dependsOn "classes"
-    dependsOn "extractAsn1Blocks"
-    inputs.files(tasks.named("extractAsn1Blocks"))
-    inputs.dir("docs/doc-tools/src/main/java")
-    outputs.dir(outputDir)
-}
-
-tasks.register("generateCliHelp", JavaExec) {
-    description = "Generate help output as Markdown for the docs site."
-    group = "documentation"
-    mainClass = "paccor.docgen.CliHelpGenerator"
-    classpath = files(docToolsMainRuntimeClasspath, sourceSets.main.output, sourceSets.main.runtimeClasspath)
-    def outputDir = layout.buildDirectory.dir("schema/docs/cli-help").get().asFile
-    systemProperty "cli.help.output.dir", outputDir.absolutePath
-    dependsOn "classes"
-    dependsOn docToolsProject.tasks.named("classes")
-    inputs.files(sourceSets.main.allJava, sourceSets.main.compileClasspath, docToolsMainRuntimeClasspath)
-    inputs.dir("docs/doc-tools/src/main/java")
-    outputs.dir(outputDir)
-}
-
-// Aggregator: run schema + doc generation, then stage generated MD/graphs under
-// docs/reference/_generated/ where the curated mkdocs pages can include-markdown them.
 tasks.register("generateDocs") {
-    description = "Generate schemas, ASN.1 blocks, and project doc Markdown; stage for mkdocs."
-    group = "documentation"
-    dependsOn "generateSchemas"
-    dependsOn "generateCliHelp"
+    group = "docs"
+
+    dependsOn "extractAsn1Blocks"
+
     def schemaDir = layout.buildDirectory.dir("schema")
-    def stagedDir = layout.projectDirectory.dir("docs/reference/_generated")
+    def staged = layout.projectDirectory.dir("docs/reference/_generated")
+
     inputs.dir(schemaDir)
-    outputs.dir(stagedDir)
+    outputs.dir(staged)
+
     doLast {
-        delete stagedDir
+        delete staged
         copy {
             from(schemaDir.get().dir("docs"))
-            into stagedDir
+            into staged
         }
         copy {
             from(schemaDir.get().dir("graphs"))
-            into stagedDir.dir("graphs")
+            into staged.dir("graphs")
         }
         copy {
             from(schemaDir.get().dir("schema-json"))
-            into stagedDir.dir("schema-json")
+            into staged.dir("schema-json")
         }
     }
 }

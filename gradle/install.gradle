@@ -1,55 +1,66 @@
+def installBinDir = file("${rootDir}/bin")
+def installLibDir = file("${rootDir}/lib")
+def installScriptsDir = file("${rootDir}/scripts")
+
+/**
+ * Clean only installed artifacts (NOT source scripts)
+ */
 tasks.register("cleanInstall") {
-    group = "install"
+    group = "build"
 
     doLast {
-        delete "$projectDir/bin"
-        delete "$projectDir/lib"
-        dotnetFiles("linux").each{ file -> delete file }
-        dotnetFiles("win").each{ file -> delete file }
+        delete installBinDir
+        delete installLibDir
+
+        tools.each { tool ->
+            delete file("${installScriptsDir}/${tool}")
+            delete file("${installScriptsDir}/${tool}.exe")
+        }
     }
-}
-
-tasks.register("installBin", Copy) {
-    dependsOn "cleanInstall"
-    dependsOn "paccor"
-
-    from(layout.buildDirectory.dir("scripts")) {
-        exclude { it.file.name.endsWith(".bat") }
-    }
-
-    into "$projectDir/bin"
-
-    filePermissions { unix(0755) }
-}
-
-tasks.register("installLib", Copy) {
-    dependsOn "cleanInstall"
-    dependsOn "jar"
-
-    from(jar.outputs.files)
-    from(configurations.runtimeClasspath)
-
-    into "$projectDir/lib"
-}
-
-tasks.register("installDotnetScripts", Copy) {
-    dependsOn "cleanInstall"
-    dependsOn "dotnetPublish"
-
-    from(dotnetFiles("linux") + dotnetFiles("win"))
-
-    into "$projectDir/scripts"
-
-    filePermissions { unix(0755) }
 }
 
 tasks.register("installToSource") {
-    group = "install"
-    description = "Install runnable app into source tree"
+    group = "build"
+    description = "Install runnable paccor into source repository"
 
-    dependsOn "installBin"
-    dependsOn "installLib"
-    dependsOn "installDotnetScripts"
+    dependsOn "build"
+    dependsOn "stageDotnet"
+
+    doLast {
+
+        // JAVA BIN
+        copy {
+            from(layout.buildDirectory.dir("scripts"))
+            into("${rootDir}/bin")
+            exclude { it.name.endsWith(".bat") }
+        }
+
+        // JAVA LIB
+        copy {
+            from(jar.outputs.files)
+            from(configurations.runtimeClasspath)
+            into("${rootDir}/lib")
+        }
+
+        // DOTNET BINARIES ONLY (already flattened, safe now)
+        copy {
+            from(layout.buildDirectory.dir("staged/dotnet"))
+            into("${rootDir}/scripts")
+
+            include "**/*"
+
+            includeEmptyDirs = false
+
+            // IMPORTANT: NO pdb or metadata files possible anymore,
+            // so no duplicates can occur
+        }
+
+        // FIX permissions
+        fileTree("${rootDir}/scripts").visit { f ->
+            if (!f.file.isDirectory() && f.name.endsWith(".sh")) {
+                f.file.setExecutable(true, false)
+            }
+        }
+    }
 }
 
-clean.dependsOn "cleanInstall"

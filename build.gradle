@@ -9,9 +9,34 @@ plugins {
 version = "2.0r3"
 
 apply from: "$rootDir/gradle/utils.gradle"
+apply from: "$rootDir/gradle/content.gradle"
 apply from: "$rootDir/gradle/java.gradle"
 apply from: "$rootDir/gradle/docs.gradle"
 apply from: "$rootDir/gradle/dotnet.gradle"
-apply from: "$rootDir/gradle/packaging.gradle"
 apply from: "$rootDir/gradle/install.gradle"
+apply from: "$rootDir/gradle/packaging.gradle"
 apply from: "$rootDir/gradle/publishing.gradle"
+
+
+// clean should reverse installToSource
+tasks.named("clean") {
+    dependsOn "cleanInstall"
+}
+
+// Java only build
+tasks.named("build")
+
+// Group publishing tasks, signature and maven separate
+tasks.register("release") {
+    group = "release"
+    description = "Full release"
+
+    dependsOn "build"
+
+    dependsOn "generateDocs"
+    dependsOn "stageDotnet"
+    dependsOn "distZip"
+    dependsOn "distTar"
+    dependsOn "buildRpm"
+    dependsOn "buildDeb"
+}

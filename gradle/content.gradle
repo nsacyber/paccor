@@ -1,0 +1,98 @@
+ext.packageContent = {
+    return [
+            bin: [
+                    from: layout.buildDirectory.dir("scripts"),
+                    include: null,
+                    exclude: { it.file.name.endsWith(".bat") },
+                    mode: 0755
+            ],
+
+            lib: [
+                    from: [
+                            jar.outputs.files,
+                            configurations.runtimeClasspath
+                    ]
+            ],
+
+            scripts_linux: [
+                    from: layout.buildDirectory.dir("staged/dotnet/linux"),
+                    mode: 0755
+            ],
+
+            scripts_win: [
+                    from: layout.buildDirectory.dir("staged/dotnet/win"),
+                    mode: 0755
+            ],
+
+            docs: [
+                    from: fileTree("docs/_assets")
+            ],
+
+            root_md: [
+                    from: fileTree(rootDir) {
+                        include "*.md"
+                    }
+            ]
+    ]
+}
+
+ext.applyPackageLayout = { target, layoutMap, os ->
+    layoutMap.each { name, spec ->
+
+        def sources = spec.from instanceof List ? spec.from : [spec.from]
+
+        sources.each { src ->
+
+            target.from(src) {
+
+                switch (name) {
+
+                    case "bin":
+                    case "scripts_linux":
+                    case "scripts_win":
+                        into name.startsWith("scripts") ? "scripts" : name
+                        filePermissions {
+                            unix(spec.mode ?: 0755)
+                        }
+                        break
+
+                    case "lib":
+                        into "lib"
+                        break
+
+                    case "docs":
+                        into "docs"
+                        break
+
+                    case "root_md":
+                        into "/opt/paccor"
+                        break
+                }
+            }
+        }
+    }
+}
+
+tasks.named("distZip") {
+    dependsOn "stageDotnet"
+
+    archiveFileName.set("paccor-${version}.linux.zip")
+
+    applyPackageLayout(it, packageContent(), "linux")
+}
+
+tasks.register("distZipWin", Zip) {
+
+    dependsOn "stageDotnet"
+
+    archiveFileName.set("paccor-${version}.win.zip")
+
+    applyPackageLayout(it, packageContent(), "win")
+
+    from(layout.buildDirectory.dir("staged/dotnet/win")) {
+        into "scripts"
+        filePermissions {
+            unix(0755)
+        }
+    }
+}
