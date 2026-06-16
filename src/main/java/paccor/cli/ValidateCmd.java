@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
+import paccor.cli.pv.ReadableFileConverter;
 import paccor.json.ObjectMapperFactory;
 import paccor.normalization.PlatformConfigurationNormalizer;
 import paccor.crypto.PcBcContentVerifierProviderBuilder;
@@ -43,11 +44,11 @@ import paccor.validator.SpecificationValidator;
 public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
     @Mixin private CommonOptions common;
 
-    @Option(names = { "-X", "--x509v2AttrCert"/*backwards compatibility*/, "--pkcPlatformCert" }, description = "Platform certificate file", required = true)
+    @Option(names = { "-X", "--x509v2AttrCert"/*backwards compatibility*/, "--pkcPlatformCert" }, description = "Platform certificate file", required = true, converter = ReadableFileConverter.class)
     private File platformCertFile;
-    @Option(names = { "-P", "--publicKeyCert"/*backwards compatibility*/, "--issuer-cert" }, description = "Signer certificate file")
+    @Option(names = { "-P", "--publicKeyCert"/*backwards compatibility*/, "--issuer-cert" }, description = "Signer certificate file", converter = ReadableFileConverter.class)
     private File signerFile;
-    @Option(names = { "-c", "--components-json" }, description = "Components JSON to verify against AC components")
+    @Option(names = { "-c", "--components-json" }, description = "Components JSON to verify against AC components", converter = ReadableFileConverter.class)
     private File componentsJson;
     @Option(names = { "--component-matcher" }, description = "Component matcher: NORMALIZED (default) or RAW")
     private String componentMatcherName;

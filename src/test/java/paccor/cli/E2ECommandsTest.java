@@ -68,7 +68,7 @@ public class E2ECommandsTest extends TestSupport {
         Path tempDir = tempDir();
         Path env = tempDir.resolve("env-pkc.json");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
             "certgen",
             "--kind", "PKC",
             "--type", "base",
@@ -88,7 +88,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertTrue(json.contains("\"type\"") && json.toLowerCase().contains("pkc"), "Envelope should record type PKC");
 
         // Attempt in-place overwrite without flag should fail
-        int rcNoOverwrite = new CommandLine(new RootCmd()).execute(
+        int rcNoOverwrite = RootCmd.commandLine().execute(
             "certgen",
             "--in", env.toString(),
             "--out", env.toString()
@@ -96,7 +96,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(ClientExitCodes.USAGE_ERROR.code(), rcNoOverwrite, "Refusing to overwrite without --overwrite-in-place should exit USAGE_ERROR");
 
         // With overwrite flag should pass (still ok if no TBS rebuild requested)
-        int rcOverwrite = new CommandLine(new RootCmd()).execute(
+        int rcOverwrite = RootCmd.commandLine().execute(
             "certgen",
             "--in", env.toString(),
             "--overwrite-in-place",
@@ -111,7 +111,7 @@ public class E2ECommandsTest extends TestSupport {
         Path env = tempDir.resolve("env-ac1.json");
         Path cer = tempDir.resolve("env-ac1.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", "1",
                 "--not-before", "20240101",
@@ -130,7 +130,7 @@ public class E2ECommandsTest extends TestSupport {
         String json = Files.readString(env);
         Assertions.assertTrue(json.contains("\"type\"") && json.toLowerCase().contains("ac"), "Envelope should record type AC");
 
-        int rcStub = new CommandLine(new RootCmd()).execute(
+        int rcStub = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -157,7 +157,7 @@ public class E2ECommandsTest extends TestSupport {
         Path env = tempDir.resolve("env-acv3.json");
         Path cer = tempDir.resolve("env-acv3.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", "1891",
                 "--not-before", "20240101",
@@ -176,7 +176,7 @@ public class E2ECommandsTest extends TestSupport {
         String json = Files.readString(env);
         Assertions.assertTrue(json.contains("\"type\"") && json.toLowerCase().contains("ac"), "Envelope should record type AC");
 
-        int rcStub = new CommandLine(new RootCmd()).execute(
+        int rcStub = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -203,7 +203,7 @@ public class E2ECommandsTest extends TestSupport {
         Path env = tempDir.resolve("env-pkcv3.json");
         Path cer = tempDir.resolve("env-pkcv3.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", "1891",
                 "--not-before", "20240101",
@@ -222,7 +222,7 @@ public class E2ECommandsTest extends TestSupport {
         String json = Files.readString(env);
         Assertions.assertTrue(json.contains("\"type\"") && json.toLowerCase().contains("pkc"), "Envelope should record type PKC");
 
-        int rcStub = new CommandLine(new RootCmd()).execute(
+        int rcStub = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -247,7 +247,7 @@ public class E2ECommandsTest extends TestSupport {
         Path env = tempDir.resolve("env-acv1.json");
         Path cer = tempDir.resolve("env-acv1.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--kind", "AC",
                 "--serial", "1",
@@ -267,7 +267,7 @@ public class E2ECommandsTest extends TestSupport {
         String json = Files.readString(env);
         Assertions.assertTrue(json.contains("\"type\"") && json.toLowerCase().contains("ac"), "Envelope should record type AC");
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -292,7 +292,7 @@ public class E2ECommandsTest extends TestSupport {
         Path env = tempDir.resolve("env-pkcv1.json");
         Path cer = tempDir.resolve("env-pkcv1.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--kind", "PKC",
                 "--serial", "1",
@@ -312,7 +312,7 @@ public class E2ECommandsTest extends TestSupport {
         String json = Files.readString(env);
         Assertions.assertTrue(json.contains("\"type\"") && json.toLowerCase().contains("pkc"), "Envelope should record type PKC");
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -339,7 +339,7 @@ public class E2ECommandsTest extends TestSupport {
         Path outBadSig = tempDir.resolve("assembled-badsig.bin");
 
         // Create envelope with algorithm and minimal data so assemble enters verification path
-        int rc1 = new CommandLine(new RootCmd()).execute(
+        int rc1 = RootCmd.commandLine().execute(
             "certgen",
             "--kind", "pkc",
             "--sig-profile", "rsa-sha256",
@@ -350,7 +350,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(ClientExitCodes.SUCCESS.code(), rc1);
 
         // Assemble without signature -> stub path; also pass --pem just to exercise the option parsing
-        int rcStub = new CommandLine(new RootCmd()).execute(
+        int rcStub = RootCmd.commandLine().execute(
             "assemble",
             "--in", env.toString(),
             "--out", outStub.toString(),
@@ -363,7 +363,7 @@ public class E2ECommandsTest extends TestSupport {
 
         // Now exercise signature-related options with a bogus signature and validation cert; expect validation failure
         String bogusSigB64 = Base64.getEncoder().encodeToString(new byte[64]);
-        int rcBad = new CommandLine(new RootCmd()).execute(
+        int rcBad = RootCmd.commandLine().execute(
                     "assemble",
                     "--in", env.toString(),
                     "--out", outBadSig.toString(),
@@ -381,7 +381,7 @@ public class E2ECommandsTest extends TestSupport {
         Path env = tempDir.resolve("env-ac1.json");
         Path cer = tempDir.resolve("env-ac1.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", "1",
                 "--not-before", "20240101",
@@ -397,7 +397,7 @@ public class E2ECommandsTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc);
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -408,7 +408,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble);
         Assertions.assertTrue(Files.exists(cer));
 
-        int rcValidateOk = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cer.toString(),
                 "--publicKeyCert", RES_GEN1_CA_CERT,
@@ -421,7 +421,7 @@ public class E2ECommandsTest extends TestSupport {
         String orig = Files.readString(Path.of(RES_GEN1_COMP_JSON_V2), StandardCharsets.UTF_8);
         String tweaked = orig.replaceFirst("\"MODEL\"\\s*:\\s*\"", "\"MODEL\": \"INVALID-");
         Files.writeString(badJson, tweaked, StandardCharsets.UTF_8);
-        int rcValidateBad = new CommandLine(new RootCmd()).execute(
+        int rcValidateBad = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cer.toString(),
                 "--publicKeyCert", RES_GEN1_CA_CERT,
@@ -436,7 +436,7 @@ public class E2ECommandsTest extends TestSupport {
         Path env = tempDir.resolve("env-acbb.json");
         Path cer = tempDir.resolve("env-acbb.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", "1",
                 "--not-before", "20240101",
@@ -452,7 +452,7 @@ public class E2ECommandsTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc);
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -463,7 +463,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble);
         Assertions.assertTrue(Files.exists(cer));
 
-        int rcValidateOk = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cer.toString(),
                 "--publicKeyCert", RES_GEN1_CA_CERT,
@@ -478,7 +478,7 @@ public class E2ECommandsTest extends TestSupport {
         Path env = tempDir.resolve("env-acv1.json");
         Path cer = tempDir.resolve("env-acv1.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--kind", "AC",
                 "--serial", "1",
@@ -495,7 +495,7 @@ public class E2ECommandsTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc);
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -506,7 +506,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble);
         Assertions.assertTrue(Files.exists(cer));
 
-        int rcValidateOk = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cer.toString(),
                 "--publicKeyCert", RES_CA_CERT,
@@ -518,7 +518,7 @@ public class E2ECommandsTest extends TestSupport {
         String orig = Files.readString(Path.of(RES_BB_COMP_JSON_V1), StandardCharsets.UTF_8);
         String tweaked = orig.replaceFirst("\"MODEL\"\\s*:\\s*\"", "\"MODEL\": \"INVALID-");
         Files.writeString(badJson, tweaked, StandardCharsets.UTF_8);
-        int rcValidateBad = new CommandLine(new RootCmd()).execute(
+        int rcValidateBad = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cer.toString(),
                 "--publicKeyCert", RES_CA_CERT,
@@ -538,7 +538,7 @@ public class E2ECommandsTest extends TestSupport {
         Path cerRebase = tempDir.resolve("env-actest4Rebase.cer");
 
         // Base
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", "1",
                 "--not-before", "20240101",
@@ -554,7 +554,7 @@ public class E2ECommandsTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc);
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", envBase.toString(),
                 "--out", cerBase.toString(),
@@ -565,7 +565,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble);
         Assertions.assertTrue(Files.exists(cerBase));
 
-        int rcValidateOk = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cerBase.toString(),
                 "--publicKeyCert", RES_MLDSA65_CA_CERT,
@@ -574,7 +574,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(0, rcValidateOk, "validate should pass components check");
 
         // Delta
-        int rc2 = new CommandLine(new RootCmd()).execute(
+        int rc2 = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", "2",
                 "--not-before", "20240101",
@@ -590,7 +590,7 @@ public class E2ECommandsTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc2);
 
-        int rcAssemble2 = new CommandLine(new RootCmd()).execute(
+        int rcAssemble2 = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", envDelta.toString(),
                 "--out", cerDelta.toString(),
@@ -601,7 +601,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble2);
         Assertions.assertTrue(Files.exists(cerDelta));
 
-        int rcValidateOk2 = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk2 = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cerDelta.toString(),
                 "--publicKeyCert", RES_MLDSA65_CA_CERT,
@@ -611,7 +611,7 @@ public class E2ECommandsTest extends TestSupport {
                 "delta component validation should require --prev-pcert");
 
         // Rebase
-        int rc3 = new CommandLine(new RootCmd()).execute(
+        int rc3 = RootCmd.commandLine().execute(
                 "certgen",
                 "--type", "rebase",
                 "--serial", "1",
@@ -628,7 +628,7 @@ public class E2ECommandsTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc3);
 
-        int rcAssemble3 = new CommandLine(new RootCmd()).execute(
+        int rcAssemble3 = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", envRebase.toString(),
                 "--out", cerRebase.toString(),
@@ -639,7 +639,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble3);
         Assertions.assertTrue(Files.exists(cerRebase));
 
-        int rcValidateOk3 = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk3 = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cerRebase.toString(),
                 "--publicKeyCert", RES_MLDSA65_CA_CERT,
@@ -648,7 +648,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(), rcValidateOk3,
                 "rebase component validation should require --prev-pcert");
 
-        int rcValidateOk4 = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk4 = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cerDelta.toString(),
                 "--publicKeyCert", RES_MLDSA65_CA_CERT,
@@ -664,7 +664,7 @@ public class E2ECommandsTest extends TestSupport {
         Path env = tempDir.resolve("env-acv3.json");
         Path cer = tempDir.resolve("env-acv3.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", "1891",
                 "--not-before", "20240101",
@@ -680,7 +680,7 @@ public class E2ECommandsTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc);
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -691,7 +691,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble);
         Assertions.assertTrue(Files.exists(cer));
 
-        int rcValidateOk = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cer.toString(),
                 "--publicKeyCert", RES_GEN1_CA_CERT,
@@ -704,7 +704,7 @@ public class E2ECommandsTest extends TestSupport {
         String orig = Files.readString(Path.of(RES_GEN1_COMP_JSON_V3), StandardCharsets.UTF_8);
         String tweaked = orig.replaceFirst("\\\"traitValue\\\"\\s*:\\s*\\\"", "\"traitValue\": \"INVALID-");
         Files.writeString(badJson, tweaked, StandardCharsets.UTF_8);
-        int rcValidateBad = new CommandLine(new RootCmd()).execute(
+        int rcValidateBad = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cer.toString(),
                 "--publicKeyCert", RES_GEN1_CA_CERT,
@@ -719,7 +719,7 @@ public class E2ECommandsTest extends TestSupport {
         Path env = tempDir.resolve("env-pkcv3.json");
         Path cer = tempDir.resolve("env-pkcv3.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", "1891",
                 "--not-before", "20240101",
@@ -735,7 +735,7 @@ public class E2ECommandsTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc);
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -746,7 +746,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble);
         Assertions.assertTrue(Files.exists(cer));
 
-        int rcValidateOk = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk = RootCmd.commandLine().execute(
                 "validate",
                 "-X", cer.toString(),
                 "--publicKeyCert", RES_MLDSA65_CA_CERT,
@@ -759,7 +759,7 @@ public class E2ECommandsTest extends TestSupport {
         String orig = Files.readString(Path.of(RES_GEN1_COMP_JSON_V3), StandardCharsets.UTF_8);
         String tweaked = orig.replaceFirst("\\\"traitValue\\\"\\s*:\\s*\\\"", "\"traitValue\": \"INVALID-");
         Files.writeString(badJson, tweaked, StandardCharsets.UTF_8);
-        int rcValidateBad = new CommandLine(new RootCmd()).execute(
+        int rcValidateBad = RootCmd.commandLine().execute(
                 "validate",
                 "-X", cer.toString(),
                 "--publicKeyCert", RES_GEN1_CA_CERT,
@@ -774,7 +774,7 @@ public class E2ECommandsTest extends TestSupport {
         Path env = tempDir.resolve("env-pkcv1.json");
         Path cer = tempDir.resolve("env-pkcv1.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--kind", "PKC",
                 "--serial", "1",
@@ -791,7 +791,7 @@ public class E2ECommandsTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc);
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -802,7 +802,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble);
         Assertions.assertTrue(Files.exists(cer));
 
-        int rcValidateOk = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk = RootCmd.commandLine().execute(
                 "validate",
                 "--pkcPlatformCert", cer.toString(),
                 "--publicKeyCert", RES_CA_CERT,
@@ -814,7 +814,7 @@ public class E2ECommandsTest extends TestSupport {
         String orig = Files.readString(Path.of(RES_BB_COMP_JSON_V1), StandardCharsets.UTF_8);
         String tweaked = orig.replaceFirst("\"MODEL\"\\s*:\\s*\"", "\"MODEL\": \"INVALID-");
         Files.writeString(badJson, tweaked, StandardCharsets.UTF_8);
-        int rcValidateBad = new CommandLine(new RootCmd()).execute(
+        int rcValidateBad = RootCmd.commandLine().execute(
                 "validate",
                 "--pkcPlatformCert", cer.toString(),
                 "--publicKeyCert", RES_CA_CERT,
@@ -828,7 +828,7 @@ public class E2ECommandsTest extends TestSupport {
         Path tempDir = tempDir();
         Path env = tempDir.resolve("env-specv.json");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--kind", "PKC",
                 "--serial", "1891",

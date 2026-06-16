@@ -18,7 +18,7 @@ class RootCmdE2ETest extends TestSupport {
         Path out = tempDir.resolve("assembled.bin");
 
         // tbsgen: minimal stub creates envelope
-        int rc1 = new CommandLine(new RootCmd()).execute(
+        int rc1 = RootCmd.commandLine().execute(
                 "certgen",
                 "--out", env.toString()
         );
@@ -28,7 +28,7 @@ class RootCmdE2ETest extends TestSupport {
         Assertions.assertTrue(json.contains("tbsDerB64") || json.contains("type"), "Envelope JSON should be present");
 
         // assemble: stub writes a file
-        int rc2 = new CommandLine(new RootCmd()).execute(
+        int rc2 = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", out.toString()
@@ -37,7 +37,7 @@ class RootCmdE2ETest extends TestSupport {
         Assertions.assertTrue(Files.exists(out), "Assembled output should be created");
 
         // validate: show usage (no signer present in this smoke test)
-        int rc3 = new CommandLine(new RootCmd()).execute(
+        int rc3 = RootCmd.commandLine().execute(
                 "validate",
                 "--help"
         );
@@ -50,7 +50,7 @@ class RootCmdE2ETest extends TestSupport {
         PrintStream original = System.out;
         try {
             System.setOut(new PrintStream(out, true, StandardCharsets.UTF_8));
-            int rc = new CommandLine(new RootCmd()).execute(
+            int rc = RootCmd.commandLine().execute(
                     "view",
                     "--certificate", "src/test/resources/TestCA.cert.example.pem"
             );

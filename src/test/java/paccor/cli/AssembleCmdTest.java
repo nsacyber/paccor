@@ -15,7 +15,6 @@ import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import picocli.CommandLine;
 import tools.jackson.databind.ObjectMapper;
 
 public class AssembleCmdTest extends TestSupport {
@@ -42,7 +41,7 @@ public class AssembleCmdTest extends TestSupport {
         new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(envJson, env);
         File out = tempFile("assembled-", ".der");
 
-        int code = new CommandLine(new RootCmd()).execute(
+        int code = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", envJson.getAbsolutePath(),
                 "--out", out.getAbsolutePath(),
@@ -70,7 +69,7 @@ public class AssembleCmdTest extends TestSupport {
 
         // Corrupted signature (random bytes base64)
         String badSigB64 = Base64.getEncoder().encodeToString(new byte[]{1,2,3,4,5});
-        int code = new CommandLine(new RootCmd()).execute(
+        int code = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", envJson.getAbsolutePath(),
                 "--out", out.getAbsolutePath(),
@@ -96,7 +95,7 @@ public class AssembleCmdTest extends TestSupport {
         File key = new File("src/test/resources/ca_2187.key");
         File cert = new File("src/test/resources/ca_2187.crt");
 
-        int code = new CommandLine(new RootCmd()).execute(
+        int code = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", envJson.getAbsolutePath(),
                 "--out", out.getAbsolutePath(),
@@ -113,7 +112,7 @@ public class AssembleCmdTest extends TestSupport {
         File envJson = tempFile("tbs-", ".json");
         new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(envJson, env);
         File out = tempFile("assembled-", ".txt");
-        int code = new CommandLine(new RootCmd()).execute(
+        int code = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", envJson.getAbsolutePath(),
                 "--out", out.getAbsolutePath()
@@ -139,7 +138,7 @@ public class AssembleCmdTest extends TestSupport {
         File key = new File("src/test/resources/TestCA.mldsa65.private.example.pem");
         File cert = new File("src/test/resources/TestCA.mldsa65.cert.example.pem");
 
-        int code = new CommandLine(new RootCmd()).execute(
+        int code = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", envJson.getAbsolutePath(),
                 "--out", out.getAbsolutePath(),

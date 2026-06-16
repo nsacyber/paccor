@@ -53,7 +53,7 @@ public class CompatCliTest extends TestSupport {
         Path env = tempDir.resolve("env-compat1.json");
         Path cer = tempDir.resolve("env-compat1.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", SERIAL_NUMBER,
                 "--not-before", NOT_BEFORE,
@@ -68,7 +68,7 @@ public class CompatCliTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc);
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -79,7 +79,7 @@ public class CompatCliTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble);
         Assertions.assertTrue(Files.exists(cer));
 
-        int rcValidateOk = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cer.toString(),
                 "--publicKeyCert", IN_PUB_CERT,
@@ -94,7 +94,7 @@ public class CompatCliTest extends TestSupport {
         Path env = tempDir.resolve("env-compatPKCS1RSA.json");
         Path cer = tempDir.resolve("env-compatPKCS1RSA.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", SERIAL_NUMBER,
                 "--not-before", NOT_BEFORE,
@@ -109,7 +109,7 @@ public class CompatCliTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc);
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -120,7 +120,7 @@ public class CompatCliTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble);
         Assertions.assertTrue(Files.exists(cer));
 
-        int rcValidateOk = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cer.toString(),
                 "--publicKeyCert", IN_PKCS1_PUB,
@@ -135,7 +135,7 @@ public class CompatCliTest extends TestSupport {
         Path env = tempDir.resolve("env-compatLarge2187.json");
         Path cer = tempDir.resolve("env-compatLarge2187.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", SERIAL_NUMBER_LARGE_2187,
                 "--not-before", NOT_BEFORE,
@@ -151,7 +151,7 @@ public class CompatCliTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc);
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -162,7 +162,7 @@ public class CompatCliTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble);
         Assertions.assertTrue(Files.exists(cer));
 
-        int rcValidateOk = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cer.toString(),
                 "--publicKeyCert", PUB_CERT_2187,
@@ -177,7 +177,7 @@ public class CompatCliTest extends TestSupport {
         Path env = tempDir.resolve("env-compatMedium2187.json");
         Path cer = tempDir.resolve("env-compatMedium2187.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", SERIAL_NUMBER_MEDIUM_2187,
                 "--not-before", NOT_BEFORE,
@@ -193,7 +193,7 @@ public class CompatCliTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc);
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -204,7 +204,7 @@ public class CompatCliTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble);
         Assertions.assertTrue(Files.exists(cer));
 
-        int rcValidateOk = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cer.toString(),
                 "--publicKeyCert", PUB_CERT_2187,
@@ -219,7 +219,7 @@ public class CompatCliTest extends TestSupport {
         Path env = tempDir.resolve("env-compatFlawed2187.json");
         Path cer = tempDir.resolve("env-compatFlawed2187.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", SERIAL_NUMBER_FLAWED_2187,
                 "--not-before", NOT_BEFORE,
@@ -235,7 +235,7 @@ public class CompatCliTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc);
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -246,7 +246,7 @@ public class CompatCliTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble);
         Assertions.assertTrue(Files.exists(cer));
 
-        int rcValidateOk = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cer.toString(),
                 "--publicKeyCert", PUB_CERT_2187,
@@ -261,7 +261,7 @@ public class CompatCliTest extends TestSupport {
         Path env = tempDir.resolve("env-compatPKCS12.json");
         Path cer = tempDir.resolve("env-compatPKCS12.cer");
 
-        int rc = new CommandLine(new RootCmd()).execute(
+        int rc = RootCmd.commandLine().execute(
                 "certgen",
                 "--serial", SERIAL_NUMBER,
                 "--not-before", NOT_BEFORE,
@@ -276,7 +276,7 @@ public class CompatCliTest extends TestSupport {
         );
         Assertions.assertEquals(0, rc);
 
-        int rcAssemble = new CommandLine(new RootCmd()).execute(
+        int rcAssemble = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", env.toString(),
                 "--out", cer.toString(),
@@ -288,7 +288,7 @@ public class CompatCliTest extends TestSupport {
         Assertions.assertEquals(0, rcAssemble);
         Assertions.assertTrue(Files.exists(cer));
 
-        int rcValidateOk = new CommandLine(new RootCmd()).execute(
+        int rcValidateOk = RootCmd.commandLine().execute(
                 "validate",
                 "--x509v2AttrCert", cer.toString(),
                 "--publicKeyCert", IN_PUB_CERT_PKCS12,
