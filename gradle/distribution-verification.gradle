@@ -3,8 +3,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'org.apache.commons:commons-compress:1.27.1'
-        classpath 'org.redline-rpm:redline:1.2.10'
+        classpath libs.commons.compress
+        classpath libs.redline
     }
 }
 

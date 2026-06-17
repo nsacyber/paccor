@@ -3,7 +3,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'signing'
-    id 'com.netflix.nebula.ospackage' version '12.2.0'
+    alias(libs.plugins.ospackage) // see gradle/libs.versions.toml
 }
 
 version = "2.0r3"
