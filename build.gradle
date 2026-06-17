@@ -31,7 +31,7 @@ tasks.named("build")
 // Group publishing tasks. signature and maven tasks separate.
 tasks.register("release") {
     group = "release"
-    description = "Full release"
+    description = "Build all release packages."
 
     dependsOn "build"
 
@@ -41,4 +41,5 @@ tasks.register("release") {
     dependsOn "distTar"
     dependsOn "buildRpm"
     dependsOn "buildDeb"
+    dependsOn "installToSource"
 }
