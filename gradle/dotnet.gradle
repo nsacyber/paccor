@@ -8,6 +8,29 @@ def dotnetOutput = { String tool, String runtime ->
     return runtime.contains("win") ? file(base + ".exe") : file(base)
 }
 
+def dotnetInputs = fileTree("dotnet/ComponentClassRegistry") {
+    include "**/*.cs"
+    include "**/*.csproj"
+    include "**/*.props"
+    include "**/*.targets"
+    include "**/*.json"
+    include "*.sln"
+    include ".editorconfig"
+    exclude "**/bin/**"
+    exclude "**/obj/**"
+}
+
+def configureDotnetPublish = { Exec task, String tool, String runtime ->
+    task.inputs.files(dotnetInputs)
+            .withPropertyName("dotnetSources")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+    task.inputs.property("dotnetConfig", dotnetConfig)
+    task.inputs.property("dotnetFramework", dotnetFramework)
+    task.inputs.property("dotnetRuntime", runtime)
+    task.outputs.file(dotnetOutput(tool, runtime))
+            .withPropertyName("publishedTool")
+}
+
 // dotnetPublish{Linux|Win}
 tools.each { tool ->
     tasks.register("dotnetPublishLinux${tool}", Exec) {
@@ -15,6 +38,7 @@ tools.each { tool ->
                 dotnetProject(tool),
                 "-c", dotnetConfig,
                 "-r", dotnetRuntimeLinux
+        configureDotnetPublish(delegate, tool, dotnetRuntimeLinux)
     }
 
     tasks.register("dotnetPublishWin${tool}", Exec) {
@@ -22,6 +46,7 @@ tools.each { tool ->
                 dotnetProject(tool),
                 "-c", dotnetConfig,
                 "-r", dotnetRuntimeWin
+        configureDotnetPublish(delegate, tool, dotnetRuntimeWin)
     }
 }
 
