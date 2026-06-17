@@ -8,7 +8,7 @@ Notes:
 - `buildRpm` and `buildDeb` are only necessary to build Linux distribution packages.
 
 ```bash
-./gradlew clean build buildRpm buildDeb distZipLinux distZipWin
+./gradlew clean build release
 ```
 
 - The same options can be built on Windows.
