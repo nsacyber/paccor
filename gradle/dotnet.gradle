@@ -8,6 +8,41 @@ def dotnetOutput = { String tool, String runtime ->
     return runtime.contains("win") ? file(base + ".exe") : file(base)
 }
 
+def dotnetUnavailableMessage = "The .NET SDK is required to build paccor distribution packages."
+def dotnetPublishFailedMessage = ".NET publish did not complete successfully."
+
+project.ext.dotnetStageFailure = null
+
+def dotnetAvailableValue = null
+def dotnetExecutableValue = null
+def dotnetExecutable = {
+    if (dotnetAvailableValue != null) {
+        return dotnetExecutableValue
+    }
+
+    def pathCandidates = (System.getenv("PATH") ?: "")
+            .split(File.pathSeparator)
+            .findAll { it != null && !it.isBlank() }
+            .collect { "${it}/dotnet".toString() }
+    def fallbackCandidates = ["/bin/dotnet", "/usr/bin/dotnet", "/usr/local/bin/dotnet"]
+    dotnetExecutableValue = (pathCandidates + fallbackCandidates).find { candidate ->
+        file(candidate).canExecute()
+    }
+    dotnetAvailableValue = dotnetExecutableValue != null
+
+    return dotnetExecutableValue
+}
+
+def dotnetAvailable = {
+    if (dotnetAvailableValue != null) {
+        return dotnetAvailableValue
+    }
+
+    dotnetExecutable()
+    return dotnetAvailableValue
+}
+
+// Enable incremental dotnet publishing
 def dotnetInputs = fileTree("dotnet/ComponentClassRegistry") {
     include "**/*.cs"
     include "**/*.csproj"
@@ -21,6 +56,16 @@ def dotnetInputs = fileTree("dotnet/ComponentClassRegistry") {
 }
 
 def configureDotnetPublish = { Exec task, String tool, String runtime ->
+    task.onlyIf {
+        def executable = dotnetExecutable()
+        if (executable == null) {
+            logger.lifecycle("Skipping ${task.path}: ${dotnetUnavailableMessage}")
+            return false
+        }
+        task.executable = executable
+        return true
+    }
+    task.ignoreExitValue = true
     task.inputs.files(dotnetInputs)
             .withPropertyName("dotnetSources")
             .withPathSensitivity(PathSensitivity.RELATIVE)
@@ -34,7 +79,7 @@ def configureDotnetPublish = { Exec task, String tool, String runtime ->
 // dotnetPublish{Linux|Win}
 tools.each { tool ->
     tasks.register("dotnetPublishLinux${tool}", Exec) {
-        commandLine "dotnet", "publish",
+        args "publish",
                 dotnetProject(tool),
                 "-c", dotnetConfig,
                 "-r", dotnetRuntimeLinux
@@ -42,7 +87,7 @@ tools.each { tool ->
     }
 
     tasks.register("dotnetPublishWin${tool}", Exec) {
-        commandLine "dotnet", "publish",
+        args "publish",
                 dotnetProject(tool),
                 "-c", dotnetConfig,
                 "-r", dotnetRuntimeWin
@@ -74,6 +119,35 @@ tasks.register("stageDotnet") {
         linuxOutDir.mkdirs()
         winOutDir.mkdirs()
 
+        def publishTasks = tools.collectMany { tool ->
+            [
+                    tasks.named("dotnetPublishLinux${tool}").get(),
+                    tasks.named("dotnetPublishWin${tool}").get()
+            ]
+        }
+
+        if (!dotnetAvailable()) {
+            project.ext.dotnetStageFailure = dotnetUnavailableMessage
+            logger.lifecycle("Skipping .NET staging: ${dotnetUnavailableMessage}")
+            return
+        }
+
+        def failedPublishTasks = publishTasks.findAll { task ->
+            task instanceof Exec &&
+                    task.executionResult.present &&
+                    task.executionResult.get().exitValue != 0
+        }
+        if (!failedPublishTasks.isEmpty()) {
+            def failedTaskNames = failedPublishTasks.collect { task ->
+                "${task.path} (exit ${task.executionResult.get().exitValue})"
+            }.join(", ")
+            project.ext.dotnetStageFailure = "${dotnetPublishFailedMessage} Failed task(s): ${failedTaskNames}."
+            logger.lifecycle("Skipping .NET staging: ${dotnetPublishFailedMessage}")
+            return
+        }
+
+        def missingOutputs = []
+
         tools.each { tool ->
 
             def linux = dotnetOutput(tool, dotnetRuntimeLinux)
@@ -87,6 +161,8 @@ tasks.register("stageDotnet") {
                         unix(0755)
                     }
                 }
+            } else {
+                missingOutputs.add(linux)
             }
 
             if (win.exists()) {
@@ -94,7 +170,28 @@ tasks.register("stageDotnet") {
                     from win
                     into winOutDir
                 }
+            } else {
+                missingOutputs.add(win)
             }
+        }
+
+        if (!missingOutputs.isEmpty()) {
+            project.ext.dotnetStageFailure = "dotnet publish completed, but expected published tools were not found: " +
+                    missingOutputs.collect { it.path }.join(", ")
+            logger.lifecycle("Incomplete .NET staging: ${project.ext.dotnetStageFailure}")
+            return
+        }
+
+        project.ext.dotnetStageFailure = null
+    }
+}
+
+tasks.register("requireDotnetArtifacts") {
+    dependsOn "stageDotnet"
+
+    doLast {
+        if (project.ext.dotnetStageFailure != null) {
+            throw new GradleException("${project.ext.dotnetStageFailure}")
         }
     }
 }

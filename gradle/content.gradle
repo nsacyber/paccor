@@ -87,7 +87,7 @@ ext.applyPackageLayout = { target, layoutMap, os ->
 }
 
 tasks.named("distZip") {
-    dependsOn "stageDotnet"
+    dependsOn "requireDotnetArtifacts"
     dependsOn "paccor"
 
     archiveFileName.set("${project.name}.${version}.${dotnetRuntimeLinux}.zip")
@@ -102,12 +102,29 @@ tasks.named("distZip") {
 
 tasks.register("distZipWin", Zip) {
 
-    dependsOn "stageDotnet"
+    dependsOn "requireDotnetArtifacts"
     dependsOn "paccor"
 
     archiveFileName.set("${project.name}.${version}.${dotnetRuntimeWin}.zip")
 
     applyPackageLayout(it, packageContent("win"), "win")
+}
+
+tasks.named("distTar") {
+    dependsOn "requireDotnetArtifacts"
+}
+
+def removeTaskDependencies = { Task task, Set taskNames ->
+    task.setDependsOn(task.dependsOn.findAll { dependency ->
+        def dependencyName = dependency.hasProperty("name") ? dependency.name : dependency.toString()
+        !(dependencyName in taskNames)
+    })
+}
+
+gradle.projectsEvaluated {
+    tasks.named("assemble").configure {
+        removeTaskDependencies(it, ["distZip", "distTar"] as Set)
+    }
 }
 
 distZip.finalizedBy(tasks.named("distZipWin"))

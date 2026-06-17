@@ -26,7 +26,19 @@ tasks.named("clean") {
 }
 
 // Java only build
-tasks.named("build")
+gradle.projectsEvaluated {
+    tasks.named("build").configure {
+        dependsOn "jar"
+        dependsOn "sourcesJar"
+        dependsOn "javadocJar"
+        dependsOn "paccor"
+
+        setDependsOn(dependsOn.findAll { dependency ->
+            def dependencyName = dependency.hasProperty("name") ? dependency.name : dependency.toString()
+            dependencyName != "assemble"
+        })
+    }
+}
 
 // Group publishing tasks. signature and maven tasks separate.
 tasks.register("release") {
@@ -36,7 +48,7 @@ tasks.register("release") {
     dependsOn "build"
 
     dependsOn "generateDocs"
-    dependsOn "stageDotnet"
+    dependsOn "requireDotnetArtifacts"
     dependsOn "distZip"
     dependsOn "distTar"
     dependsOn "buildRpm"

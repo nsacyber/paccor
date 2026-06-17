@@ -24,7 +24,7 @@ tasks.register("installToSource") {
     description = "Install runnable paccor into source repository"
 
     dependsOn "build"
-    dependsOn "stageDotnet"
+    dependsOn "requireDotnetArtifacts"
     dependsOn "paccor"
 
     doLast {
