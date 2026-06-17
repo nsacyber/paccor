@@ -4,12 +4,12 @@ Most of this section is generated from the JSON field metadata in `src/main/java
 
 ## Specifications
 
-- [TCG Platform Certificate Profile v2.1](https://trustedcomputinggroup.org/wp-content/uploads/TCG_Platform_Certificate_Profile_2.1_Pub_v2.pdf)
-- [TCG Platform Certificate Profile v1.1r19](https://trustedcomputinggroup.org/wp-content/uploads/IWG_Platform_Certificate_Profile_v1p1_r19_pub_fixed.pdf)
-- [PCIe-based Component Class Registry v1.0r18](https://trustedcomputinggroup.org/wp-content/uploads/TCG_PCIe_Component_Class_Registry_v1_r18_pub10272021.pdf)
-- [SMBIOS-based Component Class Registry v1r01](https://trustedcomputinggroup.org/wp-content/uploads/SMBIOS-Component-Class-Registry_v1.01_finalpublication.pdf)
-- [Storage Component Class Registry v1.0r22](https://trustedcomputinggroup.org/wp-content/uploads/Storage-Component-Class-Registry-Version-1.0-Revision-22_pub.pdf)
-- [TCG Platform Requirements for Certificates and RIMs v1.0](https://trustedcomputinggroup.org/wp-content/uploads/TCG-Platform-Requirements-for-Certificates-and-RIMs_v1.0_pub.pdf)
+- [TCG Platform Certificate Profile v2.1][spec-tcg-platform-certificate-profile-v2-1]
+- [TCG Platform Certificate Profile v1.1r19][spec-tcg-platform-certificate-profile-v1-1r19]
+- [PCIe-based Component Class Registry v1.0r18][spec-pcie-component-class-registry-v1-0r18]
+- [SMBIOS-based Component Class Registry v1r01][spec-smbios-component-class-registry-v1r01]
+- [Storage Component Class Registry v1.0r22][spec-storage-component-class-registry-v1-0r22]
+- [TCG Platform Requirements for Certificates and RIMs v1.0][spec-tcg-platform-requirements-certificates-rims-v1-0]
 
 ## Content generated from source code
 
@@ -22,6 +22,7 @@ These pages are generated based on annotations and notes within the code base.
 - [Vocabularies](vocabularies.md) — enumerated value sets for specific fields.
 - [Global ASN.1 Types](global-asn1-types.md) — JSON acceptance rules for ASN.1-backed Java types.
 - [JSON Schemas](json-schemas.md) — generated Draft 2020-12 schemas for the main JSON helpers.
+- [Javadocs](javadocs/index.html) — generated Java API documentation.
 
 ## Adjacent reference
 
@@ -33,4 +34,6 @@ These pages are generated based on annotations and notes within the code base.
 ./gradlew generateDocs
 ```
 
-That task runs the ASN.1 extractor and schema generator in `docs/doc-tools/`, renders the reference Markdown fragments, and stages the output under `docs/reference/_generated/` for MkDocs to include.
+That task runs the ASN.1 extractor and schema generator in `docs/doc-tools/`, renders the reference Markdown fragments, stages the output under `docs/reference/_generated/`, and stages Javadocs under `docs/reference/javadocs/` for MkDocs to include.
+
+--8<-- "_includes/specification-links.md"

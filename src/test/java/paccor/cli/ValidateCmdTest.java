@@ -9,10 +9,6 @@ import java.util.Map;
 import org.bouncycastle.asn1.DERUTF8String;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import paccor.cli.ClientExitCodes;
-import paccor.cli.RootCmd;
-import paccor.cli.ValidateCmd;
-import picocli.CommandLine;
 import paccor.tcg.credential.TCGObjectIdentifier;
 import paccor.tcg.credential.Trait;
 import paccor.tcg.credential.TraitCollection;
@@ -25,7 +21,7 @@ public class ValidateCmdTest {
     public void testValidateWrongSigner() {
         File cert = new File("src/test/resources/TestCA.cert.example.pem");
         File otherSigner = new File("src/test/resources/ca_2187.crt");
-        int code = new CommandLine(new RootCmd()).execute(
+        int code = RootCmd.commandLine().execute(
                 "validate",
                 "-X", cert.getAbsolutePath(),
                 "--publicKeyCert", otherSigner.getAbsolutePath()

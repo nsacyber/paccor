@@ -1,0 +1,132 @@
+ext.packageContent = { os = "linux" ->
+    def linuxPackage = os == "linux"
+    def dotnetPlatform = packageDotnetPlatform(os)
+
+    return [
+            bin: [
+                    from: buildScriptsDir,
+                    into: "bin",
+                    exclude: linuxPackage ? { details -> details.file.name.endsWith(".bat") } : null,
+                    mode: linuxPackage ? 0755 : null
+            ],
+
+            lib: [
+                    into: "lib",
+                    from: [
+                            jar.outputs.files,
+                            configurations.runtimeClasspath
+                    ]
+            ],
+
+            scripts_sh: [
+                    from: fileTree(sourceScriptsDir) {
+                        include "**/*.sh"
+                    },
+                    into: "scripts",
+                    mode: 0755
+            ],
+
+            scripts_other: [
+                    from: fileTree(sourceScriptsDir) {
+                        exclude "**/*.sh"
+                    },
+                    into: "scripts",
+                    exclude: { details ->
+                        def generated = generatedToolNames().contains(details.file.name)
+                        linuxPackage ? generated || details.file.name.endsWith(".exe") : generated
+                    }
+            ],
+
+            dotnet: [
+                    from: stagedDotnetDir(dotnetPlatform),
+                    into: "scripts",
+                    mode: linuxPackage ? 0755 : null
+            ],
+
+            docs: [
+                    into: "docs",
+                    from: fileTree(docsAssetsDir)
+            ],
+
+            root_md: [
+                    into: ".",
+                    from: fileTree(rootDir) {
+                        include "*.md"
+                    }
+            ]
+    ]
+}
+
+ext.applyPackageLayout = { target, layoutMap, os ->
+    layoutMap.each { name, spec ->
+
+        def sources = spec.from instanceof List ? spec.from : [spec.from]
+
+        sources.each { src ->
+
+            target.from(src) {
+
+                into spec.into
+
+                if (spec.exclude != null) {
+                    exclude spec.exclude
+                }
+
+                if (spec.mode != null) {
+                    filePermissions {
+                        unix(spec.mode)
+                    }
+                }
+            }
+        }
+    }
+}
+
+def zipRootDir = "${project.name}-${version}"
+
+tasks.named("distZip") {
+    dependsOn "requireDotnetArtifacts"
+    dependsOn "paccor"
+
+    archiveFileName.set("${project.name}.${version}.${dotnetRuntimeLinux}.zip")
+    eachFile { details ->
+        if (details.path.startsWith("${project.name}.${version}.${dotnetRuntimeLinux}/")) {
+            details.exclude()
+        }
+    }
+
+    into(zipRootDir) {
+        applyPackageLayout(delegate, packageContent("linux"), "linux")
+    }
+}
+
+tasks.register("distZipWin", Zip) {
+
+    dependsOn "requireDotnetArtifacts"
+    dependsOn "paccor"
+
+    archiveFileName.set("${project.name}.${version}.${dotnetRuntimeWin}.zip")
+
+    into(zipRootDir) {
+        applyPackageLayout(delegate, packageContent("win"), "win")
+    }
+}
+
+tasks.named("distTar") {
+    dependsOn "requireDotnetArtifacts"
+}
+
+def removeTaskDependencies = { Task task, Set taskNames ->
+    task.setDependsOn(task.dependsOn.findAll { dependency ->
+        def dependencyName = dependency.hasProperty("name") ? dependency.name : dependency.toString()
+        !(dependencyName in taskNames)
+    })
+}
+
+gradle.projectsEvaluated {
+    tasks.named("assemble").configure {
+        removeTaskDependencies(it, ["distZip", "distTar"] as Set)
+    }
+}
+
+distZip.finalizedBy(tasks.named("distZipWin"))

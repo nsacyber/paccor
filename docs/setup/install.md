@@ -12,15 +12,14 @@ This is the right path if you already have issuer certificates, holder certifica
 
 ## Source checkout
 
-```bash
-git clone https://github.com/nsacyber/paccor.git
-cd paccor
-```
+These steps will build and install paccor into the source repository folder.
 
-A source checkout is useful for contributors and test authors. The end-user tutorials are written for a runnable `bin/paccor` plus linked repository-backed input files instead of the source tree layout.
+1. Follow the instructions to [Clone the repository](<github.md#clone-the-repository>)
+2. Read the [Requirements](requirements.md) page to install the appropriate version of Java and Dotnet.
+3. From a terminal in the repository root, run the following command: `./gradlew clean installToSource`
 
 Next:
 
 - Read [Requirements](requirements.md) if you have not checked prerequisites yet
 - Read [Build](build.md) if you want to compile and unpack the distribution yourself
-- Jump to [Getting Started](../getting-started.md) if you already have a runnable `paccor`
+- Jump to [Getting Started](../getting-started.md)

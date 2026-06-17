@@ -21,6 +21,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import paccor.cli.pv.ReadableFileConverter;
 import paccor.json.AttributesJsonHelper;
 import paccor.json.ExtensionsJsonHelper;
 import paccor.json.HardwareManifestJsonHelper;
@@ -52,26 +53,26 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
     private CommonOptions common;
 
     // JSON data
-    @Option(names = { "-p", "--attributes-json" }, description = "Attributes JSON file")
+    @Option(names = { "-p", "--attributes-json" }, description = "Attributes JSON file", converter = ReadableFileConverter.class)
     private File attrsJson;
 
-    @Option(names = { "-c", "--components-json" }, description = "Hardware manifest components JSON file")
+    @Option(names = { "-c", "--components-json" }, description = "Hardware manifest components JSON file", converter = ReadableFileConverter.class)
     private File componentsJson;
 
-    @Option(names = { "-x", "--extensions-json" }, description = "Extensions JSON file")
+    @Option(names = { "-x", "--extensions-json" }, description = "Extensions JSON file", converter = ReadableFileConverter.class)
     private File extJson;
 
-    @Option(names = "--in-platform-model", description = "Existing model data from JSON")
+    @Option(names = "--in-platform-model", description = "Existing model data from JSON", converter = ReadableFileConverter.class)
     private File platformInfoJson;
 
-    @Option(names = "--in", description = "Existing to-be-signed data to merge from JSON")
+    @Option(names = "--in", description = "Existing to-be-signed data to merge from JSON", converter = ReadableFileConverter.class)
     private File inJson;
 
     // Most relevant certificates. Other certificates may be specified in the JSON.
-    @Option(names = { "-P", "--issuer-cert" }, description = "Issuer certificate file")
+    @Option(names = { "-P", "--issuer-cert" }, description = "Issuer certificate file", converter = ReadableFileConverter.class)
     private File issuerCert;
 
-    @Option(names = { "-e", "--holder-cert" }, description = "Holder/Subject certificate file")
+    @Option(names = { "-e", "--holder-cert" }, description = "Holder/Subject certificate file", converter = ReadableFileConverter.class)
     private File holderCert;
 
     // Platform Certificate options required prior to finalization

@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import picocli.CommandLine;
 import tools.jackson.databind.ObjectMapper;
 
 public class AssembleCmdSigningPathsTest extends TestSupport {
@@ -48,7 +47,7 @@ public class AssembleCmdSigningPathsTest extends TestSupport {
         File key = new File("src/test/resources/TestCA.private.example.pem");
         File cert = new File("src/test/resources/TestCA.cert.example.pem");
 
-        int code = new CommandLine(new RootCmd()).execute(
+        int code = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", envJson.getAbsolutePath(),
                 "--out", out.getAbsolutePath(),
@@ -73,7 +72,7 @@ public class AssembleCmdSigningPathsTest extends TestSupport {
         File out = tempFile("assembled-", ".der");
         File key = new File("src/test/resources/TestCA.private.example.pem");
 
-        int code = new CommandLine(new RootCmd()).execute(
+        int code = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", envJson.getAbsolutePath(),
                 "--out", out.getAbsolutePath(),
@@ -100,7 +99,7 @@ public class AssembleCmdSigningPathsTest extends TestSupport {
         try (MockedStatic<CliHelper> mockedStatic = Mockito.mockStatic(CliHelper.class, Mockito.CALLS_REAL_METHODS)) {
             mockedStatic.when(() -> CliHelper.getPassword(ArgumentMatchers.anyString()))
                     .thenThrow(new AssertionError("interactive prompt should not be used"));
-            int code = new CommandLine(new RootCmd()).execute(
+            int code = RootCmd.commandLine().execute(
                     "assemble",
                     "--in", envJson.getAbsolutePath(),
                     "--out", out.getAbsolutePath(),
@@ -133,7 +132,7 @@ public class AssembleCmdSigningPathsTest extends TestSupport {
         try (MockedStatic<CliHelper> mockedStatic = Mockito.mockStatic(CliHelper.class, Mockito.CALLS_REAL_METHODS)) {
             mockedStatic.when(() -> CliHelper.getPassword(ArgumentMatchers.anyString()))
                     .thenThrow(new AssertionError("interactive prompt should not be used"));
-            int code = new CommandLine(new RootCmd()).execute(
+            int code = RootCmd.commandLine().execute(
                     "assemble",
                     "--in", envJson.getAbsolutePath(),
                     "--out", out.getAbsolutePath(),
@@ -163,7 +162,7 @@ public class AssembleCmdSigningPathsTest extends TestSupport {
         File pwFile = tempFile("pkcs12-password-", ".txt");
         Files.writeString(pwFile.toPath(), "password", StandardCharsets.UTF_8);
 
-        int code = new CommandLine(new RootCmd()).execute(
+        int code = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", envJson.getAbsolutePath(),
                 "--out", out.getAbsolutePath(),
@@ -193,7 +192,7 @@ public class AssembleCmdSigningPathsTest extends TestSupport {
         // Try to run with a clearly non-existent module.
         // If it returns USAGE_ERROR, it means validation caught the missing PIN (or missing key selector).
         // If it returns RUNTIME_ERROR, it might have bypassed validation due to env vars and failed loading the module.
-        int code = new CommandLine(new RootCmd()).execute(
+        int code = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", envJson.getAbsolutePath(),
                 "--out", out.getAbsolutePath(),
@@ -226,7 +225,7 @@ public class AssembleCmdSigningPathsTest extends TestSupport {
         File out = tempFile("assembled-", ".der");
         File cert = new File("src/test/resources/TestCA.cert.example.pem");
 
-        int code = new CommandLine(new RootCmd()).execute(
+        int code = RootCmd.commandLine().execute(
                 "assemble",
                 "--in", envJson.getAbsolutePath(),
                 "--out", out.getAbsolutePath(),
@@ -289,7 +288,7 @@ public class AssembleCmdSigningPathsTest extends TestSupport {
 
         int code;
         try {
-            code = new CommandLine(new RootCmd()).execute(
+            code = RootCmd.commandLine().execute(
                     "assemble",
                     "--in", envJson.getAbsolutePath(),
                     "--out", out.getAbsolutePath(),

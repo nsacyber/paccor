@@ -68,7 +68,7 @@ Build the Java project:
 Build packaged distributions when needed:
 
 ```bash
-./gradlew clean build buildRpm buildDeb distZipLinux distZipWin
+./gradlew clean build release
 ```
 
 Generate the documentation inputs consumed by the site:

@@ -1,0 +1,159 @@
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+dependencies {
+    // Versions and module coordinates in
+    // <project>/gradle/libs.versions.toml
+    api libs.bouncycastle.pkix // Bouncy Castle license
+    api libs.bouncycastle.prov // Bouncy Castle license
+    api libs.jackson.annotations // Apache 2.0
+    api libs.jackson.core // Apache 2.0
+    api libs.jackson.databind // Apache 2.0
+    api libs.picocli // Apache 2.0
+
+    implementation libs.jakarta.validation // Apache 2.0
+
+    compileOnly libs.lombok // MIT
+    annotationProcessor libs.lombok // MIT
+
+    testImplementation libs.junit // EPL 2.0
+    testImplementation libs.mockito.junit // MIT
+    testRuntimeOnly libs.junit.platform.launcher // EPL 2.0
+}
+
+test {
+    useJUnitPlatform()
+}
+
+startScripts.enabled = false
+run.enabled = false
+
+def insertRequiredJavaCheck = { File script, String marker, String check ->
+    def text = script.getText("UTF-8")
+    if (text.contains(check)) {
+        return
+    }
+    if (!text.contains(marker)) {
+        throw new GradleException("Could not augment ${script.name}: expected marker not found")
+    }
+    def lineSeparator = text.contains("\r\n") ? "\r\n" : "\n"
+    def normalizedCheck = check.replace("\n", lineSeparator)
+    script.setText(text.replace(marker, normalizedCheck + marker), "UTF-8")
+}
+
+def augmentUnixStartScript = { File script ->
+    def check = """
+# Verify that the selected Java runtime can run paccor.
+REQUIRED_JAVA_MAJOR=${requiredJavaMajorVersion}
+java_version_output=\$( "\$JAVACMD" -version 2>&1 ) || die "ERROR: Could not execute Java command: \$JAVACMD"
+java_version=\$( printf '%s\\n' "\$java_version_output" | sed -n 's/.* version "\\([^"]*\\)".*/\\1/p' | sed -n '1p' )
+case "\$java_version" in
+  1.*)
+    java_major_version=\${java_version#1.}
+    java_major_version=\${java_major_version%%.*}
+    ;;
+  *)
+    java_major_version=\${java_version%%.*}
+    ;;
+esac
+case "\$java_major_version" in
+  '' | *[!0-9]*)
+    die "ERROR: Could not determine Java runtime version.
+
+Java command: \$JAVACMD
+JAVA_HOME: \${JAVA_HOME:-not set}
+
+java -version output:
+\$java_version_output"
+    ;;
+esac
+if [ "\$java_major_version" -lt "\$REQUIRED_JAVA_MAJOR" ] ; then
+    die "ERROR: paccor requires Java \$REQUIRED_JAVA_MAJOR or newer, but found Java \$java_major_version.
+
+Java command: \$JAVACMD
+JAVA_HOME: \${JAVA_HOME:-not set}
+
+java -version output:
+\$java_version_output"
+fi
+
+"""
+    insertRequiredJavaCheck(script, "# Increase the maximum file descriptors", check)
+}
+
+def augmentWindowsStartScript = { File script ->
+    def check = """
+@rem Verify that the selected Java runtime can run paccor.
+set REQUIRED_JAVA_MAJOR=${requiredJavaMajorVersion}
+set JAVA_VERSION=
+set JAVA_MAJOR=
+for /f "tokens=3" %%v in ('"%JAVA_EXE%" -version 2^>^&1 ^| findstr /i "version"') do (
+    set JAVA_VERSION=%%v
+    goto javaVersionFound
+)
+
+:javaVersionFound
+if not defined JAVA_VERSION (
+    echo. 1>&2
+    echo ERROR: Could not determine Java runtime version. 1>&2
+    echo. 1>&2
+    echo Java command: %JAVA_EXE% 1>&2
+    if defined JAVA_HOME echo JAVA_HOME: %JAVA_HOME% 1>&2
+    if not defined JAVA_HOME echo JAVA_HOME: not set 1>&2
+    echo. 1>&2
+    "%JAVA_EXE%" -version 1>&2
+    goto fail
+)
+
+set JAVA_VERSION=%JAVA_VERSION:"=%
+for /f "tokens=1,2 delims=." %%a in ("%JAVA_VERSION%") do (
+    set JAVA_MAJOR=%%a
+    if "%%a"=="1" set JAVA_MAJOR=%%b
+)
+
+if %JAVA_MAJOR% geq %REQUIRED_JAVA_MAJOR% goto javaVersionOk
+
+echo. 1>&2
+echo ERROR: paccor requires Java %REQUIRED_JAVA_MAJOR% or newer, but found Java %JAVA_MAJOR%. 1>&2
+echo. 1>&2
+echo Java command: %JAVA_EXE% 1>&2
+if defined JAVA_HOME echo JAVA_HOME: %JAVA_HOME% 1>&2
+if not defined JAVA_HOME echo JAVA_HOME: not set 1>&2
+echo. 1>&2
+"%JAVA_EXE%" -version 1>&2
+goto fail
+
+:javaVersionOk
+
+"""
+    insertRequiredJavaCheck(script, "@rem Setup the command line", check)
+}
+
+
+// CLI launcher
+def createScript = { Project project, String mainClassName, String name ->
+    project.tasks.register(name, CreateStartScripts) {t ->
+        t.outputDir = buildScriptsDir.get().asFile
+        t.applicationName = name
+        t.mainClass.set(mainClassName)
+        t.classpath = project.tasks.named(JavaPlugin.JAR_TASK_NAME).get().outputs.files + project.configurations.runtimeClasspath
+        t.doLast {
+            augmentUnixStartScript(new File(t.outputDir, name))
+            augmentWindowsStartScript(new File(t.outputDir, "${name}.bat"))
+        }
+    }
+
+    project.distributions.main.contents {
+        into("bin") {
+            from(project.tasks.named(name))
+            filePermissions {
+                unix(0755)
+            }
+            duplicatesStrategy = DuplicatesStrategy.EXCLUDE // IMPORTANT: eliminates duplicate files within the ZIP
+        }
+    }
+}
+
+createScript(project, "paccor.cli.RootCmd", "paccor")

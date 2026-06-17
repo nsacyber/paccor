@@ -88,7 +88,7 @@ jobs:
           dotnet zip -r win-x64 -c Release
       - name: Build packages
         run: |
-          ./gradlew clean build buildRpm buildDeb distZipWin distZipLinux
+          ./gradlew clean build verifyDistributionPackages
       - name: Artifacts SHA256
         shell: bash
         run: |

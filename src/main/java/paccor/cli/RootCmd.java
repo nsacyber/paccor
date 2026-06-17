@@ -27,11 +27,20 @@ public class RootCmd implements Runnable, HasCommonOptions {
     }
 
     public static void main(String[] args) {
+        System.exit(commandLine().execute(args));
+    }
+
+    public static CommandLine commandLine() {
         RootCmd rootCmd = new RootCmd();
         CommandLine cmd = new CommandLine(rootCmd);
         cmd.setExecutionStrategy(new RootCmdStrategy(new CommandLine.RunLast()));
         cmd.setExecutionExceptionHandler(new RootCmdExceptionHandler());
-        System.exit(cmd.execute(args));
+        cmd.setParameterExceptionHandler((ex, args) -> {
+            CommandLine commandLine = ex.getCommandLine();
+            commandLine.getErr().println("Error: " + ex.getMessage());
+            return ClientExitCodes.USAGE_ERROR.code();
+        });
+        return cmd;
     }
 
     public static final CommonOptions extractCommonOptions(CommandLine.ParseResult pr) {

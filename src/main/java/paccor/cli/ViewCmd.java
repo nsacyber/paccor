@@ -5,6 +5,7 @@ import paccor.cert.PlatformCertificate;
 import java.io.File;
 import java.util.List;
 import java.util.concurrent.Callable;
+import paccor.cli.pv.ReadableFileConverter;
 import paccor.model.PlatformCertificateInformationModel;
 import paccor.normalization.PlatformConfigurationNormalizer;
 import picocli.CommandLine.Command;
@@ -25,7 +26,8 @@ public class ViewCmd implements Callable<Integer>, HasCommonOptions {
     @Option(
             names = {"-X", "--x509v2AttrCert", "--pkcPlatformCert", "--certificate"},
             description = "Platform certificate file",
-            required = true)
+            required = true,
+            converter = ReadableFileConverter.class)
     private File platformCertFile;
 
     @Override

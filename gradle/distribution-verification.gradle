@@ -1,0 +1,265 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath libs.commons.compress
+        classpath libs.redline
+    }
+}
+
+import org.apache.commons.compress.archivers.ar.ArArchiveInputStream
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
+import org.apache.commons.compress.archivers.zip.ZipFile
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
+import org.redline_rpm.ReadableChannelWrapper
+import org.redline_rpm.Scanner
+import org.redline_rpm.Util
+import org.redline_rpm.payload.CpioHeader
+
+import java.nio.channels.Channels
+
+def joinPackagePath = { String prefix, String path ->
+    [prefix, path]
+            .findAll { it != null && !it.isBlank() }
+            .join("/")
+            .replace(File.separator, "/")
+}
+
+def putExpected = { Map expected, String path, Integer mode ->
+    expected[path] = mode
+}
+
+def addDirectoryTree = { Map expected, File sourceRoot, String into, Closure<Boolean> includeFile, Integer mode ->
+    if (!sourceRoot.exists()) {
+        return
+    }
+
+    fileTree(sourceRoot).files.sort { a, b -> a.path <=> b.path }.each { file ->
+        def relativePath = sourceRoot.toPath()
+                .relativize(file.toPath())
+                .toString()
+                .replace(File.separator, "/")
+        if (includeFile(file, relativePath)) {
+            putExpected(expected, joinPackagePath(into, relativePath), mode)
+        }
+    }
+}
+
+def addFilesByName = { Map expected, Iterable<File> files, String into, Integer mode ->
+    files.findAll { it.exists() && it.isFile() }
+            .sort { a, b -> a.name <=> b.name }
+            .each { file ->
+                putExpected(expected, joinPackagePath(into, file.name), mode)
+            }
+}
+
+def expectedPackageFiles = { String os ->
+    def linuxPackage = os == "linux"
+    def dotnetPlatform = packageDotnetPlatform(os)
+    def expected = [:] as LinkedHashMap<String, Integer>
+    def buildScriptsSourceDir = buildScriptsDir.get().asFile
+    def stagedDotnetSourceDir = stagedDotnetDir(dotnetPlatform).get().asFile
+
+    addDirectoryTree(expected, buildScriptsSourceDir, "bin", { file, relativePath ->
+        !linuxPackage || !file.name.endsWith(".bat")
+    }, linuxPackage ? 0755 : null)
+
+    addFilesByName(expected, jar.outputs.files.files, "lib", linuxPackage ? 0644 : null)
+    addFilesByName(expected, configurations.runtimeClasspath.files, "lib", linuxPackage ? 0644 : null)
+
+    addDirectoryTree(expected, sourceScriptsDir, "scripts", { file, relativePath ->
+        file.name.endsWith(".sh")
+    }, linuxPackage ? 0755 : null)
+
+    addDirectoryTree(expected, sourceScriptsDir, "scripts", { file, relativePath ->
+        if (file.name.endsWith(".sh")) {
+            return false
+        }
+        def generated = generatedToolNames().contains(file.name)
+        linuxPackage ? !generated && !file.name.endsWith(".exe") : !generated
+    }, linuxPackage ? 0644 : null)
+
+    addDirectoryTree(expected, stagedDotnetSourceDir, "scripts", { file, relativePath ->
+        true
+    }, linuxPackage ? 0755 : null)
+
+    addDirectoryTree(expected, docsAssetsDir, "docs", { file, relativePath ->
+        true
+    }, linuxPackage ? 0644 : null)
+
+    rootDir.listFiles()
+            ?.findAll { it.isFile() && it.name.endsWith(".md") }
+            ?.sort { a, b -> a.name <=> b.name }
+            ?.each { file ->
+                putExpected(expected, file.name, linuxPackage ? 0644 : null)
+            }
+
+    return expected
+}
+
+def normalizePackagePath = { String path, String installRoot ->
+    def normalized = path.replace("\\", "/")
+    while (normalized.startsWith("./")) {
+        normalized = normalized.substring(2)
+    }
+    while (normalized.startsWith("/")) {
+        normalized = normalized.substring(1)
+    }
+
+    if (installRoot != null) {
+        def root = installRoot
+        while (root.startsWith("/")) {
+            root = root.substring(1)
+        }
+        if (normalized == root) {
+            return null
+        }
+        if (normalized.startsWith("${root}/")) {
+            normalized = normalized.substring(root.length() + 1)
+        }
+    } else {
+        def firstSlash = normalized.indexOf("/")
+        if (firstSlash > 0 && normalized.substring(0, firstSlash).startsWith("${project.name}-")) {
+            normalized = normalized.substring(firstSlash + 1)
+        }
+    }
+
+    return normalized.isBlank() ? null : normalized
+}
+
+def putActual = { Map actual, File packageFile, String rawPath, String installRoot, Integer mode ->
+    def path = normalizePackagePath(rawPath, installRoot)
+    if (path == null) {
+        return
+    }
+    if (actual.containsKey(path)) {
+        throw new GradleException("${packageFile.name} contains duplicate entry ${path}")
+    }
+    actual[path] = mode
+}
+
+def readZipEntries = { File packageFile ->
+    def actual = [:] as LinkedHashMap<String, Integer>
+    def zip = new ZipFile(packageFile)
+    try {
+        zip.entries.each { entry ->
+            if (!entry.directory) {
+                def mode = entry.unixMode > 0 ? entry.unixMode & 07777 : null
+                putActual(actual, packageFile, entry.name, null, mode)
+            }
+        }
+    } finally {
+        zip.close()
+    }
+    return actual
+}
+
+def readDebEntries = { File packageFile ->
+    def actual = [:] as LinkedHashMap<String, Integer>
+    new FileInputStream(packageFile).withCloseable { input ->
+        def ar = new ArArchiveInputStream(input)
+        def arEntry
+        while ((arEntry = ar.nextEntry) != null) {
+            if (arEntry.name.startsWith("data.tar")) {
+                def dataInput = arEntry.name.endsWith(".gz") ? new GzipCompressorInputStream(ar) : ar
+                def tar = new TarArchiveInputStream(dataInput)
+                def tarEntry
+                while ((tarEntry = tar.nextTarEntry) != null) {
+                    if (!tarEntry.directory) {
+                        putActual(actual, packageFile, tarEntry.name, packageInstallRoot, tarEntry.mode & 07777)
+                    }
+                }
+            }
+        }
+    }
+    return actual
+}
+
+def skipFully = { InputStream input, int bytes ->
+    def remaining = bytes
+    while (remaining > 0) {
+        def skipped = input.skip(remaining)
+        if (skipped <= 0) {
+            if (input.read() == -1) {
+                throw new EOFException("Unexpected end of RPM payload")
+            }
+            skipped = 1
+        }
+        remaining -= skipped
+    }
+}
+
+def readRpmEntries = { File packageFile ->
+    def actual = [:] as LinkedHashMap<String, Integer>
+    new FileInputStream(packageFile).withCloseable { input ->
+        def scanner = new Scanner()
+        def format = scanner.run(new ReadableChannelWrapper(Channels.newChannel(input)))
+        def payload = Util.openPayloadStream(format.header, input)
+        def channel = new ReadableChannelWrapper(Channels.newChannel(payload))
+        def header = null
+        def total = 0
+        do {
+            header = new CpioHeader()
+            total = header.read(channel, total)
+            if (!header.last && header.type != CpioHeader.DIR) {
+                putActual(actual, packageFile, header.name, packageInstallRoot, header.permissions & 07777)
+                skipFully(payload, header.fileSize)
+                total += header.fileSize
+            }
+        } while (!header.last)
+    }
+    return actual
+}
+
+def verifyPackage = { String label, File packageFile, Map<String, Integer> expected, Map<String, Integer> actual, boolean verifyModes ->
+    if (!packageFile.exists()) {
+        throw new GradleException("Missing ${label} package: ${packageFile}")
+    }
+
+    def missing = expected.keySet().findAll { !actual.containsKey(it) }
+    def unexpected = actual.keySet().findAll { !expected.containsKey(it) }
+    def mismatchedModes = verifyModes ? expected.findAll { path, expectedMode ->
+        expectedMode != null && actual.containsKey(path) && actual[path] != expectedMode
+    } : [:]
+
+    if (!missing.isEmpty() || !unexpected.isEmpty() || !mismatchedModes.isEmpty()) {
+        def problems = []
+        if (!missing.isEmpty()) {
+            problems << "missing entries: ${missing.join(", ")}"
+        }
+        if (!unexpected.isEmpty()) {
+            problems << "unexpected entries: ${unexpected.join(", ")}"
+        }
+        if (!mismatchedModes.isEmpty()) {
+            problems << "mode mismatches: " + mismatchedModes.collect { path, expectedMode ->
+                "${path} expected ${Integer.toOctalString(expectedMode)} actual ${actual[path] == null ? "unset" : Integer.toOctalString(actual[path])}"
+            }.join(", ")
+        }
+        throw new GradleException("${label} package verification failed for ${packageFile.name}: ${problems.join("; ")}")
+    }
+
+    logger.lifecycle("Verified ${label} package ${packageFile.name}: ${expected.size()} expected file(s)")
+}
+
+tasks.register("verifyDistributionPackages") {
+    group = "verification"
+    description = "Verifies distribution package contents and file permissions."
+
+    dependsOn "distZip"
+    dependsOn "distZipWin"
+    dependsOn "buildRpm"
+    dependsOn "buildDeb"
+
+    inputs.files(tasks.named("distZip"), tasks.named("distZipWin"), tasks.named("buildRpm"), tasks.named("buildDeb"))
+
+    doLast {
+        def linuxExpected = expectedPackageFiles("linux")
+        def winExpected = expectedPackageFiles("win")
+
+        verifyPackage("Linux ZIP", tasks.named("distZip").get().archiveFile.get().asFile, linuxExpected, readZipEntries(tasks.named("distZip").get().archiveFile.get().asFile), true)
+        verifyPackage("Windows ZIP", tasks.named("distZipWin").get().archiveFile.get().asFile, winExpected, readZipEntries(tasks.named("distZipWin").get().archiveFile.get().asFile), false)
+        verifyPackage("RPM", tasks.named("buildRpm").get().archiveFile.get().asFile, linuxExpected, readRpmEntries(tasks.named("buildRpm").get().archiveFile.get().asFile), true)
+        verifyPackage("DEB", tasks.named("buildDeb").get().archiveFile.get().asFile, linuxExpected, readDebEntries(tasks.named("buildDeb").get().archiveFile.get().asFile), true)
+    }
+}

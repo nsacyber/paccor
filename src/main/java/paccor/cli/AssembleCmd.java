@@ -5,6 +5,7 @@ import paccor.cert.CertSigEncoding;
 import paccor.cert.CertSpecVersion;
 import paccor.cert.TbsEnvelope;
 import paccor.cli.pv.CertSigEncodingConverter;
+import paccor.cli.pv.ReadableFileConverter;
 import paccor.exception.PaccorException;
 import java.io.File;
 import java.io.IOException;
@@ -31,7 +32,7 @@ import picocli.CommandLine.Option;
 public class AssembleCmd implements Callable<Integer>, HasCommonOptions {
     @Mixin
     private CommonOptions common;
-    @Option(names = { "-i", "--in", "--tbs" }, required = true, description = "Input to-be-signed data from JSON")
+    @Option(names = { "-i", "--in", "--tbs" }, required = true, description = "Input to-be-signed data from JSON", converter = ReadableFileConverter.class)
     private File inJson;
     @Option(names = { "-f", "--out" }, required = true)
     private File outFile;
@@ -39,17 +40,17 @@ public class AssembleCmd implements Callable<Integer>, HasCommonOptions {
     private boolean pem;
     @Option(names = "--sig-encoding", defaultValue = "der", description = "${COMPLETION-CANDIDATES} (default: ${DEFAULT-VALUE})", converter={CertSigEncodingConverter.class})
     private CertSigEncoding sigEncoding = CertSigEncoding.DER;
-    @Option(names = { "-P", "--issuer-cert" }, description = "Certificate containing the public key that signs the input. Required for all signing modes (detached, local, pkcs11, remote).")
+    @Option(names = { "-P", "--issuer-cert" }, description = "Certificate containing the public key that signs the input. Required for all signing modes (detached, local, pkcs11, remote).", converter = ReadableFileConverter.class)
     private File issuerCert;
     // Provided signature options
     @Option(names = "--signature", description = "Detached signature (Base64)")
     private String signatureB64;
     // Local options
-    @Option(names = { "-k", "--local-key" }, description = "Sign locally with a private key file (PKCS#8, PKCS#1, or PKCS#12)")
+    @Option(names = { "-k", "--local-key" }, description = "Sign locally with a private key file (PKCS#8, PKCS#1, or PKCS#12)", converter = ReadableFileConverter.class)
     private File localKey;
     @Option(names = "--local-key-password", description = "Password for a PKCS#12 local key")
     private String localKeyPassword;
-    @Option(names = "--local-key-password-file", description = "File containing the password for a PKCS#12 local key")
+    @Option(names = "--local-key-password-file", description = "File containing the password for a PKCS#12 local key", converter = ReadableFileConverter.class)
     private File localKeyPasswordFile;
     // PKCS#11 options
     @Option(names = "--pkcs11-module", description = "Path to PKCS#11 module (.so/.dll)")

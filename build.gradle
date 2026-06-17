@@ -1,505 +1,59 @@
 plugins {
     id 'application'
-    id 'com.netflix.nebula.ospackage' version '12.2.0'
     id 'java-library'
     id 'maven-publish'
     id 'signing'
+    alias(libs.plugins.ospackage) // see gradle/libs.versions.toml
 }
 
-// version number
-def major_minor_version = '2.0'
-def revision = '2'
-def release_version = "${major_minor_version}r${revision}"
+version = "2.0r3"
 
-version = release_version
+// Build is split up into multiple files.
 
-java {
-    withJavadocJar()
-    withSourcesJar()
+apply from: "$rootDir/gradle/config.gradle" // config must be first
+apply from: "$rootDir/gradle/content.gradle"
+apply from: "$rootDir/gradle/java.gradle"
+apply from: "$rootDir/gradle/docs.gradle"
+apply from: "$rootDir/gradle/dotnet.gradle"
+apply from: "$rootDir/gradle/install.gradle"
+apply from: "$rootDir/gradle/packaging.gradle"
+apply from: "$rootDir/gradle/distribution-verification.gradle"
+apply from: "$rootDir/gradle/publishing.gradle"
+
+
+// clean should reverse installToSource
+tasks.named("clean") {
+    dependsOn "cleanInstall"
 }
 
-allprojects {
-    repositories {
-        mavenCentral()
+// Java only build
+gradle.projectsEvaluated {
+    tasks.named("build").configure {
+        dependsOn "jar"
+        dependsOn "sourcesJar"
+        dependsOn "javadocJar"
+        dependsOn "paccor"
+
+        setDependsOn(dependsOn.findAll { dependency ->
+            def dependencyName = dependency.hasProperty("name") ? dependency.name : dependency.toString()
+            dependencyName != "assemble"
+        })
     }
 }
 
-def firstNonBlankProperty(String... names) {
-    for (String name : names) {
-        if (hasProperty(name)) {
-            def value = property(name)?.toString()?.trim()
-            if (value) {
-                return value
-            }
-        }
-    }
-    return null
-}
-
-def bridgeLegacySigningProperty(String standardName, String legacyName) {
-    if (!hasProperty(standardName)) {
-        def legacyValue = firstNonBlankProperty(legacyName)
-        if (legacyValue != null) {
-            ext.set(standardName, legacyValue)
-        }
-    }
-}
-
-bridgeLegacySigningProperty('signing.keyId', 'crypto.keyId')
-bridgeLegacySigningProperty('signing.password', 'crypto.password')
-bridgeLegacySigningProperty('signing.secretKeyRingFile', 'crypto.secretKeyRingFile')
-
-dependencies {
-    // Versions and module coordinates in
-    // <project>/gradle/libs.versions.toml
-    api libs.bouncycastle.pkix // Bouncy Castle license
-    api libs.bouncycastle.prov // Bouncy Castle license
-    api libs.jackson.annotations // Apache 2.0
-    api libs.jackson.core // Apache 2.0
-    api libs.jackson.databind // Apache 2.0
-    implementation libs.jakarta.validation // Apache 2.0
-    api libs.picocli // Apache 2.0
-    compileOnly libs.lombok // MIT
-
-    annotationProcessor libs.lombok // MIT
-
-    // Test dependencies
-    testImplementation libs.junit // EPL 2.0
-    testImplementation libs.mockito.junit // MIT
-
-    testRuntimeOnly libs.junit.platform.launcher // EPL 2.0
-}
-
-test {
-    useJUnitPlatform()
-}
-
-evaluationDependsOn(':doc-tools')
-def docToolsProject = project(':doc-tools')
-def docToolsMainRuntimeClasspath = docToolsProject.extensions
-        .getByType(org.gradle.api.tasks.SourceSetContainer)
-        .named('main')
-        .get()
-        .runtimeClasspath
-
-// Extract ASN.1 notation blocks and member-level Javadoc from concrete classes
-// (default scope: paccor.tcg.credential.*) into build/schema/asn1-blocks.json.
-tasks.register("extractAsn1Blocks", JavaExec) {
-    description = "Run AsnDoclet to extract ASN.1 blocks from class Javadoc."
-    group = "documentation"
-    dependsOn docToolsProject.tasks.named("classes")
-    def asn1Output = layout.buildDirectory.file("schema/asn1-blocks.json").get().asFile
-    inputs.files(sourceSets.main.allJava, sourceSets.main.compileClasspath, docToolsMainRuntimeClasspath)
-    inputs.dir("docs/doc-tools/src/main/java")
-    outputs.file(asn1Output)
-    mainClass = "paccor.docgen.AsnDoclet"
-    classpath = files(docToolsMainRuntimeClasspath, sourceSets.main.output, sourceSets.main.runtimeClasspath)
-    args "--asn1-output", asn1Output.absolutePath,
-            "--source-root", layout.projectDirectory.dir("src/main/java").asFile.absolutePath,
-            "--package-filter", "paccor.tcg.credential"
-}
-
-// Dedicated JavaExec invocation that runs the doc-tools schema generator so it
-// writes JSON Schema artifacts and reference Markdown into build/schema/.
-tasks.register("generateSchemas", JavaExec) {
-    description = "Run json.SchemaUtils from docs/doc-tools to write JSON Schema and reference artifacts."
-    group = "documentation"
-    mainClass = "json.SchemaUtils"
-    classpath = files(docToolsMainRuntimeClasspath, sourceSets.main.output, sourceSets.main.runtimeClasspath)
-    def outputDir = layout.buildDirectory.dir("schema").get().asFile
-    systemProperty "schema.output.dir", outputDir.absolutePath
-    dependsOn "classes"
-    dependsOn "extractAsn1Blocks"
-    inputs.files(tasks.named("extractAsn1Blocks"))
-    inputs.dir("docs/doc-tools/src/main/java")
-    outputs.dir(outputDir)
-}
-
-tasks.register("generateCliHelp", JavaExec) {
-    description = "Generate help output as Markdown for the docs site."
-    group = "documentation"
-    mainClass = "paccor.docgen.CliHelpGenerator"
-    classpath = files(docToolsMainRuntimeClasspath, sourceSets.main.output, sourceSets.main.runtimeClasspath)
-    def outputDir = layout.buildDirectory.dir("schema/docs/cli-help").get().asFile
-    systemProperty "cli.help.output.dir", outputDir.absolutePath
-    dependsOn "classes"
-    dependsOn docToolsProject.tasks.named("classes")
-    inputs.files(sourceSets.main.allJava, sourceSets.main.compileClasspath, docToolsMainRuntimeClasspath)
-    inputs.dir("docs/doc-tools/src/main/java")
-    outputs.dir(outputDir)
-}
-
-// Aggregator: run schema + doc generation, then stage generated MD/graphs under
-// docs/reference/_generated/ where the curated mkdocs pages can include-markdown them.
-tasks.register("generateDocs") {
-    description = "Generate schemas, ASN.1 blocks, and project doc Markdown; stage for mkdocs."
-    group = "documentation"
-    dependsOn "generateSchemas"
-    dependsOn "generateCliHelp"
-    def schemaDir = layout.buildDirectory.dir("schema")
-    def stagedDir = layout.projectDirectory.dir("docs/reference/_generated")
-    inputs.dir(schemaDir)
-    outputs.dir(stagedDir)
-    doLast {
-        delete stagedDir
-        copy {
-            from(schemaDir.get().dir("docs"))
-            into stagedDir
-        }
-        copy {
-            from(schemaDir.get().dir("graphs"))
-            into stagedDir.dir("graphs")
-        }
-        copy {
-            from(schemaDir.get().dir("schema-json"))
-            into stagedDir.dir("schema-json")
-        }
-    }
-}
-
-// Fix file timestamp
-tasks.withType(AbstractArchiveTask).configureEach {
-    preserveFileTimestamps = true
-    reproducibleFileOrder = true
-}
-
-// Maven packaging and signing
-publishing {
-    publications {
-        create("mavenJava", MavenPublication) {
-            from(components.java as SoftwareComponent)
-
-            groupId = 'io.github.nsacyber.paccor'
-            artifactId = 'paccor'
-            version = project.version
-
-            pom {
-                name = 'paccor'
-                description = 'The Platform Attribute Certificate Creator can gather component details, create, sign, and validate the TCG-defined Platform Credential. #nsacyber'
-                url = 'https://github.com/nsacyber/paccor'
-
-                licenses {
-                    license {
-                        name = 'The Apache Software License, Version 2.0'
-                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
-                        distribution = 'repo'
-                    }
-                }
-
-                developers {
-                    developer {
-                        id = 'iadgovuser29'
-                        name = 'iadgovuser29'
-                        email = '33426478+iadgovuser29@users.noreply.github.com'
-                        organization = 'NSA Cybersecurity Directorate'
-                        organizationUrl = 'https://github.com/nsacyber'
-                    }
-                }
-
-                scm {
-                    connection = 'scm:git:git://github.com/nsacyber/paccor.git'
-                    developerConnection = 'scm:git:ssh://git@github.com/nsacyber/paccor.git'
-                    url = 'https://github.com/nsacyber/paccor'
-                }
-            }
-        }
-    }
-    repositories {
-        maven {
-            name = 'sonatype'
-            def user = firstNonBlankProperty('sonatypeUsername', 'ossrhUsername') ?: ""
-            def pass = firstNonBlankProperty('sonatypePassword', 'ossrhPassword') ?: ""
-            def releasesRepoUrl = firstNonBlankProperty('sonatypeReleaseUrl')
-                    ?: "https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/"
-            def snapshotsRepoUrl = firstNonBlankProperty('sonatypeSnapshotUrl')
-                    ?: "https://central.sonatype.com/repository/maven-snapshots/"
-            url = uri(version.toString().endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl)
-            credentials {
-                username = user
-                password = pass
-            }
-        }
-    }
-}
-
-signing {
-    required { gradle.taskGraph.allTasks.any { it.name.startsWith('publish') || it.name.startsWith('sign') } }
-    sign publishing.publications.mavenJava
-}
-
-// Application packaging into a zip file
-def createScript(Project project, String mainClassName, String name) {
-    project.tasks.register(name, CreateStartScripts) { t ->
-        t.outputDir       = project.layout.buildDirectory.dir("scripts").get().asFile
-        t.mainClass       = mainClassName
-        t.applicationName = name
-        t.classpath       = project.tasks.named(JavaPlugin.JAR_TASK_NAME).get().outputs.files + project.configurations.runtimeClasspath
-    }
-    project.tasks.named(name).configure {
-        dependsOn(project.tasks.named("jar"))
-    }
-
-    project.distributions.main.contents {
-        into("bin") {
-            from(project.tasks.named(name))
-            filePermissions {
-                unix(0755)
-            }
-            duplicatesStrategy = DuplicatesStrategy.EXCLUDE // IMPORTANT: eliminates duplicate files within the ZIP
-        }
-    }
-
-    tasks.named("buildDeb") {
-        dependsOn tasks.named(name)
-    }
-    tasks.named("buildRpm") {
-        dependsOn tasks.named(name)
-    }
-}
-
-// Suppress standard application plugin behavior in favor of easier to read program declarations below
-startScripts.enabled = false
-run.enabled = false
-
-createScript(project, 'paccor.cli.RootCmd', 'paccor')
-
-// Include files into a ZIP
-distributions.main.contents {
-    from("scripts/") {
-        include "**/*.sh"
-        into "scripts"
-        filePermissions {
-            unix(0755)
-        }
-    }
-    from("scripts/") {
-        exclude "**/*.sh"
-        into "scripts"
-    }
-}
-distributions.main.contents {
-    // docs/ now hosts the mkdocs source tree; only ship static assets (PDF) in the binary distribution.
-    from("docs/_assets/") {
-        into "docs"
-    }
-}
-distributions.main.contents {
-    from("./") {
-        include {
-            details ->
-            details.file.name.endsWith('.md')
-        }
-        into "./"
-    }
-}
-
-def createCcrPathString(String ccr, String config, String runtime) {
-    def prefix = "${project.rootDir}${File.separator}dotnet${File.separator}ComponentClassRegistry"
-    def netVersion = "net10.0"
-    return "${prefix}${File.separator}${ccr}${File.separator}bin${File.separator}${config}${File.separator}${netVersion}${File.separator}${runtime}${File.separator}publish${File.separator}${ccr}"
-}
-
-def static getDotnetConfig() {
-    return "Release"
-}
-
-def static getDotnetRuntimeLinux() {
-    return "linux-x64"
-}
-
-def static getDotnetRuntimeWin() {
-    return "win-x64"
-}
-
-def getZipOutputPath() {
-    return layout.buildDirectory.dir("distributions")
-}
-
-def getStagingPathForUtilities() {
-    return layout.buildDirectory.dir("tmp${File.separator}staging")
-}
-
-def createLinuxZipFileList() {
-    def config = getDotnetConfig()
-    def runtime = getDotnetRuntimeLinux()
-    def smbios = file(createCcrPathString("SmbiosCli", config, runtime))
-    def pcie = file(createCcrPathString("PcieCli", config, runtime))
-    def storage = file(createCcrPathString("StorageCli", config, runtime))
-
-    return [smbios, pcie, storage]
-}
-
-def createWinZipFileList() {
-    def config = getDotnetConfig()
-    def runtime = getDotnetRuntimeWin()
-    def smbios = file(createCcrPathString("SmbiosCli", config, runtime) + ".exe")
-    def pcie = file(createCcrPathString("PcieCli", config, runtime) + ".exe")
-    def storage = file(createCcrPathString("StorageCli", config, runtime) + ".exe")
-
-    return [smbios, pcie, storage]
-}
-
-def static checkFilesExist(ArrayList<File> fileList, String destinationIfExists) {
-    fileList.each { file ->
-        if (file.exists()) {
-            println "Copied ${file.name} into ${destinationIfExists}."
-        } else {
-            println "${file.name} not found. If it was expected, build dotnet before gradle."
-        }
-    }
-}
-
-// Create Windows ZIP
-tasks.register("distZipWin", Zip) {
-    def archiveBaseName = project.name
-    def rootDirInZip = "${archiveBaseName}-${version}"
-    def destinationInZip = "${rootDirInZip}${File.separator}scripts"
-    def zipOutputDestination = getZipOutputPath()
-    def runtime = getDotnetRuntimeWin()
-    def archiveName = "${archiveBaseName}.${version}.${runtime}.zip"
-
-    def fileList = createWinZipFileList()
-
-    into(rootDirInZip) {
-        with distributions.main.contents
-    }
-
-    from(fileList.findAll { it.exists() }) {
-        into "${destinationInZip}"
-    }
-
-    archiveFileName.set(archiveName)
-    destinationDirectory.set(zipOutputDestination)
-
-    doFirst {
-        checkFilesExist(fileList, archiveName)
-    }
-}
-
-// Create Linux ZIP
-tasks.register("distZipLinux", Zip) {
-    def archiveBaseName = project.name
-    def rootDirInZip = "${archiveBaseName}-${version}"
-    def destinationInZip = "${rootDirInZip}${File.separator}scripts"
-    def zipOutputDestination = getZipOutputPath()
-    def runtime = getDotnetRuntimeLinux()
-    def archiveName = "${archiveBaseName}.${version}.${runtime}.zip"
-
-    def fileList = createLinuxZipFileList()
-
-    into(rootDirInZip) {
-        with distributions.main.contents
-    }
-
-    from(fileList.findAll { it.exists() }) {
-        into destinationInZip
-        filePermissions {
-            unix(0755)
-        }
-    }
-
-    archiveFileName.set(archiveName)
-    destinationDirectory.set(zipOutputDestination)
-
-    doFirst {
-        checkFilesExist(fileList, archiveName)
-    }
-}
-
-// Copies linux registry utilities into a packaging staging folder, if they exist
-tasks.register("stageUtilsForDebRpm", Copy) {
-    def stagingFolder = file(getStagingPathForUtilities())
-    def fileList = createLinuxZipFileList()
-
-    from fileList.findAll { it.exists() }
-    into "${stagingFolder}"
-
-    doFirst {
-        checkFilesExist(fileList, "${stagingFolder}")
-    }
-}
-
-tasks.named("buildDeb") {
-    dependsOn tasks.named("stageUtilsForDebRpm")
-}
-
-tasks.named("buildRpm") {
-    dependsOn tasks.named("stageUtilsForDebRpm")
-}
-
-// Produce packages
-ospackage {
-    packageName='paccor'
-    os=LINUX
-    version="${project.version}"
-    release=null
-
-    into '/opt/paccor'
-    user 'root'
-
-    fileMode 0644
-    dirMode 0755
-
-    requires('dmidecode', '3.2', (int)(GREATER | EQUAL))
-    requires('ethtool')
-    requires('java-25-openjdk-devel')
-    requires('jq')
-    requires('lshw')
-    requires('nvme-cli')
-    requires('vim-common')
-
-    from(jar.outputs.files) {
-        into 'lib'
-    }
-
-    from('lib') {
-        into 'lib'
-    }
-
-    from(configurations.runtimeClasspath) {
-        into 'lib'
-    }
-
-    from('build/scripts') {
-        exclude {
-            FileTreeElement details ->
-            details.file.name.endsWith('.bat')
-        }
-        into 'bin'
-        filePermissions {
-            unix(0755)
-        }
-    }
-
-    from("scripts/") {
-        include "**/*.sh"
-        into "scripts"
-        filePermissions {
-            unix(0755)
-        }
-    }
-    from("scripts/") {
-        exclude "**/*.sh"
-        into "scripts"
-    }
-
-    from('docs/_assets') {
-        exclude {
-            FileTreeElement details ->
-            details.file.name.endsWith('.odt')
-        }
-        into 'docs'
-    }
-
-    from('./') {
-        include {
-            FileTreeElement details ->
-            details.file.name.endsWith('.md')
-        }
-        into './'
-    }
-
-    from (getStagingPathForUtilities()) {
-        into 'scripts'
-    }
+// Group publishing tasks. signature and maven tasks separate.
+tasks.register("release") {
+    group = "release"
+    description = "Build all release packages."
+
+    dependsOn "build"
+
+    dependsOn "generateDocs"
+    dependsOn "requireDotnetArtifacts"
+    dependsOn "distZip"
+    dependsOn "distTar"
+    dependsOn "buildRpm"
+    dependsOn "buildDeb"
+    dependsOn "verifyDistributionPackages"
+    dependsOn "installToSource"
 }

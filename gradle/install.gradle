@@ -1,0 +1,63 @@
+/**
+ * Clean only installed artifacts (NOT source scripts)
+ */
+tasks.register("cleanInstall") {
+    group = "build"
+
+    doLast {
+        delete installBinDir
+        delete installLibDir
+
+        tools.each { tool ->
+            delete file("${installScriptsDir}/${tool}")
+            delete file("${installScriptsDir}/${tool}.exe")
+        }
+    }
+}
+
+tasks.register("installToSource") {
+    group = "build"
+    description = "Install runnable paccor into source repository"
+
+    dependsOn "build"
+    dependsOn "requireDotnetArtifacts"
+    dependsOn "paccor"
+
+    doLast {
+
+        // JAVA BIN
+        copy {
+            from(buildScriptsDir)
+            into(installBinDir)
+            exclude { it.name.endsWith(".bat") }
+        }
+
+        // JAVA LIB
+        copy {
+            from(jar.outputs.files)
+            from(configurations.runtimeClasspath)
+            into(installLibDir)
+        }
+
+        // DOTNET BINARIES ONLY (already flattened, safe now)
+        copy {
+            from(stagedDotnetDir("linux"))
+            from(stagedDotnetDir("win"))
+            into(installScriptsDir)
+
+            include "**/*"
+
+            includeEmptyDirs = false
+
+            // IMPORTANT: NO pdb or metadata files possible anymore,
+            // so no duplicates can occur
+        }
+
+        // FIX permissions
+        fileTree(installScriptsDir).visit { f ->
+            if (!f.file.isDirectory() && f.name.endsWith(".sh")) {
+                f.file.setExecutable(true, false)
+            }
+        }
+    }
+}

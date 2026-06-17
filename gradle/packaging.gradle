@@ -1,0 +1,32 @@
+tasks.named("buildDeb") {
+    dependsOn "installToSource"
+}
+
+tasks.named("buildRpm") {
+    dependsOn "installToSource"
+}
+
+ospackage {
+    packageName = project.name
+    os = LINUX
+    version = project.version
+
+    buildRpm { arch = "${buildRpmArch}" }
+    buildDeb { arch = "${buildDebArch}" }
+
+    into packageInstallRoot
+    user "root"
+
+    fileMode 0644
+    dirMode 0755
+
+    requires('dmidecode', '3.2', (int)(GREATER | EQUAL))
+    requires('ethtool')
+    requires('java-25-openjdk-devel')
+    requires('jq')
+    requires('lshw')
+    requires('nvme-cli')
+    requires('vim-common')
+
+    applyPackageLayout(delegate, packageContent("linux"), "linux")
+}

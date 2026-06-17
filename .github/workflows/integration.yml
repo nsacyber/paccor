@@ -86,10 +86,15 @@ jobs:
           ./gradlew --no-daemon test --tests "*AssembleCmdSigningPathsTest.testPkcs11Validation*"
       - name: Deploy Zip
         run: |
-          ls build/distributions/paccor-*.zip
+          ls build/distributions/paccor*linux*.zip
           mkdir -p paccor-dist
-          unzip -d paccor-dist build/distributions/paccor-*.zip
-          mv paccor-dist/paccor*/* paccor-dist/ &> /dev/null
+          unzip -d paccor-dist build/distributions/paccor*linux*.zip
+          zip_root="$(find paccor-dist -mindepth 1 -maxdepth 1 -type d -name 'paccor-*' -print -quit)"
+          if [ -n "$zip_root" ] && [ -x "$zip_root/bin/paccor" ]; then
+            mv "$zip_root"/* paccor-dist/
+            rmdir "$zip_root"
+          fi
+          test -x paccor-dist/bin/paccor
           ls paccor-dist
       - name: Test PKCS#11 CKA_ID lookup with lowercase
         run: |

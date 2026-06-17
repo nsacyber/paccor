@@ -16,7 +16,7 @@ public class CertGenCmdTest extends TestSupport {
         File issuer = new File("src/test/resources/TestCA.cert.example.pem");
         File holder = new File("src/test/resources/TestCA.cert.example.pem");
 
-        int code = new CommandLine(new RootCmd()).execute(
+        int code = RootCmd.commandLine().execute(
                 "certgen",
                 "--out", out.getAbsolutePath(),
                 "--kind", "PKC",
@@ -37,7 +37,7 @@ public class CertGenCmdTest extends TestSupport {
     @Test
     public void testFinalizeFailsWhenCannotRebuildTbs() throws Exception {
         File out = tempFile("certgen-finalize-", ".json");
-        CommandLine cmd = new CommandLine(new RootCmd());
+        CommandLine cmd = RootCmd.commandLine();
         // In picocli, execution exception handler might suppress the exception from maybeFinalize
         // unless we rethrow it or check the code.
         int code = cmd.execute(
@@ -62,7 +62,7 @@ public class CertGenCmdTest extends TestSupport {
             return; // Skip if resources are not found in this environment
         }
 
-        int code = new CommandLine(new RootCmd()).execute(
+        int code = RootCmd.commandLine().execute(
                 "certgen",
                 "--out", out.getAbsolutePath(),
                 "--kind", "AC",

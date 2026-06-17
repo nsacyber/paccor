@@ -1,0 +1,104 @@
+evaluationDependsOn(":doc-tools")
+
+def docToolsProject = project(":doc-tools")
+def docClasspath = docToolsProject.sourceSets.main.runtimeClasspath
+
+tasks.register("extractAsn1Blocks", JavaExec) {
+    group = "docs"
+
+    dependsOn docToolsProject.tasks.named("classes")
+
+    mainClass = "paccor.docgen.AsnDoclet"
+    classpath = files(docClasspath, sourceSets.main.runtimeClasspath)
+
+    def out = layout.buildDirectory.file("schema/asn1-blocks.json").get().asFile
+
+    inputs.files(sourceSets.main.allJava)
+    outputs.file(out)
+
+    args "--asn1-output", out.absolutePath,
+            "--source-root", "${projectDir}/src/main/java",
+            "--package-filter", "paccor.tcg.credential"
+}
+
+tasks.register("generateSchemaDocs", JavaExec) {
+    group = "docs"
+    description = "Generates JSON schema reference artifacts for MkDocs."
+
+    dependsOn "extractAsn1Blocks"
+    dependsOn docToolsProject.tasks.named("classes")
+
+    mainClass = "json.SchemaUtils"
+    classpath = files(docClasspath, sourceSets.main.runtimeClasspath)
+
+    def out = layout.buildDirectory.dir("schema").get().asFile
+
+    inputs.files(sourceSets.main.allJava)
+    inputs.files(docToolsProject.sourceSets.main.allJava)
+    inputs.file(layout.buildDirectory.file("schema/asn1-blocks.json"))
+    outputs.dir(out)
+
+    systemProperty "schema.output.dir", out.absolutePath
+}
+
+tasks.register("generateCliHelpDocs", JavaExec) {
+    group = "docs"
+    description = "Generates Picocli help fragments for MkDocs."
+
+    dependsOn docToolsProject.tasks.named("classes")
+
+    mainClass = "paccor.docgen.CliHelpGenerator"
+    classpath = files(docClasspath, sourceSets.main.runtimeClasspath)
+
+    def out = layout.buildDirectory.dir("schema/docs/cli-help").get().asFile
+
+    inputs.files(sourceSets.main.allJava)
+    inputs.files(docToolsProject.sourceSets.main.allJava)
+    outputs.dir(out)
+
+    systemProperty "cli.help.output.dir", out.absolutePath
+}
+
+tasks.register("generateDocs") {
+    group = "docs"
+
+    dependsOn "generateSchemaDocs"
+    dependsOn "generateCliHelpDocs"
+    dependsOn "stageJavadocsForMkDocs"
+
+    def schemaDir = layout.buildDirectory.dir("schema")
+    def staged = layout.projectDirectory.dir("docs/reference/_generated")
+
+    inputs.dir(schemaDir)
+    outputs.dir(staged)
+
+    doLast {
+        delete staged
+        copy {
+            from(schemaDir.get().dir("docs"))
+            into staged
+        }
+        copy {
+            from(schemaDir.get().dir("graphs"))
+            into staged.dir("graphs")
+        }
+        copy {
+            from(schemaDir.get().dir("schema-json"))
+            into staged.dir("schema-json")
+        }
+    }
+}
+
+tasks.register("stageJavadocsForMkDocs", Copy) {
+    group = "docs"
+    description = "Stages generated Javadocs so MkDocs can publish them as static HTML."
+
+    dependsOn tasks.named("javadoc")
+
+    from(tasks.named("javadoc").map { it.destinationDir })
+    into(layout.projectDirectory.dir("docs/reference/javadocs"))
+
+    doFirst {
+        delete(destinationDir)
+    }
+}
