@@ -7,6 +7,7 @@ ext {
     dotnetFramework = "net10.0"
     dotnetRuntimeLinux = "linux-x64"
     dotnetRuntimeWin = "win-x64"
+    requiredJavaMajorVersion = 25
     tools = ["SmbiosCli", "PcieCli", "StorageCli"]
 
     buildRpmArch = "X86_64"
