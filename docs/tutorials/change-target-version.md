@@ -119,3 +119,5 @@ tcgCredentialSpecificationMajorVersion="1" # Released April 10, 2020
 tcgCredentialSpecificationMinorVersion="1"
 tcgCredentialSpecificationRevision="19"
 ```
+
+--8<-- "_includes/test-resource-links.md"
