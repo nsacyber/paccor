@@ -1,13 +1,3 @@
-// dotnetProject and dotnetOutput are dependent upon dotnet file structure in project
-def static dotnetProject(String tool) {
-    "dotnet/ComponentClassRegistry/${tool}/${tool}.csproj"
-}
-
-def dotnetOutput = { String tool, String runtime ->
-    def base = "${rootDir}/dotnet/ComponentClassRegistry/${tool}/bin/${dotnetConfig}/${dotnetFramework}/${runtime}/publish/${tool}"
-    return runtime.contains("win") ? file(base + ".exe") : file(base)
-}
-
 def dotnetUnavailableMessage = "The .NET SDK is required to build paccor distribution packages."
 def dotnetPublishFailedMessage = ".NET publish did not complete successfully."
 
@@ -43,7 +33,7 @@ def dotnetAvailable = {
 }
 
 // Enable incremental dotnet publishing
-def dotnetInputs = fileTree("dotnet/ComponentClassRegistry") {
+def dotnetInputs = fileTree(dotnetSourceDir) {
     include "**/*.cs"
     include "**/*.csproj"
     include "**/*.props"
@@ -112,10 +102,10 @@ tasks.register("stageDotnet") {
     dependsOn "dotnetPublish"
 
     doLast {
-        def outDir = file(layout.buildDirectory.dir("staged/dotnet"))
+        def outDir = stagedDotnetRootDir.get().asFile
         delete outDir
-        def linuxOutDir = file("$outDir/linux")
-        def winOutDir = file("$outDir/win")
+        def linuxOutDir = stagedDotnetDir("linux").get().asFile
+        def winOutDir = stagedDotnetDir("win").get().asFile
         linuxOutDir.mkdirs()
         winOutDir.mkdirs()
 

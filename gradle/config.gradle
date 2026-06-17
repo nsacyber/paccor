@@ -1,5 +1,5 @@
 /**
- * Project variables and functions.
+ * Project variables and functions. Only edit these if you know what you're doing.
  */
 
 ext {
@@ -8,4 +8,40 @@ ext {
     dotnetRuntimeLinux = "linux-x64"
     dotnetRuntimeWin = "win-x64"
     tools = ["SmbiosCli", "PcieCli", "StorageCli"]
+
+    buildRpmArch = "X86_64"
+    buildDebArch = "amd64"
+
+    packageInstallRoot = "/opt/${project.name}"
+
+    buildScriptsDir = layout.buildDirectory.dir("scripts")
+    docsAssetsDir = file("docs/_assets")
+    sourceScriptsDir = file("scripts")
+    dotnetSourceDir = file("dotnet/ComponentClassRegistry")
+    stagedDotnetRootDir = layout.buildDirectory.dir("staged/dotnet")
+
+    installBinDir = file("${rootDir}/bin")
+    installLibDir = file("${rootDir}/lib")
+    installScriptsDir = file("${rootDir}/scripts")
+
+    generatedToolNames = {
+        tools.collectMany { tool -> [tool.toString(), "${tool}.exe".toString()] } as Set
+    }
+
+    packageDotnetPlatform = { String os ->
+        os == "linux" ? "linux" : "win"
+    }
+
+    stagedDotnetDir = { String platform ->
+        layout.buildDirectory.dir("staged/dotnet/${platform}")
+    }
+
+    dotnetProject = { String tool ->
+        "dotnet/ComponentClassRegistry/${tool}/${tool}.csproj"
+    }
+
+    dotnetOutput = { String tool, String runtime ->
+        def base = file("${dotnetSourceDir}/${tool}/bin/${dotnetConfig}/${dotnetFramework}/${runtime}/publish/${tool}")
+        runtime.contains("win") ? file("${base}.exe") : base
+    }
 }

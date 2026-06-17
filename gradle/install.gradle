@@ -1,7 +1,3 @@
-def installBinDir = file("${rootDir}/bin")
-def installLibDir = file("${rootDir}/lib")
-def installScriptsDir = file("${rootDir}/scripts")
-
 /**
  * Clean only installed artifacts (NOT source scripts)
  */
@@ -31,8 +27,8 @@ tasks.register("installToSource") {
 
         // JAVA BIN
         copy {
-            from(layout.buildDirectory.dir("scripts"))
-            into("${rootDir}/bin")
+            from(buildScriptsDir)
+            into(installBinDir)
             exclude { it.name.endsWith(".bat") }
         }
 
@@ -40,14 +36,14 @@ tasks.register("installToSource") {
         copy {
             from(jar.outputs.files)
             from(configurations.runtimeClasspath)
-            into("${rootDir}/lib")
+            into(installLibDir)
         }
 
         // DOTNET BINARIES ONLY (already flattened, safe now)
         copy {
-            from(layout.buildDirectory.dir("staged/dotnet/linux"))
-            from(layout.buildDirectory.dir("staged/dotnet/win"))
-            into("${rootDir}/scripts")
+            from(stagedDotnetDir("linux"))
+            from(stagedDotnetDir("win"))
+            into(installScriptsDir)
 
             include "**/*"
 
@@ -58,7 +54,7 @@ tasks.register("installToSource") {
         }
 
         // FIX permissions
-        fileTree("${rootDir}/scripts").visit { f ->
+        fileTree(installScriptsDir).visit { f ->
             if (!f.file.isDirectory() && f.name.endsWith(".sh")) {
                 f.file.setExecutable(true, false)
             }

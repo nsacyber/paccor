@@ -7,14 +7,14 @@ tasks.named("buildRpm") {
 }
 
 ospackage {
-    packageName = "paccor"
+    packageName = project.name
     os = LINUX
     version = project.version
 
-    buildRpm { arch = "X86_64" }
-    buildDeb { arch = "amd64" }
+    buildRpm { arch = "${buildRpmArch}" }
+    buildDeb { arch = "${buildDebArch}" }
 
-    into "/opt/paccor"
+    into packageInstallRoot
     user "root"
 
     fileMode 0644

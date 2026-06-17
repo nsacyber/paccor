@@ -32,7 +32,7 @@ run.enabled = false
 // CLI launcher
 def createScript = { Project project, String mainClassName, String name ->
     project.tasks.register(name, CreateStartScripts) {t ->
-        t.outputDir = project.layout.buildDirectory.dir("scripts").get().asFile
+        t.outputDir = buildScriptsDir.get().asFile
         t.applicationName = name
         t.mainClass.set(mainClassName)
         t.classpath = project.tasks.named(JavaPlugin.JAR_TASK_NAME).get().outputs.files + project.configurations.runtimeClasspath

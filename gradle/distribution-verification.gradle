@@ -26,10 +26,6 @@ def joinPackagePath = { String prefix, String path ->
             .replace(File.separator, "/")
 }
 
-def generatedToolNames = {
-    tools.collectMany { tool -> [tool.toString(), "${tool}.exe".toString()] } as Set
-}
-
 def putExpected = { Map expected, String path, Integer mode ->
     expected[path] = mode
 }
@@ -60,25 +56,23 @@ def addFilesByName = { Map expected, Iterable<File> files, String into, Integer 
 
 def expectedPackageFiles = { String os ->
     def linuxPackage = os == "linux"
-    def dotnetPlatform = linuxPackage ? "linux" : "win"
+    def dotnetPlatform = packageDotnetPlatform(os)
     def expected = [:] as LinkedHashMap<String, Integer>
-    def buildScriptsDir = layout.buildDirectory.dir("scripts").get().asFile
-    def stagedDotnetDir = layout.buildDirectory.dir("staged/dotnet/${dotnetPlatform}").get().asFile
-    def scriptSourceDir = file("scripts")
-    def docsAssetsDir = file("docs/_assets")
+    def buildScriptsSourceDir = buildScriptsDir.get().asFile
+    def stagedDotnetSourceDir = stagedDotnetDir(dotnetPlatform).get().asFile
 
-    addDirectoryTree(expected, buildScriptsDir, "bin", { file, relativePath ->
+    addDirectoryTree(expected, buildScriptsSourceDir, "bin", { file, relativePath ->
         !linuxPackage || !file.name.endsWith(".bat")
     }, linuxPackage ? 0755 : null)
 
     addFilesByName(expected, jar.outputs.files.files, "lib", linuxPackage ? 0644 : null)
     addFilesByName(expected, configurations.runtimeClasspath.files, "lib", linuxPackage ? 0644 : null)
 
-    addDirectoryTree(expected, scriptSourceDir, "scripts", { file, relativePath ->
+    addDirectoryTree(expected, sourceScriptsDir, "scripts", { file, relativePath ->
         file.name.endsWith(".sh")
     }, linuxPackage ? 0755 : null)
 
-    addDirectoryTree(expected, scriptSourceDir, "scripts", { file, relativePath ->
+    addDirectoryTree(expected, sourceScriptsDir, "scripts", { file, relativePath ->
         if (file.name.endsWith(".sh")) {
             return false
         }
@@ -86,7 +80,7 @@ def expectedPackageFiles = { String os ->
         linuxPackage ? !generated && !file.name.endsWith(".exe") : !generated
     }, linuxPackage ? 0644 : null)
 
-    addDirectoryTree(expected, stagedDotnetDir, "scripts", { file, relativePath ->
+    addDirectoryTree(expected, stagedDotnetSourceDir, "scripts", { file, relativePath ->
         true
     }, linuxPackage ? 0755 : null)
 
@@ -173,7 +167,7 @@ def readDebEntries = { File packageFile ->
                 def tarEntry
                 while ((tarEntry = tar.nextTarEntry) != null) {
                     if (!tarEntry.directory) {
-                        putActual(actual, packageFile, tarEntry.name, "/opt/paccor", tarEntry.mode & 07777)
+                        putActual(actual, packageFile, tarEntry.name, packageInstallRoot, tarEntry.mode & 07777)
                     }
                 }
             }
@@ -209,7 +203,7 @@ def readRpmEntries = { File packageFile ->
             header = new CpioHeader()
             total = header.read(channel, total)
             if (!header.last && header.type != CpioHeader.DIR) {
-                putActual(actual, packageFile, header.name, "/opt/paccor", header.permissions & 07777)
+                putActual(actual, packageFile, header.name, packageInstallRoot, header.permissions & 07777)
                 skipFully(payload, header.fileSize)
                 total += header.fileSize
             }

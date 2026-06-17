@@ -1,14 +1,10 @@
-def generatedToolNames = {
-    tools.collectMany { tool -> [tool.toString(), "${tool}.exe".toString()] } as Set
-}
-
 ext.packageContent = { os = "linux" ->
     def linuxPackage = os == "linux"
-    def dotnetPlatform = linuxPackage ? "linux" : "win"
+    def dotnetPlatform = packageDotnetPlatform(os)
 
     return [
             bin: [
-                    from: layout.buildDirectory.dir("scripts"),
+                    from: buildScriptsDir,
                     into: "bin",
                     exclude: linuxPackage ? { details -> details.file.name.endsWith(".bat") } : null,
                     mode: linuxPackage ? 0755 : null
@@ -23,7 +19,7 @@ ext.packageContent = { os = "linux" ->
             ],
 
             scripts_sh: [
-                    from: fileTree("scripts") {
+                    from: fileTree(sourceScriptsDir) {
                         include "**/*.sh"
                     },
                     into: "scripts",
@@ -31,7 +27,7 @@ ext.packageContent = { os = "linux" ->
             ],
 
             scripts_other: [
-                    from: fileTree("scripts") {
+                    from: fileTree(sourceScriptsDir) {
                         exclude "**/*.sh"
                     },
                     into: "scripts",
@@ -42,14 +38,14 @@ ext.packageContent = { os = "linux" ->
             ],
 
             dotnet: [
-                    from: layout.buildDirectory.dir("staged/dotnet/${dotnetPlatform}"),
+                    from: stagedDotnetDir(dotnetPlatform),
                     into: "scripts",
                     mode: linuxPackage ? 0755 : null
             ],
 
             docs: [
                     into: "docs",
-                    from: fileTree("docs/_assets")
+                    from: fileTree(docsAssetsDir)
             ],
 
             root_md: [
