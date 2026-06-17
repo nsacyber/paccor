@@ -90,12 +90,20 @@ set REQUIRED_JAVA_MAJOR=${requiredJavaMajorVersion}
 set JAVA_VERSION=
 set JAVA_MAJOR=
 set JAVA_MAJOR_INVALID=
-for /f "tokens=3" %%v in ('cmd /d /c ""%JAVA_EXE%" -version 2^>^&1 ^| findstr /i "version""') do (
-    set JAVA_VERSION=%%v
-    goto javaVersionFound
+set "JAVA_VERSION_OUTPUT=%TEMP%\\paccor-java-version-%RANDOM%-%RANDOM%.txt"
+"%JAVA_EXE%" -version > "%JAVA_VERSION_OUTPUT%" 2>&1
+if errorlevel 1 goto javaVersionReadFailed
+
+for /f "usebackq tokens=1,2,3" %%a in ("%JAVA_VERSION_OUTPUT%") do (
+    if /i "%%b"=="version" (
+        set JAVA_VERSION=%%c
+        goto javaVersionFound
+    )
 )
+goto javaVersionFound
 
 :javaVersionFound
+if exist "%JAVA_VERSION_OUTPUT%" del "%JAVA_VERSION_OUTPUT%" >NUL 2>&1
 if not defined JAVA_VERSION (
     echo. 1>&2
     echo ERROR: Could not determine Java runtime version. 1>&2
@@ -128,6 +136,17 @@ if defined JAVA_HOME echo JAVA_HOME: %JAVA_HOME% 1>&2
 if not defined JAVA_HOME echo JAVA_HOME: not set 1>&2
 echo. 1>&2
 "%JAVA_EXE%" -version 1>&2
+goto fail
+
+:javaVersionReadFailed
+echo. 1>&2
+echo ERROR: Could not execute Java command: %JAVA_EXE% 1>&2
+echo. 1>&2
+if defined JAVA_HOME echo JAVA_HOME: %JAVA_HOME% 1>&2
+if not defined JAVA_HOME echo JAVA_HOME: not set 1>&2
+echo. 1>&2
+if exist "%JAVA_VERSION_OUTPUT%" type "%JAVA_VERSION_OUTPUT%" 1>&2
+if exist "%JAVA_VERSION_OUTPUT%" del "%JAVA_VERSION_OUTPUT%" >NUL 2>&1
 goto fail
 
 :javaVersionInvalid
