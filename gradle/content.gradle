@@ -82,6 +82,8 @@ ext.applyPackageLayout = { target, layoutMap, os ->
     }
 }
 
+def zipRootDir = "${project.name}-${version}"
+
 tasks.named("distZip") {
     dependsOn "requireDotnetArtifacts"
     dependsOn "paccor"
@@ -93,7 +95,9 @@ tasks.named("distZip") {
         }
     }
 
-    applyPackageLayout(it, packageContent("linux"), "linux")
+    into(zipRootDir) {
+        applyPackageLayout(delegate, packageContent("linux"), "linux")
+    }
 }
 
 tasks.register("distZipWin", Zip) {
@@ -103,7 +107,9 @@ tasks.register("distZipWin", Zip) {
 
     archiveFileName.set("${project.name}.${version}.${dotnetRuntimeWin}.zip")
 
-    applyPackageLayout(it, packageContent("win"), "win")
+    into(zipRootDir) {
+        applyPackageLayout(delegate, packageContent("win"), "win")
+    }
 }
 
 tasks.named("distTar") {
