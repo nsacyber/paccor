@@ -29,7 +29,6 @@ tasks.register("installToSource") {
         copy {
             from(buildScriptsDir)
             into(installBinDir)
-            exclude { it.name.endsWith(".bat") }
         }
 
         // JAVA LIB
