@@ -17,6 +17,7 @@ apply from: "$rootDir/gradle/docs.gradle"
 apply from: "$rootDir/gradle/dotnet.gradle"
 apply from: "$rootDir/gradle/install.gradle"
 apply from: "$rootDir/gradle/packaging.gradle"
+apply from: "$rootDir/gradle/distribution-verification.gradle"
 apply from: "$rootDir/gradle/publishing.gradle"
 
 
@@ -53,5 +54,6 @@ tasks.register("release") {
     dependsOn "distTar"
     dependsOn "buildRpm"
     dependsOn "buildDeb"
+    dependsOn "verifyDistributionPackages"
     dependsOn "installToSource"
 }

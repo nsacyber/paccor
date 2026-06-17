@@ -92,7 +92,7 @@ tasks.named("distZip") {
 
     archiveFileName.set("${project.name}.${version}.${dotnetRuntimeLinux}.zip")
     eachFile { details ->
-        if (details.path.startsWith("paccor-${version}.linux/")) {
+        if (details.path.startsWith("${project.name}.${version}.${dotnetRuntimeLinux}/")) {
             details.exclude()
         }
     }
