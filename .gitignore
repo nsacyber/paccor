@@ -81,4 +81,5 @@ dotnet/paccor_scripts/paccor_scripts/scripts
 
 # mkdocs documentation
 /docs/reference/_generated/
+/docs/reference/javadocs/
 /site/

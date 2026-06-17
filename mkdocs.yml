@@ -138,5 +138,6 @@ nav:
       - Vocabularies: reference/vocabularies.md
       - Global ASN.1 Types: reference/global-asn1-types.md
       - JSON Schemas: reference/json-schemas.md
+      - Javadocs: reference/javadocs/index.html
       - HardwareManifest Proto: reference/hardware-manifest-proto.md
   - Glossary: glossary.md
