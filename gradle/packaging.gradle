@@ -6,23 +6,6 @@ tasks.named("buildRpm") {
     dependsOn "installToSource"
 }
 
-tasks.register("stageDotnetArtifacts") {
-    dependsOn "dotnetPublish"
-
-    doLast {
-        copy {
-            from(fileTree("dotnet") {
-                include "**/publish/**/*"
-            })
-            into(layout.buildDirectory.dir("staged/dotnet"))
-        }
-    }
-}
-
-tasks.named("distZip") {
-    dependsOn "stageDotnetArtifacts"
-}
-
 ospackage {
     packageName = "paccor"
     os = LINUX
@@ -45,6 +28,5 @@ ospackage {
     requires('nvme-cli')
     requires('vim-common')
 
-    applyPackageLayout(delegate, packageContent(), "linux")
+    applyPackageLayout(delegate, packageContent("linux"), "linux")
 }
-

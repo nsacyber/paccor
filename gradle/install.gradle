@@ -25,6 +25,7 @@ tasks.register("installToSource") {
 
     dependsOn "build"
     dependsOn "stageDotnet"
+    dependsOn "paccor"
 
     doLast {
 
@@ -44,7 +45,8 @@ tasks.register("installToSource") {
 
         // DOTNET BINARIES ONLY (already flattened, safe now)
         copy {
-            from(layout.buildDirectory.dir("staged/dotnet"))
+            from(layout.buildDirectory.dir("staged/dotnet/linux"))
+            from(layout.buildDirectory.dir("staged/dotnet/win"))
             into("${rootDir}/scripts")
 
             include "**/*"
@@ -63,4 +65,3 @@ tasks.register("installToSource") {
         }
     }
 }
-

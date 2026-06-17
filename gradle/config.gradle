@@ -1,0 +1,11 @@
+/**
+ * Project variables and functions.
+ */
+
+ext {
+    dotnetConfig = "Release"
+    dotnetFramework = "net10.0"
+    dotnetRuntimeLinux = "linux-x64"
+    dotnetRuntimeWin = "win-x64"
+    tools = ["SmbiosCli", "PcieCli", "StorageCli"]
+}

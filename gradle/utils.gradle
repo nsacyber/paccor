@@ -1,4 +1,0 @@
-ext {
-
-    tools = ["SmbiosCli", "PcieCli", "StorageCli"]
-}

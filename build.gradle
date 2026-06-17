@@ -8,7 +8,9 @@ plugins {
 
 version = "2.0r3"
 
-apply from: "$rootDir/gradle/utils.gradle"
+// Build is split up into multiple files.
+
+apply from: "$rootDir/gradle/config.gradle" // config must be first
 apply from: "$rootDir/gradle/content.gradle"
 apply from: "$rootDir/gradle/java.gradle"
 apply from: "$rootDir/gradle/docs.gradle"
@@ -26,7 +28,7 @@ tasks.named("clean") {
 // Java only build
 tasks.named("build")
 
-// Group publishing tasks, signature and maven separate
+// Group publishing tasks. signature and maven tasks separate.
 tasks.register("release") {
     group = "release"
     description = "Full release"
