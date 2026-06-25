@@ -10,6 +10,7 @@ ospackage {
     packageName = project.name
     os = LINUX
     version = project.version
+    release = 1
 
     buildRpm { arch = "${buildRpmArch}" }
     buildDeb { arch = "${buildDebArch}" }
@@ -20,13 +21,13 @@ ospackage {
     fileMode 0644
     dirMode 0755
 
-    requires('dmidecode', '3.2', (int)(GREATER | EQUAL))
-    requires('ethtool')
-    requires('java-25-openjdk-devel')
-    requires('jq')
-    requires('lshw')
-    requires('nvme-cli')
-    requires('vim-common')
+    recommends('dmidecode', '3.2', (int)(GREATER | EQUAL))
+    recommends('ethtool')
+    recommends('java-25-openjdk-devel')
+    recommends('jq')
+    recommends('lshw')
+    recommends('nvme-cli')
+    recommends('vim-common')
 
     applyPackageLayout(delegate, packageContent("linux"), "linux")
 }
