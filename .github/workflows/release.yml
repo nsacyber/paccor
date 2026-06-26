@@ -53,13 +53,17 @@ jobs:
           echo "%_gpg_name $KEY_ID" >> ~/.rpmmacros
           echo "%_gpg_digest_algo sha256" >> ~/.rpmmacros
           
+          export GPG_TTY=/dev/null
           rpm --define "_gpg_sign_cmd_extra_args --pinentry-mode loopback --passphrase-file /dev/shm/gpg_pass.txt" --addsign build/distributions/*.rpm
 
           # Sign DEBs via debsigs
           for deb in build/distributions/*.deb; do
-            debsigs --sign=origin -k "$KEY_ID" \
-            --gpg-options="--pinentry-mode loopback --passphrase-file /dev/shm/gpg_pass.txt" \
-            "$deb"
+            [ -e "$deb" ] || continue
+            echo "Signing DEB: $deb"
+            
+            debsigs --sign=origin --default-key="$KEY_ID" \
+              --program="gpg --pinentry-mode loopback --passphrase-file /dev/shm/gpg_pass.txt" \
+              "$deb"
           done
           
           # Wipe and remove the file from memory immediately
