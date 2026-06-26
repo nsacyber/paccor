@@ -16,6 +16,7 @@ dist/
 # IDEA specific #
 *.iml
 .idea
+.junie
 
 # Gradle specific #
 .gradle

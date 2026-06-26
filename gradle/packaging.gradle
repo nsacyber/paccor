@@ -27,7 +27,8 @@ ospackage {
     recommends('jq')
     recommends('lshw')
     recommends('nvme-cli')
-    recommends('vim-common')
 
     applyPackageLayout(delegate, packageContent("linux"), "linux")
+
+    link('/usr/bin/paccor', "${packageInstallRoot}/bin/paccor")
 }
