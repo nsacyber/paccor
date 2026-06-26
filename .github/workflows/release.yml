@@ -1,0 +1,117 @@
+name: Release Assets
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  upload-assets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '25'
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+      - name: Build packages
+        run: |
+          ./gradlew clean build release
+      - name: Artifacts SHA256
+        shell: bash
+        run: |
+          sha256sum build/distributions/*.{deb,rpm,zip} 2> /dev/null
+          ls -go --full-time build/distributions/*.{deb,rpm,zip} 2> /dev/null
+      - name: Import GPG Key Natively
+        run: echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+      - name: Save GPG Passphrase to File
+        run: |
+          echo "${{ secrets.GPG_PASSPHRASE }}" > /dev/shm/gpg_pass.txt
+          chmod 600 /dev/shm/gpg_pass.txt
+      - name: Export Public Key as Artifact File
+        run: |
+          KEY_ID=$(gpg --list-secret-keys --keyid-format SHORT | grep sec | awk '{print $2}' | cut -d'/' -f2)
+          gpg --armor --export "$KEY_ID" > build/distributions/paccor-public-key.asc
+      - name: Sign RPM and DEB
+        run: |
+          apt-get install -y debsigs rpm
+        
+          KEY_ID=$(gpg --list-secret-keys --keyid-format SHORT | grep sec | awk '{print $2}' | cut -d'/' -f2)
+        
+          # 1. Sign RPMs with SHA-256 (Required for modern RHEL/Rocky platforms)
+          echo "%_gpg_name $KEY_ID" >> ~/.rpmmacros
+          echo "%_gpg_digest_algo sha256" >> ~/.rpmmacros
+          
+          rpm --define "_gpg_sign_cmd_extra_args --pinentry-mode loopback --passphrase-file /dev/shm/gpg_pass.txt" --addsign build/distributions/*.rpm
+
+          # 2. Sign DEBs via debsigs
+          for deb in build/distributions/*.deb; do
+            debsigs --sign=origin -k "$KEY_ID" \
+            --gpg-options="--pinentry-mode loopback --passphrase-file /dev/shm/gpg_pass.txt" \
+            "$deb"
+          done
+          
+          # 3. Wipe and remove the file from memory immediately
+          shred -u /dev/shm/gpg_pass.txt
+      - name: Generate Markdown Table with Bash
+        id: generate_table
+        run: |
+          TABLE="| File Name | Size | SHA-256 Hash |\n| :--- | :--- | :--- |\n"
+          
+          for FILE in build/distributions/*.{deb,rpm,zip}; do
+            if [ -f "$FILE" ]; then
+              # Get human-readable size (e.g., 4.2K, 15M)
+              SIZE=$(stat -c%s "$FILE" | numfmt --to=iec-binary --suffix=B)
+              # Extract clean 64-character hex hash string
+              HASH=$(sha256sum "$FILE" | awk '{print $1}')
+              # Append formatted row to our table variable
+              TABLE="${TABLE}| \`${FILE}\` | ${SIZE} | \`${HASH}\` |\n"
+            fi
+          done
+          
+          # Markdown
+          echo "HASH_TABLE<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$TABLE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      - name: Append Table to Release Description
+        uses: actions/github-script@v7
+        env:
+          HASH_TABLE: ${{ steps.generate_table.outputs.HASH_TABLE }}
+        with:
+          script: |
+            const release_id = context.payload.release.id;
+            const { HASH_TABLE } = process.env;
+            
+            // Fetch fresh copy of existing description text
+            const { data: release } = await github.rest.repos.getRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release_id,
+            });
+            
+            // Construct new body with the Bash-generated Markdown table
+            const updatedBody = `${release.body || ""}\n\n${HASH_TABLE}`;
+            
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release_id,
+              body: updatedBody,
+            });
+
+      - name: Upload Finished Assets to Release
+        uses: softprops/action-gh-release@v3
+        if: github.ref_type == 'tag'
+        with:
+          files: |
+            build/distributions/*.{deb,rpm,zip}
