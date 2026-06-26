@@ -43,28 +43,26 @@ jobs:
         run: |
           echo "${{ secrets.GPG_PASSPHRASE }}" > /dev/shm/gpg_pass.txt
           chmod 600 /dev/shm/gpg_pass.txt
-      - name: Export Public Key as Artifact File
-        run: |
-          KEY_ID=$(gpg --list-secret-keys --keyid-format SHORT | grep sec | awk '{print $2}' | cut -d'/' -f2)
-          gpg --armor --export "$KEY_ID" > build/distributions/paccor-public-key.asc
       - name: Sign RPM and DEB
         run: |
-          KEY_ID=$(gpg --list-secret-keys --keyid-format SHORT | grep sec | awk '{print $2}' | cut -d'/' -f2)
+          # Export GPG Public key
+          KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec:' | cut -d: -f5)
+          gpg --armor --export "$KEY_ID" > build/distributions/paccor-public-key.asc
         
-          # 1. Sign RPMs with SHA-256 (Required for modern RHEL/Rocky platforms)
+          # Sign RPMs set up for SHA256
           echo "%_gpg_name $KEY_ID" >> ~/.rpmmacros
           echo "%_gpg_digest_algo sha256" >> ~/.rpmmacros
           
           rpm --define "_gpg_sign_cmd_extra_args --pinentry-mode loopback --passphrase-file /dev/shm/gpg_pass.txt" --addsign build/distributions/*.rpm
 
-          # 2. Sign DEBs via debsigs
+          # Sign DEBs via debsigs
           for deb in build/distributions/*.deb; do
             debsigs --sign=origin -k "$KEY_ID" \
             --gpg-options="--pinentry-mode loopback --passphrase-file /dev/shm/gpg_pass.txt" \
             "$deb"
           done
           
-          # 3. Wipe and remove the file from memory immediately
+          # Wipe and remove the file from memory immediately
           shred -u /dev/shm/gpg_pass.txt
       - name: Generate Markdown Table with Bash
         id: generate_table
@@ -117,4 +115,4 @@ jobs:
         if: github.ref_type == 'tag'
         with:
           files: |
-            build/distributions/*.{deb,rpm,zip}
+            build/distributions/*.{asc,deb,rpm,zip}
