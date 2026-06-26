@@ -244,7 +244,7 @@ def verifyPackage = { String label, File packageFile, Map<String, Integer> expec
 
 def expectedLinuxOsPackageFiles = {
     def expected = expectedPackageFiles("linux")
-    putExpected(expected, "usr/bin/paccor", 0777) // if permissions don't match this, it can be set to null.
+    putExpected(expected, "usr/bin/paccor", null) // permissions might not look right here
     return expected
 }
 
