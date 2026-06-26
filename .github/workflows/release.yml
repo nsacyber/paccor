@@ -8,6 +8,7 @@ on:
 jobs:
   upload-assets:
     runs-on: ubuntu-latest
+    environment: production
     permissions:
       contents: write
 

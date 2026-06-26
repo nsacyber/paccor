@@ -242,6 +242,12 @@ def verifyPackage = { String label, File packageFile, Map<String, Integer> expec
     logger.lifecycle("Verified ${label} package ${packageFile.name}: ${expected.size()} expected file(s)")
 }
 
+def expectedLinuxOsPackageFiles = {
+    def expected = expectedPackageFiles("linux")
+    putExpected(expected, "usr/bin/paccor", 0777) // if permissions don't match this, it can be set to null.
+    return expected
+}
+
 tasks.register("verifyDistributionPackages") {
     group = "verification"
     description = "Verifies distribution package contents and file permissions."
@@ -255,11 +261,12 @@ tasks.register("verifyDistributionPackages") {
 
     doLast {
         def linuxExpected = expectedPackageFiles("linux")
+        def linuxOsPackageExpected = expectedLinuxOsPackageFiles()
         def winExpected = expectedPackageFiles("win")
 
         verifyPackage("Linux ZIP", tasks.named("distZip").get().archiveFile.get().asFile, linuxExpected, readZipEntries(tasks.named("distZip").get().archiveFile.get().asFile), true)
         verifyPackage("Windows ZIP", tasks.named("distZipWin").get().archiveFile.get().asFile, winExpected, readZipEntries(tasks.named("distZipWin").get().archiveFile.get().asFile), false)
-        verifyPackage("RPM", tasks.named("buildRpm").get().archiveFile.get().asFile, linuxExpected, readRpmEntries(tasks.named("buildRpm").get().archiveFile.get().asFile), true)
-        verifyPackage("DEB", tasks.named("buildDeb").get().archiveFile.get().asFile, linuxExpected, readDebEntries(tasks.named("buildDeb").get().archiveFile.get().asFile), true)
+        verifyPackage("RPM", tasks.named("buildRpm").get().archiveFile.get().asFile, linuxOsPackageExpected, readRpmEntries(tasks.named("buildRpm").get().archiveFile.get().asFile), true)
+        verifyPackage("DEB", tasks.named("buildDeb").get().archiveFile.get().asFile, linuxOsPackageExpected, readDebEntries(tasks.named("buildDeb").get().archiveFile.get().asFile), true)
     }
 }
