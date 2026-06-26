@@ -13,6 +13,10 @@ jobs:
       contents: write
 
     steps:
+      - name: Install packages into runner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y debsigs rpm
       - uses: actions/checkout@v6
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -45,8 +49,6 @@ jobs:
           gpg --armor --export "$KEY_ID" > build/distributions/paccor-public-key.asc
       - name: Sign RPM and DEB
         run: |
-          apt-get install -y debsigs rpm
-        
           KEY_ID=$(gpg --list-secret-keys --keyid-format SHORT | grep sec | awk '{print $2}' | cut -d'/' -f2)
         
           # 1. Sign RPMs with SHA-256 (Required for modern RHEL/Rocky platforms)
