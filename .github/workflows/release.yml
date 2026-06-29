@@ -70,16 +70,13 @@ jobs:
       - name: Generate Markdown Table with Bash
         id: generate_table
         run: |
-          TABLE="| File Name | Size | SHA-256 Hash |\n| :--- | :--- | :--- |\n"
+          TABLE="| Filename | SHA-256 hash | File Size in Bytes |\n| :--- | :--- | :--- |\n"
           
           for FILE in build/distributions/*.{deb,rpm,zip}; do
             if [ -f "$FILE" ]; then
-              # Get human-readable size (e.g., 4.2K, 15M)
-              SIZE=$(stat -c%s "$FILE" | numfmt --to=iec-binary --suffix=B)
-              # Extract clean 64-character hex hash string
+              SIZE=$(stat -c%s "$FILE")
               HASH=$(sha256sum "$FILE" | awk '{print $1}')
-              # Append formatted row to our table variable
-              TABLE="${TABLE}| \`${FILE}\` | ${SIZE} | \`${HASH}\` |\n"
+              TABLE="${TABLE}| \`${FILE}\` | ${HASH} | \`${SIZE}\` |\n"
             fi
           done
           
