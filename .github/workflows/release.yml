@@ -31,7 +31,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v5
       - name: Build packages
         run: |
-          ./gradlew clean build release
+          ./gradlew clean build release -x javadoc
       - name: Artifacts SHA256
         shell: bash
         run: |
@@ -49,7 +49,7 @@ jobs:
           KEY_ID=$(gpg --list-secret-keys --with-colons | grep '^sec:' | cut -d: -f5)
           gpg --armor --export "$KEY_ID" > build/distributions/paccor-public-key.asc
         
-          # Sign RPMs set up for SHA256
+          # Sign RPMs. Set up for SHA256
           echo "%_gpg_name $KEY_ID" >> ~/.rpmmacros
           echo "%_gpg_digest_algo sha256" >> ~/.rpmmacros
           
@@ -64,8 +64,10 @@ jobs:
             DEBSIGS_GPG_PROGRAM="gpg --batch --pinentry-mode loopback --passphrase-file /dev/shm/gpg_pass.txt" \
             debsigs --sign=origin --default-key="$KEY_ID" "$deb"
           done
-          
-          # Wipe and remove the file from memory immediately
+      - name: Erase GPG File
+        if: always()
+        run: | 
+          # Always erase the file
           shred -u /dev/shm/gpg_pass.txt
       - name: Generate Markdown Table with Bash
         id: generate_table
@@ -85,30 +87,23 @@ jobs:
           echo -e "$TABLE" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
       - name: Append Table to Release Description
-        uses: actions/github-script@v7
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HASH_TABLE: ${{ steps.generate_table.outputs.HASH_TABLE }}
-        with:
-          script: |
-            const release_id = context.payload.release.id;
-            const { HASH_TABLE } = process.env;
-            
-            // Fetch fresh copy of existing description text
-            const { data: release } = await github.rest.repos.getRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release_id,
-            });
-            
-            // Construct new body with the Bash-generated Markdown table
-            const updatedBody = `${release.body || ""}\n\n${HASH_TABLE}`;
-            
-            await github.rest.repos.updateRelease({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release_id,
-              body: updatedBody,
-            });
+          RELEASE_ID: ${{ github.event.release.id }}
+          REPO_NAME: ${{ github.repository }}
+        run: |
+          EXISTING_BODY=$(gh api repos/$REPO_NAME/releases/$RELEASE_ID --jq '.body // ""')
+          
+          # printf can handle newlines and special markdown characters
+          printf -v UPDATED_BODY "%s\n\n%s" "$EXISTING_BODY" "$HASH_TABLE"
+          
+          gh api \
+          --method PATCH \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          repos/$REPO_NAME/releases/$RELEASE_ID \
+          -f body="$UPDATED_BODY"
 
       - name: Upload Finished Assets to Release
         uses: softprops/action-gh-release@v3
