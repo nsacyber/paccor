@@ -14,12 +14,20 @@ ext {
     buildDebArch = "amd64"
 
     packageInstallRoot = "/opt/${project.name}"
+    ccrCliInstallRoot = "/opt/paccor-ccr"
+
+    ccrCliPackages = [
+            SmbiosCli : [packageName: "paccor-smbios-cli", versionProps: "dotnet/ComponentClassRegistry/Smbios/Smbios.Shared.props"],
+            PcieCli   : [packageName: "paccor-pcie-cli", versionProps: "dotnet/ComponentClassRegistry/Pcie/Pcie.Shared.props"],
+            StorageCli: [packageName: "paccor-storage-cli", versionProps: "dotnet/ComponentClassRegistry/Storage/Storage.Shared.props"]
+    ]
 
     buildScriptsDir = layout.buildDirectory.dir("scripts")
     docsAssetsDir = file("docs/_assets")
     sourceScriptsDir = file("scripts")
     dotnetSourceDir = file("dotnet/ComponentClassRegistry")
     stagedDotnetRootDir = layout.buildDirectory.dir("staged/dotnet")
+    ccrCliDistributionsDir = layout.buildDirectory.dir("distributions/ccr")
 
     installBinDir = file("${rootDir}/bin")
     installLibDir = file("${rootDir}/lib")
@@ -44,5 +52,50 @@ ext {
     dotnetOutput = { String tool, String runtime ->
         def base = file("${dotnetSourceDir}/${tool}/bin/${dotnetConfig}/${dotnetFramework}/${runtime}/publish/${tool}")
         runtime.contains("win") ? file("${base}.exe") : base
+    }
+
+    ccrCliPackage = { String tool ->
+        def metadata = ccrCliPackages[tool]
+        if (metadata == null) {
+            throw new GradleException("Unknown CCR CLI tool: ${tool}")
+        }
+        return metadata
+    }
+
+    ccrCliVersion = { String tool ->
+        def propsFile = file(ccrCliPackage(tool).versionProps)
+        if (!propsFile.exists()) {
+            throw new GradleException("Missing CCR CLI version props for ${tool}: ${propsFile}")
+        }
+        def props = new groovy.xml.XmlSlurper().parse(propsFile)
+        def versionNode = props.PropertyGroup.Version.find { it.text()?.trim() }
+        def versionText = versionNode?.text()?.trim()
+        if (!versionText) {
+            throw new GradleException("Missing <Version> in ${propsFile}")
+        }
+        return versionText
+    }
+
+    ccrCliPackageName = { String tool ->
+        ccrCliPackage(tool).packageName
+    }
+
+    ccrCliToolInstallRoot = { String tool ->
+        "${ccrCliInstallRoot}/${tool}"
+    }
+
+    ccrCliCommandLink = { String tool ->
+        "/usr/bin/${ccrCliPackageName(tool)}"
+    }
+
+    ccrCliArtifactFile = { String tool, String classifier, String extension ->
+        def packageName = ccrCliPackageName(tool)
+        def versionText = ccrCliVersion(tool)
+        def fileName = extension == "deb" ?
+                "${packageName}_${versionText}_${buildDebArch}.deb" :
+                extension == "rpm" ?
+                        "${packageName}-${versionText}.${buildRpmArch.toLowerCase()}.rpm" :
+                        "${packageName}-${versionText}-${classifier}.zip"
+        ccrCliDistributionsDir.map { it.file(fileName) }
     }
 }

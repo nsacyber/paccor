@@ -29,8 +29,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    env:
-      DOTNET_ROLL_FORWARD: LatestMajor
     steps:
     - uses: actions/checkout@v6
     - name: Setup .NET
@@ -40,85 +38,32 @@ jobs:
     - name: Restore dependencies
       working-directory: dotnet/ComponentClassRegistry
       run: dotnet restore
-    - name: Restore Tools
-      working-directory: dotnet/ComponentClassRegistry
-      run: dotnet tool restore
     - name: Build
       working-directory: dotnet/ComponentClassRegistry
       run: dotnet build
     - name: Test
       working-directory: dotnet/ComponentClassRegistry
       run: dotnet test
-    - name: Install Package Tools
-      working-directory: dotnet/ComponentClassRegistry
-      run: |
-        dotnet tool install --global dotnet-deb --allow-roll-forward
-        dotnet tool install --global dotnet-rpm --allow-roll-forward
-        dotnet tool install --global dotnet-zip --allow-roll-forward
-    - name: SMBIOS Cli
-      working-directory: dotnet/ComponentClassRegistry/SmbiosCli
-      run: |
-        dotnet deb install
-        dotnet rpm install
-        dotnet zip install
-        dotnet deb -r linux-x64 -c Debug
-        dotnet rpm -r linux-x64 -c Debug
-        dotnet zip -r linux-x64 -c Debug
-        dotnet zip -r win-x64 -c Debug
-        dotnet deb -r linux-x64 -c Release
-        dotnet rpm -r linux-x64 -c Release
-        dotnet zip -r linux-x64 -c Release
-        dotnet zip -r win-x64 -c Release
-    - name: PCIe Cli
-      working-directory: dotnet/ComponentClassRegistry/PcieCli
-      run: |
-        dotnet deb install
-        dotnet rpm install
-        dotnet zip install
-        dotnet deb -r linux-x64 -c Debug
-        dotnet rpm -r linux-x64 -c Debug
-        dotnet zip -r linux-x64 -c Debug
-        dotnet zip -r win-x64 -c Debug
-        dotnet deb -r linux-x64 -c Release
-        dotnet rpm -r linux-x64 -c Release
-        dotnet zip -r linux-x64 -c Release
-        dotnet zip -r win-x64 -c Release
-    - name: Storage Cli
-      working-directory: dotnet/ComponentClassRegistry/StorageCli
-      run: |
-        dotnet deb install
-        dotnet rpm install
-        dotnet zip install
-        dotnet deb -r linux-x64 -c Debug
-        dotnet rpm -r linux-x64 -c Debug
-        dotnet zip -r linux-x64 -c Debug
-        dotnet zip -r win-x64 -c Debug
-        dotnet deb -r linux-x64 -c Release
-        dotnet rpm -r linux-x64 -c Release
-        dotnet zip -r linux-x64 -c Release
-        dotnet zip -r win-x64 -c Release
+    - name: Build Gradle CCR debug packages
+      if: needs.artifact-policy.outputs.save_artifacts == 'true' && matrix.os == 'ubuntu-latest'
+      run: ./gradlew ccrCliPackages verifyCcrCliPackages
     - name: Debug Apps SHA256
+      if: needs.artifact-policy.outputs.save_artifacts == 'true' && matrix.os == 'ubuntu-latest'
       shell: bash
       run: |
-        sha256sum dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/Debug/**/**/*.{deb,rpm,zip} 2> /dev/null
-        ls -go --full-time dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/Debug/**/**/*.{deb,rpm,zip} 2> /dev/null
+        sha256sum build/distributions/ccr/*.{deb,rpm,zip} 2> /dev/null
+        ls -go --full-time build/distributions/ccr/*.{deb,rpm,zip} 2> /dev/null
     - name: Artifacts
-      if: needs.artifact-policy.outputs.save_artifacts == 'true'
+      if: needs.artifact-policy.outputs.save_artifacts == 'true' && matrix.os == 'ubuntu-latest'
       uses: actions/upload-artifact@v7
       with:
-        name: debugapps.builton_${{ matrix.os }}
+        name: ccr-cli-packages.builton_${{ matrix.os }}
         retention-days: 1
         if-no-files-found: error
         path: |
-          dotnet/ComponentClassRegistry/SmbiosCli/bin/Debug/**/*.deb
-          dotnet/ComponentClassRegistry/SmbiosCli/bin/Debug/**/*.rpm
-          dotnet/ComponentClassRegistry/SmbiosCli/bin/Debug/**/*.zip
-          dotnet/ComponentClassRegistry/PcieCli/bin/Debug/**/*.deb
-          dotnet/ComponentClassRegistry/PcieCli/bin/Debug/**/*.rpm
-          dotnet/ComponentClassRegistry/PcieCli/bin/Debug/**/*.zip
-          dotnet/ComponentClassRegistry/StorageCli/bin/Debug/**/*.deb
-          dotnet/ComponentClassRegistry/StorageCli/bin/Debug/**/*.rpm
-          dotnet/ComponentClassRegistry/StorageCli/bin/Debug/**/*.zip
+          build/distributions/ccr/*.deb
+          build/distributions/ccr/*.rpm
+          build/distributions/ccr/*.zip
   nuget:
     runs-on: ubuntu-latest
     needs:

@@ -82,6 +82,20 @@ ext.applyPackageLayout = { target, layoutMap, os ->
     }
 }
 
+ext.ccrCliPackageContent = { String tool, String os ->
+    def linuxPackage = os == "linux"
+    def runtime = linuxPackage ? dotnetRuntimeLinux : dotnetRuntimeWin
+
+    return [
+            cli: [
+                    from: dotnetOutput(tool, runtime),
+                    into: linuxPackage ? "." : ".",
+                    exclude: null,
+                    mode: linuxPackage ? 0755 : null
+            ]
+    ]
+}
+
 def zipRootDir = "${project.name}-${version}"
 
 tasks.named("distZip") {

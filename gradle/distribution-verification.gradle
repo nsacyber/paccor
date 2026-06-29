@@ -155,7 +155,7 @@ def readZipEntries = { File packageFile ->
     return actual
 }
 
-def readDebEntries = { File packageFile ->
+def readDebEntries = { File packageFile, String installRoot = packageInstallRoot ->
     def actual = [:] as LinkedHashMap<String, Integer>
     new FileInputStream(packageFile).withCloseable { input ->
         def ar = new ArArchiveInputStream(input)
@@ -167,7 +167,7 @@ def readDebEntries = { File packageFile ->
                 def tarEntry
                 while ((tarEntry = tar.nextTarEntry) != null) {
                     if (!tarEntry.directory) {
-                        putActual(actual, packageFile, tarEntry.name, packageInstallRoot, tarEntry.mode & 07777)
+                        putActual(actual, packageFile, tarEntry.name, installRoot, tarEntry.mode & 07777)
                     }
                 }
             }
@@ -190,7 +190,7 @@ def skipFully = { InputStream input, int bytes ->
     }
 }
 
-def readRpmEntries = { File packageFile ->
+def readRpmEntries = { File packageFile, String installRoot = packageInstallRoot ->
     def actual = [:] as LinkedHashMap<String, Integer>
     new FileInputStream(packageFile).withCloseable { input ->
         def scanner = new Scanner()
@@ -203,7 +203,7 @@ def readRpmEntries = { File packageFile ->
             header = new CpioHeader()
             total = header.read(channel, total)
             if (!header.last && header.type != CpioHeader.DIR) {
-                putActual(actual, packageFile, header.name, packageInstallRoot, header.permissions & 07777)
+                putActual(actual, packageFile, header.name, installRoot, header.permissions & 07777)
                 skipFully(payload, header.fileSize)
                 total += header.fileSize
             }
@@ -248,6 +248,26 @@ def expectedLinuxOsPackageFiles = {
     return expected
 }
 
+def expectedCcrCliZipFiles = { String tool, String os ->
+    def expected = [:] as LinkedHashMap<String, Integer>
+    def binaryName = os == "linux" ? tool : "${tool}.exe"
+    putExpected(expected, binaryName, os == "linux" ? 0755 : null)
+    return expected
+}
+
+def expectedCcrCliLinuxOsPackageFiles = { String tool ->
+    def expected = expectedCcrCliZipFiles(tool, "linux")
+    putExpected(expected, ccrCliCommandLink(tool).replaceFirst("^/", ""), null)
+    return expected
+}
+
+def verifyCcrArtifactName = { String tool, String classifier, String extension, File packageFile ->
+    def expectedName = ccrCliArtifactFile(tool, classifier, extension).get().asFile.name
+    if (packageFile.name != expectedName) {
+        throw new GradleException("Unexpected CCR CLI artifact name for ${tool}: expected ${expectedName}, got ${packageFile.name}")
+    }
+}
+
 tasks.register("verifyDistributionPackages") {
     group = "verification"
     description = "Verifies distribution package contents and file permissions."
@@ -268,5 +288,36 @@ tasks.register("verifyDistributionPackages") {
         verifyPackage("Windows ZIP", tasks.named("distZipWin").get().archiveFile.get().asFile, winExpected, readZipEntries(tasks.named("distZipWin").get().archiveFile.get().asFile), false)
         verifyPackage("RPM", tasks.named("buildRpm").get().archiveFile.get().asFile, linuxOsPackageExpected, readRpmEntries(tasks.named("buildRpm").get().archiveFile.get().asFile), true)
         verifyPackage("DEB", tasks.named("buildDeb").get().archiveFile.get().asFile, linuxOsPackageExpected, readDebEntries(tasks.named("buildDeb").get().archiveFile.get().asFile), true)
+    }
+}
+
+tasks.register("verifyCcrCliPackages") {
+    group = "verification"
+    description = "Verifies standalone ComponentClassRegistry CLI package contents and file permissions."
+
+    dependsOn "ccrCliPackages"
+
+    doLast {
+        ccrCliPackages.each { tool, metadata ->
+            def linuxZip = tasks.named("ccrCliLinuxZip${tool}").get().archiveFile.get().asFile
+            def winZip = tasks.named("ccrCliWinZip${tool}").get().archiveFile.get().asFile
+            def deb = tasks.named("ccrCliDeb${tool}").get().archiveFile.get().asFile
+            def rpm = tasks.named("ccrCliRpm${tool}").get().archiveFile.get().asFile
+
+            verifyCcrArtifactName(tool, dotnetRuntimeLinux, "zip", linuxZip)
+            verifyCcrArtifactName(tool, dotnetRuntimeWin, "zip", winZip)
+            verifyCcrArtifactName(tool, null, "deb", deb)
+            verifyCcrArtifactName(tool, null, "rpm", rpm)
+
+            def linuxExpected = expectedCcrCliZipFiles(tool, "linux")
+            def winExpected = expectedCcrCliZipFiles(tool, "win")
+            def linuxOsPackageExpected = expectedCcrCliLinuxOsPackageFiles(tool)
+            def installRoot = ccrCliToolInstallRoot(tool)
+
+            verifyPackage("${tool} Linux ZIP", linuxZip, linuxExpected, readZipEntries(linuxZip), true)
+            verifyPackage("${tool} Windows ZIP", winZip, winExpected, readZipEntries(winZip), false)
+            verifyPackage("${tool} RPM", rpm, linuxOsPackageExpected, readRpmEntries(rpm, installRoot), true)
+            verifyPackage("${tool} DEB", deb, linuxOsPackageExpected, readDebEntries(deb, installRoot), true)
+        }
     }
 }
