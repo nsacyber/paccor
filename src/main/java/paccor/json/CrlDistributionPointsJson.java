@@ -25,6 +25,8 @@ public final class CrlDistributionPointsJson {
             JsonUtils.asStream(root.spliterator())
                     .map(CrlDistributionPointsJson::readDistributionPoint)
                     .forEach(points::add);
+        } else if (root != null && root.isObject()) {
+            points.add(readDistributionPoint(root));
         }
         return CRLDistPoint.getInstance(new DERSequence(ASN1Utils.toASN1EncodableVector(points)));
     }
