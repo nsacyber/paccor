@@ -61,9 +61,8 @@ jobs:
             [ -e "$deb" ] || continue
             echo "Signing DEB: $deb"
             
-            debsigs --sign=origin --default-key="$KEY_ID" \
-              --program="gpg --pinentry-mode loopback --passphrase-file /dev/shm/gpg_pass.txt" \
-              "$deb"
+            DEBSIGS_GPG_PROGRAM="gpg --batch --pinentry-mode loopback --passphrase-file /dev/shm/gpg_pass.txt" \
+            debsigs --sign=origin --default-key="$KEY_ID" "$deb"
           done
           
           # Wipe and remove the file from memory immediately
