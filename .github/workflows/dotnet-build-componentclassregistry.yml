@@ -45,11 +45,12 @@ jobs:
       working-directory: dotnet/ComponentClassRegistry
       run: dotnet test
   apps:
-    needs: artifact-policy
+    needs:
+      - artifact-policy
+      - dotnet
     runs-on: ubuntu-latest
     steps:
       - name: Build Gradle CCR packages
-        if: needs.artifact-policy.outputs.save_artifacts == 'true'
         run: ./gradlew ccrCliPackages verifyCcrCliPackages
       - name: Apps SHA256
         if: needs.artifact-policy.outputs.save_artifacts == 'true'
