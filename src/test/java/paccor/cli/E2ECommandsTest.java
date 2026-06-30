@@ -1,5 +1,9 @@
 package paccor.cli;
 
+import org.bouncycastle.asn1.x509.CRLDistPoint;
+import org.bouncycastle.asn1.x509.DistributionPoint;
+import org.bouncycastle.asn1.x509.DistributionPointName;
+import org.bouncycastle.asn1.x509.ReasonFlags;
 import paccor.cert.CertSpecVersion;
 import paccor.cert.PlatformCertificate;
 import java.io.File;
@@ -462,6 +466,19 @@ public class E2ECommandsTest extends TestSupport {
         );
         Assertions.assertEquals(0, rcAssemble);
         Assertions.assertTrue(Files.exists(cer));
+
+        PlatformCertificate certificate = PlatformCertificate.load(cer.toFile());
+        Assertions.assertNotNull(certificate);
+        Assertions.assertTrue(certificate.isAttributeCertificate());
+        Assertions.assertEquals(CertSpecVersion.V1_1, certificate.resolvedSpecVersion());
+        Extension crlExt = certificate.getExtension(Extension.cRLDistributionPoints);
+        Assertions.assertNotNull(crlExt);
+        CRLDistPoint crlDistPoint = CRLDistPoint.getInstance(crlExt.getParsedValue());
+        Assertions.assertNotNull(crlDistPoint);
+        Assertions.assertEquals(1, crlDistPoint.getDistributionPoints().length);
+        DistributionPoint dp0 = DistributionPoint.getInstance(crlDistPoint.getDistributionPoints()[0]);
+        Assertions.assertNotNull(dp0);
+        Assertions.assertEquals(ReasonFlags.superseded, dp0.getReasons().intValue());
 
         int rcValidateOk = RootCmd.commandLine().execute(
                 "validate",

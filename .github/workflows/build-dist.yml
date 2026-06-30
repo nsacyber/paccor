@@ -26,20 +26,12 @@ jobs:
   build:
     needs: artifact-policy
     runs-on: ubuntu-latest
-    env:
-      DOTNET_ROLL_FORWARD: LatestMajor
     steps:
       - uses: actions/checkout@v6
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.0.x'
-      - name: Restore dependencies
-        working-directory: dotnet/ComponentClassRegistry
-        run: dotnet restore
-      - name: Restore Tools
-        working-directory: dotnet/ComponentClassRegistry
-        run: dotnet tool restore
+          dotnet-version: 10.0.x
       - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
@@ -47,55 +39,16 @@ jobs:
           java-version: '25'
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
-      - name: Restore dependencies
-        working-directory: dotnet/ComponentClassRegistry
-        run: dotnet restore
-      - name: Install Package Tools
-        working-directory: dotnet/ComponentClassRegistry
-        run: |
-          dotnet tool install --global dotnet-deb --allow-roll-forward
-          dotnet tool install --global dotnet-rpm --allow-roll-forward
-          dotnet tool install --global dotnet-zip --allow-roll-forward
-      - name: SMBIOS Cli
-        working-directory: dotnet/ComponentClassRegistry/SmbiosCli
-        run: |
-          dotnet deb install
-          dotnet rpm install
-          dotnet zip install
-          dotnet deb -r linux-x64 -c Release
-          dotnet rpm -r linux-x64 -c Release
-          dotnet zip -r linux-x64 -c Release
-          dotnet zip -r win-x64 -c Release
-      - name: PCIe Cli
-        working-directory: dotnet/ComponentClassRegistry/PcieCli
-        run: |
-          dotnet deb install
-          dotnet rpm install
-          dotnet zip install
-          dotnet deb -r linux-x64 -c Release
-          dotnet rpm -r linux-x64 -c Release
-          dotnet zip -r linux-x64 -c Release
-          dotnet zip -r win-x64 -c Release
-      - name: Storage Cli
-        working-directory: dotnet/ComponentClassRegistry/StorageCli
-        run: |
-          dotnet deb install
-          dotnet rpm install
-          dotnet zip install
-          dotnet deb -r linux-x64 -c Release
-          dotnet rpm -r linux-x64 -c Release
-          dotnet zip -r linux-x64 -c Release
-          dotnet zip -r win-x64 -c Release
       - name: Build packages
         run: |
-          ./gradlew clean build verifyDistributionPackages
+          ./gradlew clean build verifyDistributionPackages ccrCliPackages verifyCcrCliPackages
       - name: Artifacts SHA256
         shell: bash
         run: |
           sha256sum build/distributions/*.{deb,rpm,zip} 2> /dev/null
           ls -go --full-time build/distributions/*.{deb,rpm,zip} 2> /dev/null
-          sha256sum dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/**/**/**/*.{deb,rpm,zip} 2> /dev/null
-          ls -go --full-time dotnet/ComponentClassRegistry/{PcieCli,SmbiosCli,StorageCli}/bin/**/**/**/*.{deb,rpm,zip} 2> /dev/null
+          sha256sum build/distributions/ccr/*.{deb,rpm,zip} 2> /dev/null
+          ls -go --full-time build/distributions/ccr/*.{deb,rpm,zip} 2> /dev/null
       - name: Artifacts
         if: needs.artifact-policy.outputs.save_artifacts == 'true'
         uses: actions/upload-artifact@v7
@@ -107,12 +60,6 @@ jobs:
             build/distributions/*.deb
             build/distributions/*.rpm
             build/distributions/*.zip
-            dotnet/ComponentClassRegistry/SmbiosCli/**/*.deb
-            dotnet/ComponentClassRegistry/SmbiosCli/**/*.rpm
-            dotnet/ComponentClassRegistry/SmbiosCli/**/*.zip
-            dotnet/ComponentClassRegistry/PcieCli/**/*.deb
-            dotnet/ComponentClassRegistry/PcieCli/**/*.rpm
-            dotnet/ComponentClassRegistry/PcieCli/**/*.zip
-            dotnet/ComponentClassRegistry/StorageCli/**/*.deb
-            dotnet/ComponentClassRegistry/StorageCli/**/*.rpm
-            dotnet/ComponentClassRegistry/StorageCli/**/*.zip
+            build/distributions/ccr/*.deb
+            build/distributions/ccr/*.rpm
+            build/distributions/ccr/*.zip
