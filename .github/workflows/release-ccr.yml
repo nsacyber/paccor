@@ -3,10 +3,6 @@ name: Release ComponentClassRegistry CLI Assets
 on:
   workflow_dispatch:
     inputs:
-      release_ref:
-        description: Tag or ref to check out and package
-        required: true
-        type: string
       ccr_cli_tool:
         description: CCR CLI tool to release
         required: true
@@ -34,7 +30,7 @@ jobs:
           sudo apt-get install -y debsigs rpm
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.release_ref }}
+          ref: ${{ github.ref }}
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
         with:
@@ -70,11 +66,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO_NAME: ${{ github.repository }}
-          RELEASE_REF: ${{ inputs.release_ref }}
+          RELEASE_REF: ${{ github.ref_name }}
         run: |
           RELEASE_JSON=$(gh release view "$RELEASE_REF" --repo "$REPO_NAME" --json databaseId,tagName)
-          echo "id=$(jq -r '.databaseId' <<< "$RELEASE_JSON")" >> "$GITHUB_OUTPUT"
-          echo "tag=$(jq -r '.tagName' <<< "$RELEASE_JSON")" >> "$GITHUB_OUTPUT"
+          RELEASE_ID=$(jq -r '.databaseId // empty' <<< "$RELEASE_JSON")
+          RELEASE_TAG=$(jq -r '.tagName // empty' <<< "$RELEASE_JSON")
+
+          if [ -z "$RELEASE_ID" ] || [ -z "$RELEASE_TAG" ]; then
+            echo "The selected workflow ref '$RELEASE_REF' must resolve to a GitHub release with both a release id and tag." >&2
+            exit 1
+          fi
+
+          echo "id=$RELEASE_ID" >> "$GITHUB_OUTPUT"
+          echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
       - name: Import GPG Key Natively
         run: echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
       - name: Save GPG Passphrase to File
@@ -145,4 +149,4 @@ jobs:
         with:
           tag_name: ${{ steps.release.outputs.tag }}
           files: |
-            "$CCR_DIST_DIR"/*.{deb,rpm,zip}
+            ${{ env.CCR_DIST_DIR }}/*.{deb,rpm,zip}
