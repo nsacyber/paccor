@@ -71,6 +71,7 @@ ccrCliPackages.each { tool, metadata ->
         group = "distribution"
         description = "Builds the standalone DEB package for ${tool}."
         dependsOn "dotnetPublishLinux${tool}"
+        dependsOn "paccor"
         packageName = ccrPackageName
         version = packageVersion
         release = 1
@@ -91,6 +92,7 @@ ccrCliPackages.each { tool, metadata ->
         group = "distribution"
         description = "Builds the standalone RPM package for ${tool}."
         dependsOn "dotnetPublishLinux${tool}"
+        dependsOn "paccor"
         packageName = ccrPackageName
         version = packageVersion
         release = 1
