@@ -14,7 +14,13 @@ ext {
     buildDebArch = "amd64"
 
     packageInstallRoot = "/opt/${project.name}"
+    packageCommandLink = "/usr/bin/${project.name}"
+    packageExecutable = "${packageInstallRoot}/bin/${project.name}"
     ccrCliInstallRoot = "/opt/paccor-ccr"
+    ccrCliLinuxPackageExcludes = [
+            "${packageInstallRoot.replaceFirst('^/', '')}/**".toString(),
+            packageCommandLink.replaceFirst('^/', '').toString()
+    ]
 
     ccrCliPackages = [
             SmbiosCli : [packageName: "paccor-smbios-cli", versionProps: "dotnet/ComponentClassRegistry/Smbios/Smbios.Shared.props"],
@@ -86,6 +92,10 @@ ext {
 
     ccrCliCommandLink = { String tool ->
         "/usr/bin/${ccrCliPackageName(tool)}"
+    }
+
+    ccrCliPackageDescription = { String tool, String packageType ->
+        "Builds the standalone ${packageType} package for ${tool}."
     }
 
     ccrCliArtifactFile = { String tool, String classifier, String extension ->

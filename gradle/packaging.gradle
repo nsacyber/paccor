@@ -6,21 +6,19 @@ tasks.named("buildRpm") {
     dependsOn "installToSource"
 }
 
-def ccrPackageTasks = []
-def debTaskClass = tasks.named("buildDeb").get().class
-def rpmTaskClass = tasks.named("buildRpm").get().class
+def configureMainLinuxPackageTask = { task ->
+    task.into packageInstallRoot
+    task.user "root"
+
+    applyPackageLayout(task, packageContent(packageDotnetPlatform("linux")), packageDotnetPlatform("linux"))
+    task.link(packageCommandLink, packageExecutable)
+}
 
 ospackage {
     packageName = project.name
     os = LINUX
     version = project.version
     release = 1
-
-    buildRpm { arch = "${buildRpmArch}" }
-    buildDeb { arch = "${buildDebArch}" }
-
-    into packageInstallRoot
-    user "root"
 
     fileMode 0644
     dirMode 0755
@@ -32,81 +30,74 @@ ospackage {
     recommends('lshw')
     recommends('nvme-cli')
 
-    applyPackageLayout(delegate, packageContent("linux"), "linux")
+    buildRpm {
+        arch = "${buildRpmArch}"
+        configureMainLinuxPackageTask(delegate)
+    }
+    buildDeb {
+        arch = "${buildDebArch}"
+        configureMainLinuxPackageTask(delegate)
+    }
+}
 
-    link('/usr/bin/paccor', "${packageInstallRoot}/bin/paccor")
+def ccrPackageTasks = []
+def debTaskClass = tasks.named("buildDeb").get().class
+def rpmTaskClass = tasks.named("buildRpm").get().class
+
+def configureCcrCliZipTask = { task, String tool, String runtime, String os ->
+    def dotnetPlatform = packageDotnetPlatform(os)
+
+    task.group = "distribution"
+    task.description = ccrCliPackageDescription(tool, "${dotnetPlatform} ZIP")
+    task.dependsOn "dotnetPublish${dotnetPlatform.capitalize()}${tool}"
+    task.archiveFileName.set(ccrCliArtifactFile(tool, runtime, "zip").map { it.asFile.name })
+    task.destinationDirectory.set(ccrCliDistributionsDir)
+
+    task.into("${ccrCliPackageName(tool)}-${ccrCliVersion(tool)}-${runtime}") {
+        applyPackageLayout(delegate, ccrCliPackageContent(tool, dotnetPlatform), dotnetPlatform)
+    }
+}
+
+def configureCcrCliLinuxPackageTask = { task, String tool, String packageType, String arch ->
+    def installRoot = ccrCliToolInstallRoot(tool)
+
+    task.group = "distribution"
+    task.description = ccrCliPackageDescription(tool, packageType.toUpperCase())
+    task.dependsOn "dotnetPublishLinux${tool}"
+    task.dependsOn "paccor"
+    task.packageName = ccrCliPackageName(tool)
+    task.version = ccrCliVersion(tool)
+    task.release = 1
+    task.arch = arch
+    task.user "root"
+    task.archiveFileName.set(ccrCliArtifactFile(tool, null, packageType).map { it.asFile.name })
+    task.destinationDirectory.set(ccrCliDistributionsDir)
+
+    task.from(dotnetOutput(tool, dotnetRuntimeLinux)) {
+        filePermissions {
+            unix(0755)
+        }
+    }
+    task.link(ccrCliCommandLink(tool), "${installRoot}/${tool}")
 }
 
 ccrCliPackages.each { tool, metadata ->
-    def ccrPackageName = ccrCliPackageName(tool)
-    def packageVersion = ccrCliVersion(tool)
     def capitalizedTool = tool.toString()
-    def installRoot = ccrCliToolInstallRoot(tool)
 
     def linuxZipTask = tasks.register("ccrCliLinuxZip${capitalizedTool}", Zip) {
-        group = "distribution"
-        description = "Builds the standalone Linux ZIP package for ${tool}."
-        dependsOn "dotnetPublishLinux${tool}"
-        archiveFileName.set(ccrCliArtifactFile(tool, dotnetRuntimeLinux, "zip").map { it.asFile.name })
-        destinationDirectory.set(ccrCliDistributionsDir)
-
-        into("${ccrPackageName}-${packageVersion}-${dotnetRuntimeLinux}") {
-            applyPackageLayout(delegate, ccrCliPackageContent(tool, "linux"), "linux")
-        }
+        configureCcrCliZipTask(delegate, tool, dotnetRuntimeLinux, "linux")
     }
 
     def winZipTask = tasks.register("ccrCliWinZip${capitalizedTool}", Zip) {
-        group = "distribution"
-        description = "Builds the standalone Windows ZIP package for ${tool}."
-        dependsOn "dotnetPublishWin${tool}"
-        archiveFileName.set(ccrCliArtifactFile(tool, dotnetRuntimeWin, "zip").map { it.asFile.name })
-        destinationDirectory.set(ccrCliDistributionsDir)
-
-        into("${ccrPackageName}-${packageVersion}-${dotnetRuntimeWin}") {
-            applyPackageLayout(delegate, ccrCliPackageContent(tool, "win"), "win")
-        }
+        configureCcrCliZipTask(delegate, tool, dotnetRuntimeWin, "win")
     }
 
     def debTask = tasks.register("ccrCliDeb${capitalizedTool}", debTaskClass) {
-        group = "distribution"
-        description = "Builds the standalone DEB package for ${tool}."
-        dependsOn "dotnetPublishLinux${tool}"
-        dependsOn "paccor"
-        packageName = ccrPackageName
-        version = packageVersion
-        release = 1
-        arch = "${buildDebArch}"
-        user "root"
-        archiveFileName.set(ccrCliArtifactFile(tool, null, "deb").map { it.asFile.name })
-        destinationDirectory.set(ccrCliDistributionsDir)
-
-        rootSpec.children.clear()
-        exclude "opt/paccor/**"
-        exclude "usr/bin/paccor"
-        into installRoot
-        applyPackageLayout(delegate, ccrCliPackageContent(tool, "linux"), "linux")
-        link(ccrCliCommandLink(tool), "${installRoot}/${tool}")
+        configureCcrCliLinuxPackageTask(delegate, tool, "deb", "${buildDebArch}")
     }
 
     def rpmTask = tasks.register("ccrCliRpm${capitalizedTool}", rpmTaskClass) {
-        group = "distribution"
-        description = "Builds the standalone RPM package for ${tool}."
-        dependsOn "dotnetPublishLinux${tool}"
-        dependsOn "paccor"
-        packageName = ccrPackageName
-        version = packageVersion
-        release = 1
-        arch = "${buildRpmArch}"
-        user "root"
-        archiveFileName.set(ccrCliArtifactFile(tool, null, "rpm").map { it.asFile.name })
-        destinationDirectory.set(ccrCliDistributionsDir)
-
-        rootSpec.children.clear()
-        exclude "opt/paccor/**"
-        exclude "usr/bin/paccor"
-        into installRoot
-        applyPackageLayout(delegate, ccrCliPackageContent(tool, "linux"), "linux")
-        link(ccrCliCommandLink(tool), "${installRoot}/${tool}")
+        configureCcrCliLinuxPackageTask(delegate, tool, "rpm", "${buildRpmArch}")
     }
 
     ccrPackageTasks.addAll([linuxZipTask, winZipTask, debTask, rpmTask])
