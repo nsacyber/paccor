@@ -149,4 +149,4 @@ jobs:
         with:
           tag_name: ${{ steps.release.outputs.tag }}
           files: |
-            "$CCR_DIST_DIR"/*.{deb,rpm,zip}
+            ${{ env.CCR_DIST_DIR }}/*.{deb,rpm,zip}
