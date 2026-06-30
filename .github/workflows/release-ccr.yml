@@ -7,6 +7,16 @@ on:
         description: Tag or ref to check out and package
         required: true
         type: string
+      ccr_cli_tool:
+        description: CCR CLI tool to release
+        required: true
+        type: choice
+        default: ALL
+        options:
+          - SmbiosCli
+          - PcieCli
+          - StorageCli
+          - ALL
 
 jobs:
   upload-ccr-assets:
@@ -36,8 +46,25 @@ jobs:
           java-version: '25'
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v5
+      - name: Resolve CCR CLI Selection
+        id: ccr_selection
+        env:
+          CCR_CLI_TOOL: ${{ inputs.ccr_cli_tool }}
+        run: |
+          case "$CCR_CLI_TOOL" in
+            SmbiosCli|PcieCli|StorageCli)
+              echo "gradle_tasks=ccrCliLinuxZip${CCR_CLI_TOOL} ccrCliWinZip${CCR_CLI_TOOL} ccrCliDeb${CCR_CLI_TOOL} ccrCliRpm${CCR_CLI_TOOL}" >> "$GITHUB_OUTPUT"
+              ;;
+            ALL)
+              echo "gradle_tasks=ccrCliPackages verifyCcrCliPackages" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unknown CCR CLI tool selection: $CCR_CLI_TOOL" >&2
+              exit 1
+              ;;
+          esac
       - name: Build CCR packages
-        run: ./gradlew clean ccrCliPackages verifyCcrCliPackages
+        run: ./gradlew clean ${{ steps.ccr_selection.outputs.gradle_tasks }}
       - name: Resolve GitHub Release
         id: release
         env:
@@ -116,6 +143,6 @@ jobs:
       - name: Upload Finished Assets to Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: "$RELEASE_TAG"
+          tag_name: ${{ steps.release.outputs.tag }}
           files: |
             "$CCR_DIST_DIR"/*.{deb,rpm,zip}
