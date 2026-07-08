@@ -30,14 +30,14 @@ import tools.jackson.databind.JsonNode;
 @JsonFormat(with = JsonFormat.Feature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record HardwareManifestJsonHelper(
-    @JsonPropertyDescription("Platform Configuration Version 1 details.")
-    PlatformConfiguration pcV1,
-    @JsonPropertyDescription("Platform Configuration Version 2 details.")
-    PlatformConfigurationV2 pcV2,
-    @JsonPropertyDescription("Platform Configuration Version 3 details.")
-    PlatformConfigurationV3 pcV3,
-    @JsonPropertyDescription("Trait-based platform identifier data derived from the hardware manifest.")
-    TraitMap platformTraits) {
+        @JsonPropertyDescription("Platform Configuration Version 1 details.")
+        PlatformConfiguration pcV1,
+        @JsonPropertyDescription("Platform Configuration Version 2 details.")
+        PlatformConfigurationV2 pcV2,
+        @JsonPropertyDescription("Platform Configuration Version 3 details.")
+        PlatformConfigurationV3 pcV3,
+        @JsonPropertyDescription("Trait-based platform identifier data derived from the hardware manifest.")
+        TraitMap platformTraits) {
 
     public static final HardwareManifestJsonHelper fromJsonNode(JsonNode node) {
         if (node == null || node.isNull()) return null;
@@ -102,19 +102,19 @@ public record HardwareManifestJsonHelper(
      * @return platform configuration v3
      */
     private static PlatformConfigurationV3 resolvePcv3(String jsonString, JsonNode node, PlatformConfiguration pcV1, PlatformConfigurationV2 pcV2) {
-        PlatformConfigurationV3 pcV3 = ObjectMapperFactory.fromJsonSafe(jsonString, PlatformConfigurationV3.class);
+        PlatformConfigurationV3 pcV3 = buildPcv3FromNode(node);
         if (pcV3 == null) {
-            pcV3 = buildPcv3FromNode(node);
+            pcV3 = ObjectMapperFactory.fromJsonSafe(jsonString, PlatformConfigurationV3.class);
         }
         return pcV3 != null ? pcV3 : canonicalize(pcV1, pcV2);
     }
 
     private static PlatformConfigurationV3 resolvePcv3(File componentsJson, PlatformConfiguration pcV1, PlatformConfigurationV2 pcV2) {
-        PlatformConfigurationV3 pcV3 = ObjectMapperFactory.fromJsonSafe(componentsJson, PlatformConfigurationV3.class);
+        PlatformConfigurationV3 pcV3 = readJsonNode(componentsJson)
+                .map(HardwareManifestJsonHelper::buildPcv3FromNode)
+                .orElse(null);
         if (pcV3 == null) {
-            pcV3 = readJsonNode(componentsJson)
-                    .map(HardwareManifestJsonHelper::buildPcv3FromNode)
-                    .orElse(null);
+            pcV3 = ObjectMapperFactory.fromJsonSafe(componentsJson, PlatformConfigurationV3.class);
         }
         return pcV3 != null ? pcV3 : canonicalize(pcV1, pcV2);
     }
@@ -139,10 +139,7 @@ public record HardwareManifestJsonHelper(
 
     private static List<TraitMap> readPlatformComponents(JsonNode comps) {
         List<TraitMap> components = new ArrayList<>();
-        if (comps == null || !comps.isArray()) {
-            return components;
-        }
-        for (JsonNode node : comps) {
+        for (JsonNode node : asNodeList(comps)) {
             TraitMap tm = readTraitMap(node);
             if (tm != null && !tm.isEmpty()) {
                 components.add(tm);
@@ -169,10 +166,7 @@ public record HardwareManifestJsonHelper(
 
     private static List<PlatformPropertiesV2> readPlatformProperties(JsonNode props) {
         List<PlatformPropertiesV2> out = new ArrayList<>();
-        if (props == null || !props.isArray()) {
-            return out;
-        }
-        for (JsonNode p : props) {
+        for (JsonNode p : asNodeList(props)) {
             try {
                 PlatformPropertiesV2 prop = ObjectMapperFactory.fromJsonNode(p, PlatformPropertiesV2.class);
                 if (prop != null) {
@@ -181,5 +175,19 @@ public record HardwareManifestJsonHelper(
             } catch (Exception ignored) { }
         }
         return out;
+    }
+
+    private static List<JsonNode> asNodeList(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return List.of();
+        }
+        if (node.isArray()) {
+            List<JsonNode> out = new ArrayList<>();
+            for (JsonNode child : node) {
+                out.add(child);
+            }
+            return out;
+        }
+        return List.of(node);
     }
 }

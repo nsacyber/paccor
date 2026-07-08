@@ -4,6 +4,7 @@ import paccor.exception.JsonException;
 import java.io.File;
 import java.nio.file.Files;
 import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.ObjectWriter;
@@ -17,6 +18,7 @@ public final class ObjectMapperFactory {
 
     public static final ObjectMapper create() {
         return JsonMapper.builder()
+                .enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
                 .addModule(new JacksonAsn1Module())
                 .build();
     }

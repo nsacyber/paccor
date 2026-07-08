@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import paccor.json.schema.ComponentSchema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -189,12 +190,9 @@ public class ComponentIdentifierV2 extends ASN1Object {
          */
         public final void componentAddressesFromSequence(@NonNull ASN1Sequence seq) {
             Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, ComponentAddress::getInstance))
-                    .ifPresentOrElse(
-                            this::componentAddress,
-                            () ->
-                                Arrays.asList(seq.toArray()).forEach(
-                                        element ->
-                                                this.componentAddress(ComponentAddress.getInstance(element))));
+                    .map(List::of)
+                    .orElseGet(() -> Stream.of(seq.toArray()).map(ComponentAddress::getInstance).toList())
+                    .forEach(this::componentAddress);
         }
     }
 }

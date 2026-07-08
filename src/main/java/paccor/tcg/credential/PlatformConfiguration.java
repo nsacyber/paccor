@@ -1,8 +1,10 @@
 package paccor.tcg.credential;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Size;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -41,9 +43,11 @@ public class PlatformConfiguration extends ASN1Object {
 	private static final int MIN_SEQUENCE_SIZE = 0;
 	private static final int MAX_SEQUENCE_SIZE = 3;
 
+	@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
 	@Singular
 	@Size(min = 1)
 	private final List<ComponentIdentifier> componentIdentifiers; // optional, tagged 0
+	@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
 	@Singular
 	@Size(min = 1)
 	private final List<PlatformProperties> platformProperties; // optional, tagged 1
@@ -115,9 +119,10 @@ public class PlatformConfiguration extends ASN1Object {
 		 * @param seq ASN1Sequence
 		 */
 		public final void componentIdentifiersFromSequence(@NonNull ASN1Sequence seq) {
-			Arrays.asList(seq.toArray()).forEach(
-					element ->
-							this.componentIdentifier(ComponentIdentifier.getInstance(element)));
+			Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, ComponentIdentifier::getInstance))
+					.map(List::of)
+					.orElseGet(() -> Stream.of(seq.toArray()).map(ComponentIdentifier::getInstance).toList())
+					.forEach(this::componentIdentifier);
 		}
 
 		/**
@@ -125,9 +130,10 @@ public class PlatformConfiguration extends ASN1Object {
 		 * @param seq ASN1Sequence
 		 */
 		public final void platformPropertiesFromSequence(@NonNull ASN1Sequence seq) {
-			Arrays.asList(seq.toArray()).forEach(
-					element ->
-							this.platformProperty(PlatformProperties.getInstance(element)));
+			Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, PlatformProperties::getInstance))
+					.map(List::of)
+					.orElseGet(() -> Stream.of(seq.toArray()).map(PlatformProperties::getInstance).toList())
+					.forEach(this::platformProperty);
 		}
 	}
 }
