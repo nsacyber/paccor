@@ -6,8 +6,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import jakarta.validation.constraints.Size;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 import paccor.json.schema.HardwareManifestSchema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -53,6 +54,7 @@ public class PlatformConfigurationV2 extends ASN1Object {
 	private static final int MIN_SEQUENCE_SIZE = 0;
 	private static final int MAX_SEQUENCE_SIZE = 4;
 
+	@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
 	@JsonProperty(HardwareManifestSchema.COMPONENTS)
 	@JsonPropertyDescription("Platform components in the legacy v1.1 component identifier form.")
 	@Singular
@@ -61,6 +63,7 @@ public class PlatformConfigurationV2 extends ASN1Object {
 	@JsonProperty(HardwareManifestSchema.COMPONENTS_URI)
 	@JsonPropertyDescription("Optional URI reference for externally hosted component identifiers.")
 	private final URIReference componentIdentifiersUri; // optional, tagged 1
+	@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
 	@JsonProperty(HardwareManifestSchema.PROPERTIES)
 	@JsonPropertyDescription("Platform properties.")
 	@Singular
@@ -140,9 +143,10 @@ public class PlatformConfigurationV2 extends ASN1Object {
 		 * @param seq ASN1Sequence
 		 */
 		public final void componentIdentifiersFromSequence(@NonNull ASN1Sequence seq) {
-			Arrays.asList(seq.toArray()).forEach(
-					element ->
-							this.componentIdentifier(ComponentIdentifierV2.getInstance(element)));
+			Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, ComponentIdentifierV2::getInstance))
+					.map(List::of)
+					.orElseGet(() -> Stream.of(seq.toArray()).map(ComponentIdentifierV2::getInstance).toList())
+					.forEach(this::componentIdentifier);
 		}
 
 		/**
@@ -150,9 +154,10 @@ public class PlatformConfigurationV2 extends ASN1Object {
 		 * @param seq ASN1Sequence
 		 */
 		public final void platformPropertiesFromSequence(@NonNull ASN1Sequence seq) {
-			Arrays.asList(seq.toArray()).forEach(
-					element ->
-							this.platformProperty(PlatformPropertiesV2.getInstance(element)));
+			Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, PlatformPropertiesV2::getInstance))
+					.map(List::of)
+					.orElseGet(() -> Stream.of(seq.toArray()).map(PlatformPropertiesV2::getInstance).toList())
+					.forEach(this::platformProperty);
 		}
 	}
 }

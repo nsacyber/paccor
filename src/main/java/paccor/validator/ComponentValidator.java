@@ -168,16 +168,17 @@ public final class ComponentValidator {
         return -1;
     }
 
-    private record ComponentKey(String registryOid, String classValueHex, String manufacturer, String model) {
+    private record ComponentKey(String registryOid, String classValueHex, String manufacturer, String model, String serial) {
         static ComponentKey from(TraitMap traits) {
             String registry = componentRegistryOid(traits);
             String classValue = componentClassValueHex(traits);
             String manufacturer = componentManufacturer(traits);
             String model = componentModel(traits);
+            String serial = componentSerial(traits);
             if (registry == null || classValue == null || manufacturer == null || model == null) {
                 return null;
             }
-            return new ComponentKey(registry, classValue, manufacturer, model);
+            return new ComponentKey(registry, classValue, manufacturer, model, serial);
         }
     }
 
@@ -197,6 +198,12 @@ public final class ComponentValidator {
     private static String componentModel(TraitMap traits) {
         return TraitCollection.from(traits)
                 .firstStringWithCategory(TCGObjectIdentifier.tcgTrCatComponentModel)
+                .orElse(null);
+    }
+
+    private static String componentSerial(TraitMap traits) {
+        return TraitCollection.from(traits)
+                .firstStringWithCategory(TCGObjectIdentifier.tcgTrCatComponentSerial)
                 .orElse(null);
     }
 

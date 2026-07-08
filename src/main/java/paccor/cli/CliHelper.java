@@ -1,5 +1,7 @@
 package paccor.cli;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import paccor.cert.CertKind;
 import paccor.exception.CertificateLoadException;
 import paccor.exception.PaccorException;
@@ -73,11 +75,45 @@ public class CliHelper {
     public static final byte[] derToPem(final String filename, final x509type type) throws IOException {
         byte[] buffer = Files.readAllBytes(Paths.get(filename));
         
-        if ((char)buffer[0] != '-') { // DER can start with a digit
+        if (!containsPemBlock(buffer, type)) { // If the buffer contains a PEM block, trust the PEM parser
             buffer = bytesToPem(buffer, type).getBytes();
         }
         
         return buffer;
+    }
+
+    /**
+     * Test if the byte array contains a PEM block.
+     * @param data byte array
+     * @param type x509type - type of PEM known to the project
+     * @return true if the byte array contains a PEM block, false otherwise.
+     */
+    public static final boolean containsPemBlock(final byte[] data, final x509type type) {
+        String header = type.getPemHeader().trim();
+        String footer = type.getPemFooter().trim();
+        return containsPemBlock(data, header, footer);
+    }
+
+    /**
+     * Test if the byte array contains a PEM block.
+     * @param data byte array
+     * @param header header string
+     * @param footer footer string
+     * @return true if the byte array contains a PEM block, false otherwise.
+     */
+    public static final boolean containsPemBlock(final byte[] data, final String header, final String footer) {
+        if (data == null || header == null || footer == null) {
+            return false;
+        }
+
+        String text = new String(data, StandardCharsets.UTF_8);
+
+        String regex = "^\\s*" + Pattern.quote(header) + ".*?" + "^\\s*" + Pattern.quote(footer);
+
+        Pattern pattern = Pattern.compile(regex, Pattern.MULTILINE | Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(text);
+
+        return matcher.find();
     }
 
     public static final boolean parsesAsPkc(final String b64) {

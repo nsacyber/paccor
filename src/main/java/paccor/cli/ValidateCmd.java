@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
 import paccor.cli.pv.ReadableFileConverter;
-import paccor.json.ObjectMapperFactory;
+import paccor.json.HardwareManifestJsonHelper;
 import paccor.normalization.PlatformConfigurationNormalizer;
 import paccor.crypto.PcBcContentVerifierProviderBuilder;
 import org.bouncycastle.cert.CertException;
@@ -164,14 +164,15 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
             }
             return false;
         }
-        PlatformConfiguration expectV1 = ObjectMapperFactory.fromJsonSafe(jsonFile, PlatformConfiguration.class);
-        PlatformConfigurationV2 expectV2 = ObjectMapperFactory.fromJsonSafe(jsonFile, PlatformConfigurationV2.class);
-        PlatformConfigurationV3 expectV3 = ObjectMapperFactory.fromJsonSafe(jsonFile, PlatformConfigurationV3.class);
+        HardwareManifestJsonHelper manifest = HardwareManifestJsonHelper.readComponents(jsonFile);
+        if (manifest == null) {
+            return false;
+        }
 
         List<TraitMap> expected = normalizeExpected(
-                expectV1,
-                expectV2,
-                expectV3,
+                manifest.pcV1(),
+                manifest.pcV2(),
+                manifest.pcV3(),
                 certificate.hasAttribute(TCGObjectIdentifier.tcgAtPlatformConfigurationV1),
                 certificate.hasAttribute(TCGObjectIdentifier.tcgAtPlatformConfigurationV2));
 
@@ -192,39 +193,62 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
             PlatformConfigurationV3 expectV3,
             boolean requireV1Compatibility,
             boolean requireV2Compatibility) {
-        if (requireV1Compatibility && PlatformConfigurationNormalizer.hasContent(expectV1)) {
-            return PlatformConfigurationNormalizer.componentsForValidation(expectV1);
-        }
-        if (requireV1Compatibility && PlatformConfigurationNormalizer.hasContent(expectV3)) {
-            PlatformConfiguration downcast = PlatformConfigurationNormalizer.toV1(expectV3);
-            if (downcast == null) {
-                if (shouldPrintDetails()) {
-                    System.out.println("Expected component JSON cannot be represented as PlatformConfiguration.");
-                }
-                return null;
-            }
-            return PlatformConfigurationNormalizer.componentsForValidation(downcast);
-        }
-        if (requireV2Compatibility && PlatformConfigurationNormalizer.hasContent(expectV3)) {
-            PlatformConfigurationV2 downcast = PlatformConfigurationNormalizer.toV2(expectV3);
-            if (downcast == null) {
-                if (shouldPrintDetails()) {
-                    System.out.println("Expected component JSON cannot be represented as PlatformConfigurationV2.");
-                }
-                return null;
-            }
-            return PlatformConfigurationNormalizer.componentsForValidation(downcast);
+        return tryV1Compat(expectV1, expectV3, requireV1Compatibility)
+                .or(() -> tryV2Compat(expectV3, requireV2Compatibility))
+                .or(() -> tryDirect(expectV3, expectV2, expectV1))
+                .orElse(List.of());
+    }
+
+    private Optional<List<TraitMap>> tryV1Compat(
+            PlatformConfiguration expectV1,
+            PlatformConfigurationV3 expectV3,
+            boolean requireV1Compatibility) {
+        if (!requireV1Compatibility) return Optional.empty();
+        if (PlatformConfigurationNormalizer.hasContent(expectV1)) {
+            return Optional.of(PlatformConfigurationNormalizer.componentsForValidation(expectV1));
         }
         if (PlatformConfigurationNormalizer.hasContent(expectV3)) {
-            return PlatformConfigurationNormalizer.componentsForValidation(expectV3);
+            return Optional.ofNullable(PlatformConfigurationNormalizer.toV1(expectV3))
+                    .map(PlatformConfigurationNormalizer::componentsForValidation)
+                    .or(() -> {
+                        if (shouldPrintDetails()) {
+                            System.out.println("Expected component JSON cannot be represented as PlatformConfiguration.");
+                        }
+                        return Optional.empty();
+                    });
         }
-        if (PlatformConfigurationNormalizer.hasContent(expectV2)) {
-            return PlatformConfigurationNormalizer.componentsForValidation(expectV2);
+        return Optional.empty();
+    }
+
+    private Optional<List<TraitMap>> tryV2Compat(
+            PlatformConfigurationV3 expectV3,
+            boolean requireV2Compatibility) {
+        if (!requireV2Compatibility || !PlatformConfigurationNormalizer.hasContent(expectV3)) {
+            return Optional.empty();
         }
-        if (PlatformConfigurationNormalizer.hasContent(expectV1)) {
-            return PlatformConfigurationNormalizer.componentsForValidation(expectV1);
-        }
-        return List.of();
+        return Optional.ofNullable(PlatformConfigurationNormalizer.toV2(expectV3))
+                .map(PlatformConfigurationNormalizer::componentsForValidation)
+                .or(() -> {
+                    if (shouldPrintDetails()) {
+                        System.out.println("Expected component JSON cannot be represented as PlatformConfigurationV2.");
+                    }
+                    return Optional.empty();
+                });
+    }
+
+    private Optional<List<TraitMap>> tryDirect(
+            PlatformConfigurationV3 expectV3,
+            PlatformConfigurationV2 expectV2,
+            PlatformConfiguration expectV1) {
+        return Optional.ofNullable(expectV3)
+                .filter(PlatformConfigurationNormalizer::hasContent)
+                .map(PlatformConfigurationNormalizer::componentsForValidation)
+                .or(() -> Optional.ofNullable(expectV2)
+                        .filter(PlatformConfigurationNormalizer::hasContent)
+                        .map(PlatformConfigurationNormalizer::componentsForValidation))
+                .or(() -> Optional.ofNullable(expectV1)
+                        .filter(PlatformConfigurationNormalizer::hasContent)
+                        .map(PlatformConfigurationNormalizer::componentsForValidation));
     }
 
     private boolean compareNormalized(List<TraitMap> expected, List<TraitMap> actual, ComponentMatcher matcher) {
