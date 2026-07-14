@@ -586,7 +586,7 @@ public class E2ECommandsTest extends TestSupport {
                 "validate",
                 "--x509v2AttrCert", cerBase.toString(),
                 "--publicKeyCert", RES_MLDSA65_CA_CERT,
-                "--components-json", RES_TEST4_COMP_JSON
+                "--components-json", RES_TEST4_COMP_WITH_TRAITS_JSON
         );
         Assertions.assertEquals(0, rcValidateOk, "validate should pass components check");
 
