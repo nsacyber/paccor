@@ -92,6 +92,12 @@ public class ViewCmd implements Callable<Integer>, HasCommonOptions {
         TraitMap anchors = info.getCryptographicAnchors();
         println("Cryptographic Anchors: " + countTraits(anchors));
 
+        TraitMap ownership = info.getPlatformOwnership();
+        println("Platform Ownership: " + countTraits(ownership));
+
+        TraitMap manufacturingAssertions = info.getManufacturingAssertions();
+        println("Manufacturing Assertions: " + countTraits(manufacturingAssertions));
+
         return ClientExitCodes.SUCCESS.code();
     }
 

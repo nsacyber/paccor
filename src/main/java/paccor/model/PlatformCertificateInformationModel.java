@@ -69,6 +69,8 @@ public class PlatformCertificateInformationModel {
     private List<CertificateReference> previousPlatformCertificateObjects;
     private TraitMap cryptographicAnchors;
     private List<CertificateReference> cryptographicAnchorObjects;
+    private TraitMap platformOwnership;
+    private TraitMap manufacturingAssertions;
     private PlatformConfigurationV3 platformConfiguration;
     private TraitMap platformTraits;
     private String platformConfigUri;
@@ -154,6 +156,12 @@ public class PlatformCertificateInformationModel {
             this.cryptographicAnchors = TraitMap.getInstance(attr.cryptographicAnchors());
             this.cryptographicAnchorObjects =
                     ResolvedCertificateReferenceMap.referencesOf(attr.cryptographicAnchors());
+        }
+        if (attr.platformOwnership() != null) {
+            this.platformOwnership = TraitMap.getInstance(attr.platformOwnership());
+        }
+        if (attr.manufacturingAssertions() != null) {
+            this.manufacturingAssertions = TraitMap.getInstance(attr.manufacturingAssertions());
         }
     }
 
@@ -320,6 +328,8 @@ public class PlatformCertificateInformationModel {
         model.setTcgCredentialType(certificate.getTcgCredentialType());
         model.setPreviousPlatformCertificates(certificate.traitMap(TCGObjectIdentifier.tcgAtPreviousPlatformCertificates));
         model.setCryptographicAnchors(certificate.traitMap(TCGObjectIdentifier.tcgAtCryptographicAnchors));
+        model.setPlatformOwnership(certificate.traitMap(TCGObjectIdentifier.tcgAtPlatformOwnership));
+        model.setManufacturingAssertions(certificate.traitMap(TCGObjectIdentifier.tcgAtManufacturingAssertions));
         model.setPlatformConfiguration(certificate.canonicalizedPlatformConfigurationV3());
         model.setPlatformTraits(SubjectAlternativeNameHelper.extractPlatformTraits(
                 certificate.subjectAlternativeNames(),

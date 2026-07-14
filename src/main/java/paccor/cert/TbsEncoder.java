@@ -243,6 +243,8 @@ public class TbsEncoder {
         addAttribute(attributes, TCGObjectIdentifier.tcgAtPlatformConfigUri, uri);
         addAttribute(attributes, TCGObjectIdentifier.tcgAtPreviousPlatformCertificates, platformInfo.getPreviousPlatformCertificates());
         addAttribute(attributes, TCGObjectIdentifier.tcgAtCryptographicAnchors, platformInfo.getCryptographicAnchors());
+        addAttribute(attributes, TCGObjectIdentifier.tcgAtPlatformOwnership, platformInfo.getPlatformOwnership());
+        addAttribute(attributes, TCGObjectIdentifier.tcgAtManufacturingAssertions, platformInfo.getManufacturingAssertions());
         return attributes;
     }
 

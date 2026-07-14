@@ -56,6 +56,10 @@ public record AttributesJsonHelper(
         @JsonProperty(AttributesSchema.CRYPTOGRAPHIC_ANCHORS)
         @JsonDeserialize(using = CryptographicAnchorsDeserializer.class)
         TraitMap cryptographicAnchors,
+        @JsonProperty(AttributesSchema.PLATFORM_OWNERSHIP)
+        TraitMap platformOwnership,
+        @JsonProperty(AttributesSchema.MANUFACTURING_ASSERTIONS)
+        TraitMap manufacturingAssertions,
         // uncommon fields, V1.0 fields
         @JsonProperty(AttributesSchema.TCPA_SPEC_VERSION)
         TCPASpecVersion tCPASpecVersion,
