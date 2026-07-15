@@ -18,10 +18,14 @@ import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
 import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.bouncycastle.util.encoders.Base64;
 import paccor.tcg.credential.TBBSecurityAssertions;
-import paccor.tcg.credential.Trait;
 import paccor.tcg.credential.TraitMap;
+import paccor.tcg.credential.TCGObjectIdentifier;
+import paccor.tcg.credential.ComponentIdentifierV11Trait;
+import paccor.tcg.credential.PlatformPropertiesV2;
+import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Builder
 public record TbsFinalizer(String tbsB64, String shaHex) {
@@ -30,9 +34,8 @@ public record TbsFinalizer(String tbsB64, String shaHex) {
         issues.addAll(checkSpecification(profile, pi));
         issues.addAll(checkAcFields(pi));
         validateTbbSecurityAssertions(profile.specVersion(), pi, issues);
-        mustHaveExtension(pi.getExtensions(), Extension.authorityKeyIdentifier, "Authority Key Identifier", issues);
-        mustHaveExtension(pi.getExtensions(), Extension.certificatePolicies, "Certificate Policies", issues);
-        mustHaveExtension(pi.getExtensions(), Extension.subjectAlternativeName, "Subject Alternative Name", issues);
+        validateV2Traits(profile.specVersion(), pi, issues);
+        mustHaveMandatoryExtensions(pi, issues);
         return issues;
     }
 
@@ -41,14 +44,19 @@ public record TbsFinalizer(String tbsB64, String shaHex) {
         issues.addAll(checkSpecification(profile, pi));
         issues.addAll(checkPkcFields(pi));
         validateTbbSecurityAssertions(profile.specVersion(), pi, issues);
-        mustHaveExtension(pi.getExtensions(), Extension.authorityKeyIdentifier, "Authority Key Identifier", issues);
-        mustHaveExtension(pi.getExtensions(), Extension.certificatePolicies, "Certificate Policies", issues);
-        mustHaveExtension(pi.getExtensions(), Extension.subjectAlternativeName, "Subject Alternative Name", issues);
+        validateV2Traits(profile.specVersion(), pi, issues);
+        mustHaveMandatoryExtensions(pi, issues);
         mustHaveExtension(pi.getExtensions(), Extension.subjectKeyIdentifier, "Subject Key Identifier", issues);
         mustHaveExtension(pi.getExtensions(), Extension.basicConstraints, "Basic Constraints", issues, true);
         mustHavePkcExtendedKeyUsage(profile, pi, issues);
         validateBasicConstraints(pi.getExtensions(), issues);
         return issues;
+    }
+
+    private static void mustHaveMandatoryExtensions(PlatformCertificateInformationModel pi, List<String> issues) {
+        mustHaveExtension(pi.getExtensions(), Extension.authorityKeyIdentifier, "Authority Key Identifier", issues);
+        mustHaveExtension(pi.getExtensions(), Extension.certificatePolicies, "Certificate Policies", issues);
+        mustHaveExtension(pi.getExtensions(), Extension.subjectAlternativeName, "Subject Alternative Name", issues);
     }
 
     private static List<String> checkCommonFields(PlatformCertificateInformationModel pi) {
@@ -193,40 +201,91 @@ public record TbsFinalizer(String tbsB64, String shaHex) {
             CertSpecVersion specVersion,
             PlatformCertificateInformationModel pi,
             List<String> issues) {
-        TBBSecurityAssertions assertions = pi.getTbbSecurityAssertions();
-        if (assertions == null) return;
+        Optional.ofNullable(pi.getTbbSecurityAssertions())
+                .filter(_ -> specVersion == CertSpecVersion.V2_0)
+                .map(TBBSecurityAssertions::getTraits)
+                .ifPresent(traits -> TraitMap.validateTraitMap(traits, "TBBSecurityAssertions", TBBSecurityAssertions.ALLOWED_TRAIT_TYPES, null, issues));
+    }
+
+    private static void validateV2Traits(CertSpecVersion specVersion, PlatformCertificateInformationModel pi, List<String> issues) {
         if (specVersion == CertSpecVersion.V2_0) {
-            TraitMap traits = assertions.getTraits();
-            validateTraitMap(traits, "TBBSecurityAssertions", TBBSecurityAssertions.ALLOWED_TRAIT_TYPES, null, issues);
+            validatePlatformIdentifier(pi, issues);
+            validateComponents(pi, issues);
+            validatePlatformOwnership(pi, issues);
         }
     }
 
-    private static void validateTraitMap(
-            TraitMap traits,
+    private static void validatePlatformIdentifier(PlatformCertificateInformationModel pi, List<String> issues) {
+        Optional.ofNullable(pi.getPlatformTraits())
+                .filter(traits -> !traits.isEmpty())
+                .ifPresentOrElse(
+                        traits -> TraitMap.validateTraitMap(traits, "PlatformIdentifier", null,
+                                Set.of(TCGObjectIdentifier.tcgTrCatPlatformManufacturer,
+                                        TCGObjectIdentifier.tcgTrCatPlatformModel,
+                                        TCGObjectIdentifier.tcgTrCatPlatformVersion),
+                                issues),
+                        () -> issues.add("Subject Alternative Name must contain a PlatformIdentifier sequence with traits.")
+                );
+    }
+
+    private static void validateComponents(PlatformCertificateInformationModel pi, List<String> issues) {
+        Optional.ofNullable(pi.getPlatformConfiguration()).ifPresent(pc -> {
+            boolean isDelta = Boolean.TRUE.equals(pi.getIsDelta());
+            validateComponentTraits(pc.getPlatformComponents(), isDelta, issues);
+            if (isDelta) {
+                validatePropertyStatus(pc.getPlatformProperties(), issues);
+            }
+        });
+    }
+
+    private static void validateComponentTraits(List<TraitMap> components, boolean isDelta, List<String> issues) {
+        if (components == null) return;
+        Set<ASN1ObjectIdentifier> requiredBase = Set.of(
+                TCGObjectIdentifier.tcgTrCatComponentClass,
+                TCGObjectIdentifier.tcgTrCatComponentManufacturer,
+                TCGObjectIdentifier.tcgTrCatComponentModel
+        );
+        IntStream.range(0, components.size()).forEach(i -> {
+            TraitMap component = components.get(i);
+            String context = "Component[" + i + "]";
+            if (component.containsKey(ComponentIdentifierV11Trait.class)) {
+                validateV11Component(component, context, issues);
+            } else {
+                validateV20Component(component, context, isDelta, requiredBase, issues);
+            }
+        });
+    }
+
+    private static void validateV11Component(TraitMap component, String context, List<String> issues) {
+        if (component.size() > 1) {
+            issues.add(context + " containing ComponentIdentifierV11Trait SHALL NOT contain any other trait.");
+        }
+    }
+
+    private static void validateV20Component(
+            TraitMap component,
             String context,
-            Set<Class<? extends Trait<?, ?>>> allowedTypes,
-            Set<ASN1ObjectIdentifier> requiredCategories,
+            boolean isDelta,
+            Set<ASN1ObjectIdentifier> requiredBase,
             List<String> issues) {
-        if (traits == null || traits.isEmpty()) return;
-
-        if (allowedTypes != null) {
-            for (Class<? extends Trait<?, ?>> type : traits.keySet()) {
-                if (!allowedTypes.contains(type)) {
-                    issues.add(context + " contains unsupported trait type: " + type.getSimpleName());
-                }
-            }
+        Set<ASN1ObjectIdentifier> required = new HashSet<>(requiredBase);
+        if (isDelta) {
+            required.add(TCGObjectIdentifier.tcgTrCatComponentStatus);
         }
+        TraitMap.validateTraitMap(component, context, null, required, issues);
+    }
 
-        if (requiredCategories != null) {
-            Set<ASN1ObjectIdentifier> presentCategories = traits.flattenTraits().stream()
-                    .map(Trait::getTraitCategory)
-                    .collect(Collectors.toSet());
-            for (ASN1ObjectIdentifier required : requiredCategories) {
-                if (!presentCategories.contains(required)) {
-                    issues.add(context + " is missing required trait category: " + required.getId());
-                }
-            }
-        }
+    private static void validatePropertyStatus(List<PlatformPropertiesV2> properties, List<String> issues) {
+        if (properties == null) return;
+        IntStream.range(0, properties.size())
+                .filter(i -> properties.get(i).getStatus() == null)
+                .forEach(i -> issues.add("Property[" + i + "] in Delta Platform Certificate SHALL contain the status field."));
+    }
+
+    private static void validatePlatformOwnership(PlatformCertificateInformationModel pi, List<String> issues) {
+        Optional.ofNullable(pi.getPlatformOwnership())
+                .filter(traits -> !traits.isEmpty())
+                .ifPresent(traits -> TraitMap.validateTraitMap(traits, "PlatformOwnership", null, Set.of(TCGObjectIdentifier.tcgTrCatPlatformOwnership), issues));
     }
 
     /**

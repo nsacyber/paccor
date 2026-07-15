@@ -15,6 +15,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import paccor.json.ObjectMapperFactory;
 import paccor.json.TraitMapDeserializer;
 import lombok.AllArgsConstructor;
@@ -74,12 +76,36 @@ public class TraitMap extends ASN1Object implements Map<Class<? extends Trait<?,
         return builder.build();
     }
 
-    public static TraitMap fromTraits(List<? extends Trait<?, ?>> traits) {
+    public static final TraitMap fromTraits(List<? extends Trait<?, ?>> traits) {
         TraitMapBuilder builder = TraitMap.builder();
         if (traits != null) {
             traits.forEach(builder::trait);
         }
         return builder.build();
+    }
+
+    public static final void validateTraitMap(
+            TraitMap traits,
+            String context,
+            Set<Class<? extends Trait<?, ?>>> allowedTypes,
+            Set<ASN1ObjectIdentifier> requiredCategories,
+            List<String> issues) {
+        if (traits == null || traits.isEmpty()) return;
+
+        Optional.ofNullable(allowedTypes).ifPresent(allowed ->
+                traits.keySet().stream()
+                        .filter(type -> !allowed.contains(type))
+                        .forEach(type -> issues.add(context + " contains unsupported trait type: " + type.getSimpleName()))
+        );
+
+        Optional.ofNullable(requiredCategories).ifPresent(required -> {
+            Set<ASN1ObjectIdentifier> presentCategories = traits.flattenTraits().stream()
+                    .map(Trait::getTraitCategory)
+                    .collect(Collectors.toSet());
+            required.stream()
+                    .filter(req -> !presentCategories.contains(req))
+                    .forEach(req -> issues.add(context + " is missing required trait category: " + req.getId()));
+        });
     }
 
     public final List<Trait<?, ?>> flattenTraits() {
@@ -220,11 +246,6 @@ public class TraitMap extends ASN1Object implements Map<Class<? extends Trait<?,
 
     public static class TraitMapBuilder {
         private Map<Class<? extends Trait<?, ?>>, List<Trait<?, ?>>> traits = new LinkedHashMap<>();
-
-        public TraitMapBuilder setSingleTrait(Trait<?, ?> traitObj) {
-            traits.put(traitObj.getTraitType(), new ArrayList<>(List.of(traitObj)));
-            return this;
-        }
 
         public TraitMapBuilder trait(Trait<?, ?> traitObj) {
             traits.computeIfAbsent(traitObj.getTraitType(), _ -> new ArrayList<>()).add(traitObj);
