@@ -260,6 +260,8 @@ An example of the full command: `paccor certgen -x "$extsettings" -c "$component
 -P "$pcsigncert" -N "$serialnumber" -b "$dateNotBefore" -a "$dateNotAfter" --sig-profile "$paccor_sigalg"
 -f "$tbsout" --finalize`
 
+Example with variables substituted: `paccor certgen -x /opt/paccor/scripts/pc_testgen/extensions.json -c /opt/paccor/scripts/pc_testgen/localhost-componentlist.json -e /opt/paccor/scripts/pc_testgen/ek.cer -p /opt/paccor/scripts/pc_testgen/localhost-policyreference.json -P /opt/paccor/scripts/pc_testgen/PCTestCA.example.com.pem -N 0001 -b 20180101 -a 20380101 --sig-profile rsa-sha256 -f /opt/paccor/scripts/pc_testgen/tbs.json --finalize`
+
 Inputs:
 
 - EK certificate
@@ -287,13 +289,15 @@ material is accessed and used.
 
 Example: `paccor assemble --in "$tbsout" -k "$sigkey" -P "$pcsigncert" -f "$pccert" --pem`
 
+Example with variables substituted: `paccor assemble --in /opt/paccor/scripts/pc_testgen/tbs.json -k /opt/paccor/scripts/pc_testgen/private.pem -P /opt/paccor/scripts/pc_testgen/PCTestCA.example.com.pem -f /opt/paccor/scripts/pc_testgen/platform_cert.20260715133924.cer --pem`
+
 Inputs:
 
 - TBS data
 - signing method to include local key, PKCS#11 information, or remote access information
 - issuer certificate
 - where to save the signed certificate
-- encoding choice for the signed certificate, DER or PEM
+- encoding choice for the signed certificate, DER (by default) or specify PEM encoding
 
 If the certificate signature and generation succeeded, it will be written to the location specified. It can be viewed
 and validated immediately.
@@ -303,6 +307,8 @@ and validated immediately.
 The last step is to validate the generated platform certificate.
 
 Example: `paccor validate -P "$pcsigncert" -X "$pccert" -c "$componentlist"`
+
+Example with variables substituted: `paccor validate -P /opt/paccor/scripts/pc_testgen/PCTestCA.example.com.pem -X /opt/paccor/scripts/pc_testgen/platform_cert.20260715133924.cer -c /opt/paccor/scripts/pc_testgen/localhost-componentlist.json`
 
 Things checked:
 
