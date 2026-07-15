@@ -343,8 +343,8 @@ public class AttributesJsonHelperTest {
                         +       "    \"" + Json.ISO9000URI.name() + "\": \"" + iso9000URI + "\""
                         +       "}";
         TBBSecurityAssertions tbsa = ObjectMapperFactory.fromJsonSafe(jsonData, TBBSecurityAssertions.class);
-        Assertions.assertEquals(tbsa.getVersion(), new ASN1Integer(Integer.parseInt(version)));
-        CommonCriteriaMeasures ccInfo = tbsa.getCcInfo();
+        Assertions.assertEquals(new ASN1Integer(Integer.parseInt(version)), tbsa.getVersion().orElse(null));
+        CommonCriteriaMeasures ccInfo = tbsa.getCcInfo().orElseThrow();
         Assertions.assertEquals(ccVersion, ccInfo.getVersion().getString());
         Assertions.assertEquals(EvaluationAssuranceLevel.getInstance(assuranceLevel), ccInfo.getAssuranceLevel());
         Assertions.assertEquals(EvaluationStatus.getInstance(evaluationStatus), ccInfo.getEvaluationStatus());
@@ -352,17 +352,17 @@ public class AttributesJsonHelperTest {
         Assertions.assertEquals(profileOid, ccInfo.getProfileOid().getId());
         Assertions.assertEquals(profileURI, ccInfo.getProfileUri().getUniformResourceIdentifier().getString());
         Assertions.assertEquals(profileAlg, ccInfo.getProfileUri().getHashAlgorithm().getAlgorithm().getId());
-        Assertions.assertArrayEquals(profileHash.getBytes(), Base64.encode(ccInfo.getProfileUri().getHashValue().getBytes()));
+        Assertions.assertArrayEquals(Base64.decode(profileHash), ccInfo.getProfileUri().getHashValue().getOctets());
         Assertions.assertEquals(targetOid, ccInfo.getTargetOid().getId());
         Assertions.assertEquals(targetURI, ccInfo.getTargetUri().getUniformResourceIdentifier().getString());
         Assertions.assertEquals(targetAlg, ccInfo.getTargetUri().getHashAlgorithm().getAlgorithm().getId());
-        Assertions.assertArrayEquals(targetHash.getBytes(), Base64.encode(ccInfo.getTargetUri().getHashValue().getBytes()));
-        FIPSLevel fips = tbsa.getFipsLevel();
+        Assertions.assertArrayEquals(Base64.decode(targetHash), ccInfo.getTargetUri().getHashValue().getOctets());
+        FIPSLevel fips = tbsa.getFipsLevel().orElseThrow();
         Assertions.assertEquals(fipsVersion, fips.getVersion().getString());
         Assertions.assertEquals(SecurityLevel.getInstance(fipsLevel), fips.getLevel());
         Assertions.assertEquals(Boolean.valueOf(fipsPlus), fips.getPlus().isTrue());
-        Assertions.assertEquals(MeasurementRootType.getInstance(rtmType), tbsa.getRtmType());
+        Assertions.assertEquals(MeasurementRootType.getInstance(rtmType), tbsa.getRtmType().orElseThrow());
         Assertions.assertEquals(Boolean.valueOf(iso9000Certified), tbsa.getIso9000Certified().isTrue());
-        Assertions.assertEquals(iso9000URI, tbsa.getIso9000Uri().getString());
+        Assertions.assertEquals(iso9000URI, tbsa.getIso9000Uri().map(s -> s.getString()).orElse(null));
     }
 }

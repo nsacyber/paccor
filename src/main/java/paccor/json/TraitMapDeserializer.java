@@ -1,11 +1,12 @@
 package paccor.json;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import paccor.json.schema.ComponentSchema;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import paccor.normalization.ComponentIdentifierV2Converter;
@@ -25,25 +26,24 @@ import tools.jackson.databind.node.ObjectNode;
 public class TraitMapDeserializer extends ValueDeserializer<TraitMap> {
     @Override
     public TraitMap deserialize(JsonParser p, DeserializationContext context) throws JacksonException {
-        JsonNode root = context.readTree(p);
-        TraitMap.TraitMapBuilder builder = TraitMap.builder();
-        if (root == null || root.isNull()) {
-            return builder.build();
-        }
-
-        JsonNode traitsNode = root.isObject() ? findTraitsNode(root) : root;
-        JsonNode legacyNode = root.isObject() ? root : null;
-        List<Trait<?, ?>> explicitTraits = collectExplicitTraits(builder, context, traitsNode);
-        if (isLegacyComponentIdentifier(legacyNode)) {
-            mergeLegacyComponentTraits(builder, legacyNode, explicitTraits, context);
-        }
-
-        return builder.build();
+        return Optional.ofNullable(context.readTree(p))
+                .filter(node -> !node.isNull())
+                .map(root -> {
+                    TraitMap.TraitMapBuilder builder = TraitMap.builder();
+                    JsonNode traitsNode = root.isObject() ? findTraitsNode(root) : root;
+                    JsonNode legacyNode = root.isObject() ? root : null;
+                    List<Trait<?, ?>> explicitTraits = collectExplicitTraits(builder, context, traitsNode);
+                    if (isLegacyComponentIdentifier(legacyNode)) {
+                        mergeLegacyComponentTraits(builder, legacyNode, explicitTraits, context);
+                    }
+                    return builder.build();
+                })
+                .orElseGet(() -> TraitMap.builder().build());
     }
 
     private static JsonNode findTraitsNode(JsonNode root) {
         return JsonUtils.get(root, false, "traits")
-                .filter(JsonNode::isArray)
+                .filter(node -> node.isArray() || node.isObject())
                 .orElse(null);
     }
 
@@ -51,18 +51,24 @@ public class TraitMapDeserializer extends ValueDeserializer<TraitMap> {
             TraitMap.TraitMapBuilder builder,
             DeserializationContext context,
             JsonNode traitsNode) {
-        List<Trait<?, ?>> explicitTraits = new ArrayList<>();
-        if (traitsNode == null || !traitsNode.isArray() || traitsNode.isEmpty()) {
-            return explicitTraits;
+        if (traitsNode == null) {
+            return List.of();
         }
-        for (JsonNode traitNode : traitsNode) {
-            Trait<?, ?> trait = readTrait(context, traitNode);
+        if (traitsNode.isArray()) {
+            return StreamSupport.stream(traitsNode.spliterator(), false)
+                    .map(traitNode -> readTrait(context, traitNode))
+                    .filter(Objects::nonNull)
+                    .peek(builder::trait)
+                    .collect(Collectors.toList());
+        }
+        if (traitsNode.isObject()) {
+            Trait<?, ?> trait = readTrait(context, traitsNode);
             if (trait != null) {
-                explicitTraits.add(trait);
                 builder.trait(trait);
+                return List.of(trait);
             }
         }
-        return explicitTraits;
+        return List.of();
     }
 
     private static Trait<?, ?> readTrait(DeserializationContext context, JsonNode traitNode) {
@@ -119,21 +125,13 @@ public class TraitMapDeserializer extends ValueDeserializer<TraitMap> {
             JsonNode legacyNode,
             List<Trait<?, ?>> explicitTraits,
             DeserializationContext context) {
-        try {
-            return ObjectMapperFactory.fromJsonNode(legacyNode, ComponentIdentifierV2.class);
-        } catch (Exception ignored) {
-            // Try patched conversion below.
+        ComponentIdentifierV2 v2 = ObjectMapperFactory.fromJsonNodeSafe(legacyNode, ComponentIdentifierV2.class);
+        if (v2 != null) {
+            return v2;
         }
 
         ObjectNode patched = patchLegacyComponentNode(legacyNode, explicitTraits, context);
-        if (patched == null) {
-            return null;
-        }
-        try {
-            return ObjectMapperFactory.fromJsonNode(patched, ComponentIdentifierV2.class);
-        } catch (Exception ignored) {
-            return null;
-        }
+        return ObjectMapperFactory.fromJsonNodeSafe(patched, ComponentIdentifierV2.class);
     }
 
     private static ObjectNode patchLegacyComponentNode(

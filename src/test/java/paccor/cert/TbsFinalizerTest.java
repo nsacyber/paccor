@@ -17,9 +17,19 @@ import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.bouncycastle.util.encoders.Base64;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import paccor.tcg.credential.ComponentIdentifierV11Trait;
+import paccor.tcg.credential.ComponentIdentifierV2;
+import paccor.tcg.credential.ComponentClass;
+import paccor.tcg.credential.UTF8StringTrait;
+import paccor.tcg.credential.TraitMap;
+import paccor.tcg.credential.TCGObjectIdentifier;
+import paccor.tcg.credential.PlatformConfigurationV3;
+import paccor.tcg.credential.PlatformPropertiesV2;
+import org.bouncycastle.asn1.DEROctetString;
+import org.bouncycastle.asn1.DERUTF8String;
 import paccor.tcg.credential.TCGSpecificationVersion;
 
-public class FinalizeHelperTest {
+public class TbsFinalizerTest {
     private static final AlgorithmIdentifier SIG_ALG =
             new AlgorithmIdentifier(PKCSObjectIdentifiers.sha256WithRSAEncryption);
 
@@ -99,6 +109,7 @@ public class FinalizeHelperTest {
         pi.setNotBefore(new Date(System.currentTimeMillis()));
         pi.setNotAfter(new Date(System.currentTimeMillis() + 3600000));
         pi.setHolder(new HolderInfo(null, null));
+        pi.setPlatformTraits(TbsEncoderDerivedExtensionsTest.samplePlatformTraits());
 
         pi.putExtension(TbsEncoderDerivedExtensionsTest.dummyExtension(
                 Extension.authorityKeyIdentifier, "Authority Key Identifier"));
@@ -172,6 +183,146 @@ public class FinalizeHelperTest {
         Assertions.assertTrue(issues.contains("Basic Constraints CA flag must be FALSE for PKC."));
         Assertions.assertTrue(issues.contains("Extended Key Usage must include " + KeyPurposeId.getInstance(
                 CertTypeResolver.toOid(CertKind.PKC, CertType.BASE)).getId() + "."));
+    }
+
+    @Test
+    void validateAc_v20_requiresPlatformTraits() {
+        PlatformCertificateInformationModel pi = sampleV20Model();
+        pi.setPlatformTraits(null); // Missing required traits
+
+        List<String> issues = TbsFinalizer.validateAc(CertificateProfile.platformV2_0Ac(), pi);
+        Assertions.assertTrue(issues.contains("Subject Alternative Name must contain a PlatformIdentifier sequence with traits."));
+    }
+
+    @Test
+    void validateAc_v20_checksRequiredPlatformTraits() {
+        PlatformCertificateInformationModel pi = sampleV20Model();
+        TraitMap traits = TraitMap.builder()
+                .trait(UTF8StringTrait.builder()
+                        .traitCategory(TCGObjectIdentifier.tcgTrCatPlatformManufacturer)
+                        .traitValue(new DERUTF8String("Manufacturer"))
+                        .build())
+                .build();
+        pi.setPlatformTraits(traits); // Missing Model and Version
+
+        List<String> issues = TbsFinalizer.validateAc(CertificateProfile.platformV2_0Ac(), pi);
+        Assertions.assertTrue(issues.contains("PlatformIdentifier is missing required trait category: " + TCGObjectIdentifier.tcgTrCatPlatformModel.getId()));
+        Assertions.assertTrue(issues.contains("PlatformIdentifier is missing required trait category: " + TCGObjectIdentifier.tcgTrCatPlatformVersion.getId()));
+    }
+
+    @Test
+    void validateAc_v20_checksComponentV11Exclusivity() {
+        PlatformCertificateInformationModel pi = sampleV20Model();
+        pi.setPlatformTraits(samplePlatformTraits());
+
+        ComponentIdentifierV11Trait v11 = ComponentIdentifierV11Trait.builder()
+                .traitValue(ComponentIdentifierV2.builder()
+                        .componentClass(new ComponentClass(TCGObjectIdentifier.tcgRegistryComponentClassTcg, new DEROctetString(new byte[] {0, 0, 0, 1})))
+                        .componentManufacturer(new DERUTF8String("man"))
+                        .componentModel(new DERUTF8String("mod"))
+                        .build())
+                .build();
+
+        TraitMap component = TraitMap.builder()
+                .trait(v11)
+                .trait(UTF8StringTrait.builder()
+                        .traitCategory(TCGObjectIdentifier.tcgTrCatComponentClass)
+                        .traitValue(new DERUTF8String("another"))
+                        .build())
+                .build();
+
+        pi.setPlatformConfiguration(PlatformConfigurationV3.builder()
+                .platformComponent(component)
+                .build());
+
+        List<String> issues = TbsFinalizer.validateAc(CertificateProfile.platformV2_0Ac(), pi);
+        Assertions.assertTrue(issues.contains("Component[0] containing ComponentIdentifierV11Trait SHALL NOT contain any other trait."));
+    }
+
+    @Test
+    void validateAc_v20_checksRequiredComponentTraits() {
+        PlatformCertificateInformationModel pi = sampleV20Model();
+        pi.setPlatformTraits(samplePlatformTraits());
+
+        TraitMap component = TraitMap.builder()
+                .trait(UTF8StringTrait.builder()
+                        .traitCategory(TCGObjectIdentifier.tcgTrCatComponentManufacturer)
+                        .traitValue(new DERUTF8String("man"))
+                        .build())
+                .build();
+
+        pi.setPlatformConfiguration(PlatformConfigurationV3.builder()
+                .platformComponent(component)
+                .build());
+
+        List<String> issues = TbsFinalizer.validateAc(CertificateProfile.platformV2_0Ac(), pi);
+        Assertions.assertTrue(issues.contains("Component[0] is missing required trait category: " + TCGObjectIdentifier.tcgTrCatComponentClass.getId()));
+        Assertions.assertTrue(issues.contains("Component[0] is missing required trait category: " + TCGObjectIdentifier.tcgTrCatComponentModel.getId()));
+    }
+
+    @Test
+    void validateAc_v20_deltaRequiresComponentStatusAndPropertyStatus() {
+        PlatformCertificateInformationModel pi = sampleV20Model();
+        pi.setPlatformTraits(samplePlatformTraits());
+        pi.setIsDelta(true);
+
+        TraitMap component = TraitMap.builder()
+                .trait(UTF8StringTrait.builder().traitCategory(TCGObjectIdentifier.tcgTrCatComponentClass).traitValue(new DERUTF8String("c")).build())
+                .trait(UTF8StringTrait.builder().traitCategory(TCGObjectIdentifier.tcgTrCatComponentManufacturer).traitValue(new DERUTF8String("m")).build())
+                .trait(UTF8StringTrait.builder().traitCategory(TCGObjectIdentifier.tcgTrCatComponentModel).traitValue(new DERUTF8String("m")).build())
+                .build(); // Missing Status
+
+        pi.setPlatformConfiguration(PlatformConfigurationV3.builder()
+                .platformComponent(component)
+                .platformProperty(PlatformPropertiesV2.builder()
+                        .propertyName(new DERUTF8String("prop"))
+                        .propertyValue(new DERUTF8String("val"))
+                        .build()) // Missing Status
+                .build());
+
+        List<String> issues = TbsFinalizer.validateAc(CertificateProfile.platformV2_0Ac(), pi);
+        Assertions.assertTrue(issues.contains("Component[0] is missing required trait category: " + TCGObjectIdentifier.tcgTrCatComponentStatus.getId()));
+        Assertions.assertTrue(issues.contains("Property[0] in Delta Platform Certificate SHALL contain the status field."));
+    }
+
+    @Test
+    void validateAc_v20_checksPlatformOwnershipTrait() {
+        PlatformCertificateInformationModel pi = sampleV20Model();
+        pi.setPlatformTraits(samplePlatformTraits());
+
+        TraitMap ownership = TraitMap.builder()
+                .trait(UTF8StringTrait.builder()
+                        .traitCategory(TCGObjectIdentifier.tcgTrCatPlatformManufacturer) // Wrong category
+                        .traitValue(new DERUTF8String("val"))
+                        .build())
+                .build();
+        pi.setPlatformOwnership(ownership);
+
+        List<String> issues = TbsFinalizer.validateAc(CertificateProfile.platformV2_0Ac(), pi);
+        Assertions.assertTrue(issues.contains("PlatformOwnership is missing required trait category: " + TCGObjectIdentifier.tcgTrCatPlatformOwnership.getId()));
+    }
+
+    private PlatformCertificateInformationModel sampleV20Model() {
+        PlatformCertificateInformationModel pi = new PlatformCertificateInformationModel();
+        pi.setIssuer(NameInfo.fromDerB64("MBExDzANBgNVBAMMBlRlc3RDQQ=="));
+        pi.setTcgCredentialSpecification(
+                TCGSpecificationVersion.builder()
+                        .majorVersion(new ASN1Integer(2))
+                        .minorVersion(new ASN1Integer(0))
+                        .revision(new ASN1Integer(43))
+                        .build());
+        pi.setCertSerialNumber(BigInteger.TEN);
+        pi.setNotBefore(new Date());
+        pi.setNotAfter(new Date(System.currentTimeMillis() + 3600000));
+        pi.setHolder(new HolderInfo(null, null));
+        pi.putExtension(TbsEncoderDerivedExtensionsTest.dummyExtension(Extension.authorityKeyIdentifier, "AKI"));
+        pi.putExtension(TbsEncoderDerivedExtensionsTest.dummyExtension(Extension.certificatePolicies, "CP"));
+        pi.putExtension(TbsEncoderDerivedExtensionsTest.dummyExtension(Extension.subjectAlternativeName, "SAN"));
+        return pi;
+    }
+
+    private TraitMap samplePlatformTraits() {
+        return TbsEncoderDerivedExtensionsTest.samplePlatformTraits();
     }
 
     @Test

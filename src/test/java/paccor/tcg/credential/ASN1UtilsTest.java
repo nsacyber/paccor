@@ -89,7 +89,7 @@ public class ASN1UtilsTest {
         Assertions.assertNotNull(result);
         Assertions.assertEquals(1, result.size());
         Assertions.assertTrue(result.containsKey(2));
-        Assertions.assertEquals(tbb.getRtmType(), result.get(2).getBaseObject());
+        Assertions.assertEquals(tbb.getRtmType().orElse(null), result.get(2).getBaseObject());
     }
 
     @Test

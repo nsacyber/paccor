@@ -9,6 +9,8 @@ public final class AttributesSchema {
     public static final String PLATFORM_CONFIG_URI = "platformConfigUri";
     public static final String PREVIOUS_PLATFORM_CERTIFICATES = "previousPlatformCertificates";
     public static final String CRYPTOGRAPHIC_ANCHORS = "cryptographicAnchors";
+    public static final String PLATFORM_OWNERSHIP = "platformOwnership";
+    public static final String MANUFACTURING_ASSERTIONS = "manufacturingAssertions";
     public static final String TCPA_SPEC_VERSION = "tCPASpecVersion";
     public static final String TPM_MANUFACTURER = "tPMManufacturer";
     public static final String TPM_MODEL = "tPMModel";
@@ -32,6 +34,10 @@ public final class AttributesSchema {
                 "List of previous platform certificates. Accepts explicit trait JSON or FILE-backed certificate entries."),
         CRYPTOGRAPHIC_ANCHORS_FIELD(AttributesSchema.CRYPTOGRAPHIC_ANCHORS,
                 "Cryptographic anchors for the platform. Accepts explicit trait JSON or FILE-backed certificate entries. FILE entries should use CertificateIdentifierTrait categories such as EK, DICE, or SPDM certificate categories."),
+        PLATFORM_OWNERSHIP_FIELD(AttributesSchema.PLATFORM_OWNERSHIP,
+                "This attribute identifies the owner or user of the platform, at the time of issuance of the Platform Certificate or Delta Platform Certificate."),
+        MANUFACTURING_ASSERTIONS_FIELD(AttributesSchema.MANUFACTURING_ASSERTIONS,
+                "This attribute provides a mechanism for platform manufacturers to make platform manufacturer-specific assertions about the manufacturing and supply chain properties of the platform."),
         TCPA_SPEC_VERSION_FIELD(AttributesSchema.TCPA_SPEC_VERSION,
                 "Legacy v1.0 TCPA specification version."),
         TPM_MANUFACTURER_FIELD(AttributesSchema.TPM_MANUFACTURER,

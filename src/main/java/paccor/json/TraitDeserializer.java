@@ -36,31 +36,14 @@ public class TraitDeserializer extends ValueDeserializer<Trait<?, ?>>  {
      *         Otherwise, the default {@code ASN1ObjectTrait.class}.
      */
     public static final Class<? extends Trait<?, ?>> resolveTraitClass(DeserializationContext context, JsonNode traitNode) {
-        Optional<String> traitIdOid = extractOid(context, traitNode, "traitId");
-        Optional<String> traitCategoryOid = extractOid(context, traitNode, "traitCategory");
-
-        // 1. Try to resolve by traitId first
-        Class<? extends Trait<?, ?>> resultById = ASN1ObjectTrait.class;
-        if (traitIdOid.isPresent()) {
-            resultById = TraitId.getTraitClassForId(traitIdOid.get());
-        }
-        if (resultById != ASN1ObjectTrait.class) {
-            return resultById;
-        }
-
-        // 2. Resolve by Alias (e.g., "status", "booleanValue", "utf8")
-        Class<? extends Trait<?, ?>> resultByAlias = resolveByAlias(traitNode);
-        if (resultByAlias != ASN1ObjectTrait.class) {
-            return resultByAlias;
-        }
-
-        // 3. Try to resolve by traitCategory
-        Class<? extends Trait<?, ?>> resultByCat = ASN1ObjectTrait.class;
-        if (traitCategoryOid.isPresent()) {
-            resultByCat = TraitId.getTraitClassForCategory(traitCategoryOid.get());
-        }
-
-        return resultByCat;
+        return extractOid(context, traitNode, "traitId")
+                .map(TraitId::getTraitClassForId)
+                .filter(clazz -> clazz != ASN1ObjectTrait.class)
+                .or(() -> Optional.of(resolveByAlias(traitNode))
+                        .filter(clazz -> clazz != ASN1ObjectTrait.class))
+                .or(() -> extractOid(context, traitNode, "traitCategory")
+                        .map(TraitId::getTraitClassForCategory))
+                .orElse(ASN1ObjectTrait.class);
     }
 
     /**
@@ -83,31 +66,24 @@ public class TraitDeserializer extends ValueDeserializer<Trait<?, ?>>  {
     }
 
     private static Class<? extends Trait<?, ?>> resolveByAlias(JsonNode traitNode) {
-        Class<? extends Trait<?, ?>> resultByAlias = ASN1ObjectTrait.class;
-        for (String alias : TraitId.getRegisteredAliases()) {
-            if (JsonUtils.has(traitNode, false, alias)) {
-                resultByAlias = TraitId.getTraitClassByAlias(alias);
-                if (resultByAlias != ASN1ObjectTrait.class) {
-                    break;
-                }
-            }
-        }
-        return resultByAlias;
+        return TraitId.getRegisteredAliases().stream()
+                .filter(alias -> JsonUtils.has(traitNode, false, alias))
+                .map(TraitId::getTraitClassByAlias)
+                .filter(clazz -> clazz != ASN1ObjectTrait.class)
+                .findFirst()
+                .orElse(ASN1ObjectTrait.class);
     }
 
     public static final JsonNode checkTraitValueAliases(JsonNode node, String defaultValueKey) {
-        if (node == null || node.isNull()) {
-            return null;
-        }
-
-        for (String alias : TraitId.getRegisteredAliases()) {
-            Optional<JsonNode> hit = JsonUtils.get(node, false, alias);
-            if (hit.isPresent() && !hit.get().isNull()) {
-                return hit.get();
-            }
-        }
-
-        return node.get(defaultValueKey);
+        return Optional.ofNullable(node)
+                .filter(n -> !n.isNull())
+                .flatMap(n -> TraitId.getRegisteredAliases().stream()
+                        .map(alias -> JsonUtils.get(n, false, alias))
+                        .flatMap(Optional::stream)
+                        .filter(hit -> !hit.isNull())
+                        .findFirst()
+                        .or(() -> Optional.ofNullable(n.get(defaultValueKey))))
+                .orElse(null);
     }
 
     public static final JsonNode checkTraitValueAliases(JsonNode node) {

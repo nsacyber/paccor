@@ -5,13 +5,11 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import lombok.AllArgsConstructor;
+import java.util.stream.Collectors;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.extern.jackson.Jacksonized;
 import paccor.json.schema.HardwareManifestSchema;
 import paccor.normalization.ComponentIdentifierV2Converter;
@@ -58,7 +56,7 @@ public record HardwareManifestJsonHelper(
     }
 
     /**
-     * Reads components from JSON file.
+     * Reads components from a JSON file.
      * @param componentsJson file to read
      * @return HardwareManifestJsonHelper with populated data
      */
@@ -138,56 +136,35 @@ public record HardwareManifestJsonHelper(
     }
 
     private static List<TraitMap> readPlatformComponents(JsonNode comps) {
-        List<TraitMap> components = new ArrayList<>();
-        for (JsonNode node : asNodeList(comps)) {
-            TraitMap tm = readTraitMap(node);
-            if (tm != null && !tm.isEmpty()) {
-                components.add(tm);
-            }
-        }
-        return components;
+        return asNodeList(comps).stream()
+                .map(HardwareManifestJsonHelper::readTraitMap)
+                .filter(tm -> tm != null && !tm.isEmpty())
+                .collect(Collectors.toList());
     }
 
     private static TraitMap readTraitMap(JsonNode node) {
-        try {
-            TraitMap tm = ObjectMapperFactory.fromJsonNode(node, TraitMap.class);
-            if (tm != null && !tm.isEmpty()) {
-                return tm;
-            }
-        } catch (Exception ignored) { }
-
-        try {
-            ComponentIdentifierV2 v2 = ObjectMapperFactory.fromJsonNode(node, ComponentIdentifierV2.class);
-            return ComponentIdentifierV2Converter.toTraitMap(v2);
-        } catch (Exception ignored) {
-            return null;
+        TraitMap tm = ObjectMapperFactory.fromJsonNodeSafe(node, TraitMap.class);
+        if (tm != null && !tm.isEmpty()) {
+            return tm;
         }
+
+        ComponentIdentifierV2 v2 = ObjectMapperFactory.fromJsonNodeSafe(node, ComponentIdentifierV2.class);
+        return v2 != null ? ComponentIdentifierV2Converter.toTraitMap(v2) : null;
     }
 
     private static List<PlatformPropertiesV2> readPlatformProperties(JsonNode props) {
-        List<PlatformPropertiesV2> out = new ArrayList<>();
-        for (JsonNode p : asNodeList(props)) {
-            try {
-                PlatformPropertiesV2 prop = ObjectMapperFactory.fromJsonNode(p, PlatformPropertiesV2.class);
-                if (prop != null) {
-                    out.add(prop);
-                }
-            } catch (Exception ignored) { }
-        }
-        return out;
+        return asNodeList(props).stream()
+                .map(p -> ObjectMapperFactory.fromJsonNodeSafe(p, PlatformPropertiesV2.class))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     private static List<JsonNode> asNodeList(JsonNode node) {
-        if (node == null || node.isNull()) {
-            return List.of();
-        }
-        if (node.isArray()) {
-            List<JsonNode> out = new ArrayList<>();
-            for (JsonNode child : node) {
-                out.add(child);
-            }
-            return out;
-        }
-        return List.of(node);
+        return Optional.ofNullable(node)
+                .filter(n -> !n.isNull())
+                .map(n -> n.isArray()
+                        ? JsonUtils.asStream(n.spliterator()).collect(Collectors.toList())
+                        : List.of(n))
+                .orElse(List.of());
     }
 }

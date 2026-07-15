@@ -20,6 +20,7 @@ import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1TaggedObject;
 import org.bouncycastle.asn1.ASN1UTF8String;
 import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.DERTaggedObject;
 
 /**
  * <pre>{@code
@@ -109,19 +110,19 @@ public class EntityGeoLocation extends ASN1Object {
         ASN1EncodableVector vec = new ASN1EncodableVector();
         vec.add(this.countryCode);
         if (this.stateOrProvince != null) {
-            vec.add(this.stateOrProvince);
+            vec.add(new DERTaggedObject(false, 0, stateOrProvince));
         }
         if (this.localityName != null) {
-            vec.add(this.localityName);
+            vec.add(new DERTaggedObject(false, 1, localityName));
         }
         if (this.streetAddress != null) {
-            vec.add(this.streetAddress);
+            vec.add(new DERTaggedObject(false, 2, streetAddress));
         }
         if (this.locationCoords != null) {
-            vec.add(this.locationCoords);
+            vec.add(new DERTaggedObject(false, 3, locationCoords));
         }
         if (this.postalCode != null) {
-            vec.add(this.postalCode);
+            vec.add(new DERTaggedObject(false, 5, postalCode));
         }
         return new DERSequence(vec);
     }

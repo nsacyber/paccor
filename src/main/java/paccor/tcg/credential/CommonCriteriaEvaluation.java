@@ -119,10 +119,10 @@ public class CommonCriteriaEvaluation extends ASN1Object {
             vec.add(new DERTaggedObject(false, 0, this.evaluationScheme));
         }
         if (this.cCCertificateIssuanceDate != null) {
-            vec.add(new DERTaggedObject(false, 0, this.cCCertificateIssuanceDate));
+            vec.add(new DERTaggedObject(false, 1, this.cCCertificateIssuanceDate));
         }
         if (this.cCCertificateExpiryDate != null) {
-            vec.add(new DERTaggedObject(false, 0, this.cCCertificateExpiryDate));
+            vec.add(new DERTaggedObject(false, 2, this.cCCertificateExpiryDate));
         }
         return new DERSequence(vec);
     }

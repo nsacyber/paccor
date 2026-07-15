@@ -4,9 +4,8 @@ import java.io.IOException;
 import java.util.Optional;
 import paccor.json.schema.ComponentSchema;
 import paccor.json.schema.JsonSchemaValue;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.DERUTF8String;
 import paccor.normalization.HexNormalizer;
+import paccor.tcg.credential.ASN1Utils;
 import paccor.tcg.credential.ComponentAddress;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonParser;
@@ -40,34 +39,23 @@ public class ComponentAddressDeserializer extends ValueDeserializer<ComponentAdd
     }
 
     private ComponentAddress handleTwoElements(JsonNode node, boolean caseSens) {
-        ComponentAddress.ComponentAddressBuilder address = ComponentAddress.builder();
-        if (JsonUtils.has(node, caseSens,
-                ComponentSchema.AddressField.ADDRESS_TYPE_FIELD,
-                ComponentSchema.AddressField.ADDRESS_VALUE_FIELD)) {
-            Optional<JsonNode> typeOpt = JsonUtils.get(node, caseSens, ComponentSchema.AddressField.ADDRESS_TYPE_FIELD);
-            Optional<JsonNode> valueOpt = JsonUtils.get(node, caseSens, ComponentSchema.AddressField.ADDRESS_VALUE_FIELD);
-
-            typeOpt.ifPresent(typeNode ->
-                    valueOpt.ifPresent(valueNode -> {
-                        ComponentSchema.AddressTypeValue typeValue =
-                                JsonSchemaValue.lookup(typeNode.asString(), ComponentSchema.AddressTypeValue.class);
-                        address.addressType(typeValue.oid());
-                        address.addressValue(new DERUTF8String(HexNormalizer.normalizeMac(valueNode.asString())));
-                    }));
-        }
-        return address.build();
+        return JsonUtils.get(node, caseSens, ComponentSchema.AddressField.ADDRESS_TYPE_FIELD)
+                .flatMap(typeNode -> JsonUtils.get(node, caseSens, ComponentSchema.AddressField.ADDRESS_VALUE_FIELD)
+                        .map(valueNode -> ComponentAddress.builder()
+                                .addressType(JsonSchemaValue.lookup(typeNode.asString(), ComponentSchema.AddressTypeValue.class).oid())
+                                .addressValue(ASN1Utils.getUTF8String(HexNormalizer.normalizeMac(valueNode.asString())))
+                                .build()))
+                .orElseGet(() -> ComponentAddress.builder().build());
     }
 
     private ComponentAddress handleOneElement(JsonNode node, boolean caseSens) {
-        ComponentAddress.ComponentAddressBuilder address = ComponentAddress.builder();
-        final String type = node.propertyNames().iterator().next();
-        final String value = node.get(type).asString();
+        String type = node.propertyNames().iterator().next();
+        String value = node.get(type).asString();
 
         ComponentSchema.AddressTypeValue typeValue = JsonSchemaValue.lookup(type, ComponentSchema.AddressTypeValue.class);
-        address.addressType(new ASN1ObjectIdentifier(typeValue.getValue()));
-
-        final String filtered = HexNormalizer.normalizeMac(value);
-        address.addressValue(new DERUTF8String(filtered));
-        return address.build();
+        return ComponentAddress.builder()
+                .addressType(ASN1Utils.getOID(typeValue.getValue()))
+                .addressValue(ASN1Utils.getUTF8String(HexNormalizer.normalizeMac(value)))
+                .build();
     }
 }

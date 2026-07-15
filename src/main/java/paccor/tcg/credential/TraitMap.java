@@ -9,12 +9,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import paccor.json.ObjectMapperFactory;
 import paccor.json.TraitMapDeserializer;
 import lombok.AllArgsConstructor;
@@ -24,7 +26,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.ToString;
-import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.ASN1Sequence;
@@ -35,7 +36,7 @@ import tools.jackson.databind.annotation.JsonDeserialize;
 
 /**
  * <pre>{@code
- * &lt;?&gt; ::= SEQUENCE(SIZE(1..MAX)) OF Trait
+ * <?> ::= SEQUENCE(SIZE(1..MAX)) OF Trait
  * }</pre>
  */
 @AllArgsConstructor
@@ -55,12 +56,6 @@ public class TraitMap extends ASN1Object implements Map<Class<? extends Trait<?,
     @Size(min = 1)
     private final Map<Class<? extends Trait<?, ?>>, List<Trait<?, ?>>> traits;
 
-    /**
-     * Attempts to cast the provided object to TraitMap.
-     * If the object is an ASN1Sequence, the object is parsed by fromASN1Sequence.
-     * @param obj the object to parse
-     * @return TraitMap
-     */
     public static TraitMap getInstance(Object obj) {
         if (obj == null || obj instanceof TraitMap) {
             return (TraitMap) obj;
@@ -71,11 +66,6 @@ public class TraitMap extends ASN1Object implements Map<Class<? extends Trait<?,
         throw new IllegalArgumentException("Illegal argument in getInstance: " + obj.getClass().getName());
     }
 
-    /**
-     * Attempts to parse the given ASN1Sequence.
-     * @param seq An ASN1Sequence
-     * @return TraitMap
-     */
     public static final TraitMap fromASN1Sequence(@NonNull ASN1Sequence seq) {
         if (seq.size() < TraitMap.MIN_SEQUENCE_SIZE) {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
@@ -86,7 +76,7 @@ public class TraitMap extends ASN1Object implements Map<Class<? extends Trait<?,
         return builder.build();
     }
 
-    public static TraitMap fromTraits(List<? extends Trait<?, ?>> traits) {
+    public static final TraitMap fromTraits(List<? extends Trait<?, ?>> traits) {
         TraitMapBuilder builder = TraitMap.builder();
         if (traits != null) {
             traits.forEach(builder::trait);
@@ -94,35 +84,67 @@ public class TraitMap extends ASN1Object implements Map<Class<? extends Trait<?,
         return builder.build();
     }
 
-    /**
-     * Flatten the trait map into a single list.
-     * @return List of Traits
-     */
+    public static final void validateTraitMap(
+            TraitMap traits,
+            String context,
+            Set<Class<? extends Trait<?, ?>>> allowedTypes,
+            Set<ASN1ObjectIdentifier> requiredCategories,
+            List<String> issues) {
+        if (traits == null || traits.isEmpty()) return;
+
+        Optional.ofNullable(allowedTypes).ifPresent(allowed ->
+                traits.keySet().stream()
+                        .filter(type -> !allowed.contains(type))
+                        .forEach(type -> issues.add(context + " contains unsupported trait type: " + type.getSimpleName()))
+        );
+
+        Optional.ofNullable(requiredCategories).ifPresent(required -> {
+            Set<ASN1ObjectIdentifier> presentCategories = traits.flattenTraits().stream()
+                    .map(Trait::getTraitCategory)
+                    .collect(Collectors.toSet());
+            required.stream()
+                    .filter(req -> !presentCategories.contains(req))
+                    .forEach(req -> issues.add(context + " is missing required trait category: " + req.getId()));
+        });
+    }
+
     public final List<Trait<?, ?>> flattenTraits() {
-        if (getTraits() == null) return List.of();
-        return getTraits().values().stream().filter(Objects::nonNull).flatMap(Collection::stream).toList();
+        if (traits == null) return List.of();
+        return traits.values().stream().filter(Objects::nonNull).flatMap(Collection::stream).toList();
+    }
+
+    public final <TraitValueType extends ASN1Object, TraitType extends Trait<TraitValueType, TraitType>> Optional<TraitValueType> firstTraitValue(Class<TraitType> traitType) {
+        return Optional.ofNullable(traits)
+                .map(m -> m.get(traitType))
+                .flatMap(list -> list.stream().findFirst())
+                .map(traitType::cast)
+                .map(TraitType::getTraitValue);
+    }
+
+    public final <T extends Trait<?, ?>> Optional<T> firstTrait(Class<T> traitType) {
+        return Optional.ofNullable(traits)
+                .map(m -> m.get(traitType))
+                .flatMap(list -> list.stream().findFirst())
+                .map(traitType::cast);
     }
 
     public final <TraitValueType extends ASN1Object, TraitType extends Trait<TraitValueType, TraitType>> TraitValueType firstValueOfType(Class<TraitType> traitType) {
-        return Optional.ofNullable(traits)
-                .map(list -> traits.get(traitType))
-                .flatMap(list -> list.stream().findFirst())
-                .map(traitType::cast)
-                .map(TraitType::getTraitValue)
-                .orElse(null);
+        return firstTraitValue(traitType).orElse(null);
     }
 
-    /**
-     * Flatten the trait map into a single list of the specified type.
-     * @param traitType The type of Trait to focus on
-     * @return List of Traits of the specified type
-     * @param <TraitType> The type of Trait to focus on
-     */
     public final <TraitValueType extends ASN1Object, TraitType extends Trait<TraitValueType, TraitType>> List<TraitType> get(Class<TraitType> traitType) {
-        return flattenTraits().stream()
-                .filter(traitType::isInstance)
-                .map(traitType::cast)
-                .toList();
+        return Optional.ofNullable(traits)
+                .map(m -> m.get(traitType))
+                .map(list -> list.stream().map(traitType::cast).toList())
+                .orElseGet(List::of);
+    }
+
+    public final TraitMap filter(Set<Class<? extends Trait<?, ?>>> allowedTypes) {
+        TraitMapBuilder builder = TraitMap.builder();
+        flattenTraits().stream()
+                .filter(t -> allowedTypes.contains(t.getClass()))
+                .forEach(builder::trait);
+        return builder.build();
     }
 
     @Override
@@ -185,16 +207,19 @@ public class TraitMap extends ASN1Object implements Map<Class<? extends Trait<?,
         if (traits == null) {
             throw new UnsupportedOperationException("Internal traits map is immutable");
         }
-        for (Entry<? extends Class<? extends Trait<?, ?>>, ? extends List<Trait<?, ?>>> entry : map.entrySet()) {
-            put(entry.getKey(), entry.getValue());
+        map.forEach(this::put);
+    }
+
+    public void setSingleTrait(@NonNull Trait<?, ?> trait) {
+        if (traits == null) {
+            throw new UnsupportedOperationException("Internal traits map is immutable");
         }
+        traits.put(trait.getTraitType(), new ArrayList<>(List.of(trait)));
     }
 
     @Override
     public void clear() {
-        if (traits != null) {
-            traits.clear();
-        }
+        Optional.ofNullable(traits).ifPresent(Map::clear);
     }
 
     @NonNull
@@ -215,42 +240,18 @@ public class TraitMap extends ASN1Object implements Map<Class<? extends Trait<?,
         return traits != null ? traits.entrySet() : Collections.emptySet();
     }
 
-    /**
-     * @return This object as an ASN1Sequence
-     */
     public ASN1Primitive toASN1Primitive() {
-        ASN1EncodableVector vec = new ASN1EncodableVector();
-        if (traits != null) {
-            vec = ASN1Utils.toASN1EncodableVector(
-                    traits.values().stream()
-                            .filter(Objects::nonNull)
-                            .flatMap(Collection::stream)
-                            .toList());
-        }
-        return new DERSequence(vec);
+        return new DERSequence(ASN1Utils.toASN1EncodableVector(flattenTraits()));
     }
 
-    /**
-     * The rest of this builder is generated by lombok Builder annotation
-     */
     public static class TraitMapBuilder {
+        private Map<Class<? extends Trait<?, ?>>, List<Trait<?, ?>>> traits = new LinkedHashMap<>();
+
         public TraitMapBuilder trait(Trait<?, ?> traitObj) {
-            if (traits == null) {
-                traits = new HashMap<>();
-            }
-            if (!traits.containsKey(traitObj.getTraitType())) {
-                traits.put(traitObj.getTraitType(), new ArrayList<>());
-            }
-            List<Trait<?, ?>> list = traits.get(traitObj.getTraitType());
-            list.add(traitObj);
-            traits.put(traitObj.getTraitType(), list);
+            traits.computeIfAbsent(traitObj.getTraitType(), _ -> new ArrayList<>()).add(traitObj);
             return this;
         }
 
-        /**
-         * Attempts to recover Traits from the ASN1Sequence and then read their TraitID and process them into appropriate types.
-         * @param seq ASN1Sequence
-         */
         public final void traitsFromSequence(@NonNull ASN1Sequence seq) {
             Arrays.stream(seq.toArray())
                     .map(obj -> (ASN1Object)obj)
@@ -266,10 +267,6 @@ public class TraitMap extends ASN1Object implements Map<Class<? extends Trait<?,
                     });
         }
 
-        /**
-         * Read traits from the JsonNode into the TraitMap.
-         * @param refNode JsonNode
-         */
         public final void traitsFromJson(@NonNull JsonNode refNode) {
             ObjectMapperFactory.fromJsonNode(refNode, TraitMap.class).flattenTraits()
                     .forEach(this::trait);

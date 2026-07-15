@@ -19,24 +19,13 @@ import tools.jackson.databind.ValueDeserializer;
 public class IssuerSerialDeserializer extends ValueDeserializer<IssuerSerial> {
     @Override
     public IssuerSerial deserialize(JsonParser p, DeserializationContext context) throws JacksonException {
-        JsonNode node = context.readTree(p);
-
-        Optional<JsonNode> issuerOpt = JsonUtils.get(node, false, ComponentSchema.IssuerSerialField.ISSUER_FIELD);
-        Optional<JsonNode> serialOpt = JsonUtils.get(node, false, ComponentSchema.IssuerSerialField.SERIAL_FIELD);
-
-        final String issuer = issuerOpt
-                .map(JsonNode::asString)
-                .map(String::trim)
-                .orElse("");
-        final String genericCertSerial = serialOpt
-                .map(JsonNode::asString)
-                .map(String::trim)
-                .orElse("");
-
-        if (!issuer.isEmpty() && !genericCertSerial.isEmpty()) {
-            return new IssuerSerial(new X500Name(issuer), new BigInteger(genericCertSerial));
-        }
-        // Handle other cases or throw an exception if the format is unexpected
-        throw JacksonIOException.construct(new IOException("Unexpected JSON format for IssuerSerial"));
+        return Optional.ofNullable(context.readTree(p))
+                .filter(node -> !node.isNull())
+                .flatMap(node -> JsonUtils.get(node, false, ComponentSchema.IssuerSerialField.ISSUER_FIELD)
+                        .flatMap(JsonUtils::trimmedValueAsText)
+                        .flatMap(issuer -> JsonUtils.get(node, false, ComponentSchema.IssuerSerialField.SERIAL_FIELD)
+                                .flatMap(JsonUtils::trimmedValueAsText)
+                                .map(serial -> new IssuerSerial(new X500Name(issuer), new BigInteger(serial)))))
+                .orElseThrow(() -> JacksonIOException.construct(new IOException("Unexpected JSON format for IssuerSerial")));
     }
 }

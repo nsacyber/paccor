@@ -10,8 +10,8 @@ import paccor.json.AttributesJsonHelper;
 import paccor.json.HardwareManifestJsonHelper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import paccor.model.CertificateReference;
-import paccor.model.PlatformCertificateInformationModel;
+import paccor.json.TraitMapDeserializerTest;
+import paccor.tcg.credential.TCGObjectIdentifier;
 
 public class PlatformCertificateInformationModelTest {
     private static final String COMP_JSON_WITH_TRAITS = "src/test/resources/tutorials/v2/componentswithtraits.json";
@@ -65,6 +65,36 @@ public class PlatformCertificateInformationModelTest {
         CertificateReference previous = pi.getPreviousPlatformCertificateObjects().getFirst();
         Assertions.assertNotNull(previous.certKind());
         Assertions.assertNotNull(previous.certSpecVersion());
+    }
+
+    @Test
+    public void applyAttributesCarriesOwnershipAndMfgAssertions() throws JsonException {
+        String platformOwnerUtf8 = """
+                {
+                    "traitCategory": "%s",
+                    "utf8": "I got 8 problems but a Trait is all of them."
+                }
+                """.formatted(TCGObjectIdentifier.tcgTrCatPlatformOwnership.getId());
+        String json = """
+                {
+                    "platformOwnership": [
+                        %s,%s,%s
+                    ],
+                    "manufacturingAssertions": [
+                        %s,%s
+                    ]
+                }
+                """.formatted(TraitMapDeserializerTest.boolJson_1, TraitMapDeserializerTest.certificateIdentifierJson_1, platformOwnerUtf8,
+                TraitMapDeserializerTest.entGeoLocationJson_1, TraitMapDeserializerTest.countryOfOriginJson_1);
+
+        AttributesJsonHelper attributes = AttributesJsonHelper.read(json);
+        PlatformCertificateInformationModel pi = new PlatformCertificateInformationModel();
+        pi.applyAttributes(attributes);
+
+        Assertions.assertNotNull(pi.getPlatformOwnership());
+        Assertions.assertNotNull(pi.getManufacturingAssertions());
+        Assertions.assertEquals(3, sizeOf(pi.getPlatformOwnership().flattenTraits()));
+        Assertions.assertEquals(2, sizeOf(pi.getManufacturingAssertions().flattenTraits()));
     }
 
     @Test

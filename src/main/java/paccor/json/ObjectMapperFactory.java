@@ -31,6 +31,14 @@ public final class ObjectMapperFactory {
         return get().convertValue(node, type);
     }
 
+    public static final <T> T fromJsonNodeSafe(JsonNode node, Class<T> type) {
+        try {
+            return fromJsonNode(node, type);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
     public static final <T> T fromJson(String json, Class<T> type) throws JsonException {
         return withOrWithoutModule(om -> {
             try {

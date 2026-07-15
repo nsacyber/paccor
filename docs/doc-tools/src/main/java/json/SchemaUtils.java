@@ -516,7 +516,7 @@ public class SchemaUtils {
                 "Generic DER-encoded octet string given meaning by context information. paccor attempts to resolve the data to a specific type using trait metadata."));
 
         for (String alias : TRAIT_VALUE_ALIASES) {
-            properties.set(alias, createRefWithDescription(context, TraitId.getTraitClassByAlias(alias), "Click the reference to see JSON format. It should be similar to the spec."));
+            properties.set(alias, createRefWithDescription(context, TraitId.getTraitClassByAlias(alias), "JSON format follows the referenced schema. It should be similar to the spec."));
         }
 
         ArrayNode required = schema.putArray(getTag(context, SchemaKeyword.TAG_REQUIRED));
