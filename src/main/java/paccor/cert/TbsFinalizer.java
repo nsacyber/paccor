@@ -17,6 +17,11 @@ import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
 import org.bouncycastle.asn1.x509.KeyPurposeId;
 import org.bouncycastle.util.encoders.Base64;
+import paccor.tcg.credential.TBBSecurityAssertions;
+import paccor.tcg.credential.Trait;
+import paccor.tcg.credential.TraitMap;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Builder
 public record TbsFinalizer(String tbsB64, String shaHex) {
@@ -24,6 +29,7 @@ public record TbsFinalizer(String tbsB64, String shaHex) {
         List<String> issues = checkCommonFields(pi);
         issues.addAll(checkSpecification(profile, pi));
         issues.addAll(checkAcFields(pi));
+        validateTbbSecurityAssertions(profile.specVersion(), pi, issues);
         mustHaveExtension(pi.getExtensions(), Extension.authorityKeyIdentifier, "Authority Key Identifier", issues);
         mustHaveExtension(pi.getExtensions(), Extension.certificatePolicies, "Certificate Policies", issues);
         mustHaveExtension(pi.getExtensions(), Extension.subjectAlternativeName, "Subject Alternative Name", issues);
@@ -34,6 +40,7 @@ public record TbsFinalizer(String tbsB64, String shaHex) {
         List<String> issues = checkCommonFields(pi);
         issues.addAll(checkSpecification(profile, pi));
         issues.addAll(checkPkcFields(pi));
+        validateTbbSecurityAssertions(profile.specVersion(), pi, issues);
         mustHaveExtension(pi.getExtensions(), Extension.authorityKeyIdentifier, "Authority Key Identifier", issues);
         mustHaveExtension(pi.getExtensions(), Extension.certificatePolicies, "Certificate Policies", issues);
         mustHaveExtension(pi.getExtensions(), Extension.subjectAlternativeName, "Subject Alternative Name", issues);
@@ -180,6 +187,46 @@ public record TbsFinalizer(String tbsB64, String shaHex) {
             return CertTypeResolver.toOid(CertKind.PKC, CertType.BASE);
         }
         return Extension.extendedKeyUsage;
+    }
+
+    private static void validateTbbSecurityAssertions(
+            CertSpecVersion specVersion,
+            PlatformCertificateInformationModel pi,
+            List<String> issues) {
+        TBBSecurityAssertions assertions = pi.getTbbSecurityAssertions();
+        if (assertions == null) return;
+        if (specVersion == CertSpecVersion.V2_0) {
+            TraitMap traits = assertions.getTraits();
+            validateTraitMap(traits, "TBBSecurityAssertions", TBBSecurityAssertions.ALLOWED_TRAIT_TYPES, null, issues);
+        }
+    }
+
+    private static void validateTraitMap(
+            TraitMap traits,
+            String context,
+            Set<Class<? extends Trait<?, ?>>> allowedTypes,
+            Set<ASN1ObjectIdentifier> requiredCategories,
+            List<String> issues) {
+        if (traits == null || traits.isEmpty()) return;
+
+        if (allowedTypes != null) {
+            for (Class<? extends Trait<?, ?>> type : traits.keySet()) {
+                if (!allowedTypes.contains(type)) {
+                    issues.add(context + " contains unsupported trait type: " + type.getSimpleName());
+                }
+            }
+        }
+
+        if (requiredCategories != null) {
+            Set<ASN1ObjectIdentifier> presentCategories = traits.flattenTraits().stream()
+                    .map(Trait::getTraitCategory)
+                    .collect(Collectors.toSet());
+            for (ASN1ObjectIdentifier required : requiredCategories) {
+                if (!presentCategories.contains(required)) {
+                    issues.add(context + " is missing required trait category: " + required.getId());
+                }
+            }
+        }
     }
 
     /**

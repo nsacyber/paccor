@@ -91,8 +91,24 @@ public class JsonUtils {
      *         Otherwise, an empty {@code Optional}
      */
     public static final Optional<String> trimmedIfText(JsonNode node) {
-        return Optional.of(node)
+        return Optional.ofNullable(node)
                 .filter(JsonNode::isString)
+                .map(JsonNode::asString)
+                .filter(s -> !s.isBlank())
+                .map(String::trim);
+    }
+
+    /**
+     * Processes a given {@code JsonNode} to return an {@code Optional<String>} that contains
+     * the trimmed text value if the node is a value node (string, number, boolean, etc.) and non-blank.
+     *
+     * @param node the {@code JsonNode} to process
+     * @return If the node is a value node and non-blank, an {@code Optional<String>} containing the trimmed text value;
+     *         Otherwise, an empty {@code Optional}
+     */
+    public static final Optional<String> trimmedValueAsText(JsonNode node) {
+        return Optional.ofNullable(node)
+                .filter(n -> !n.isNull() && n.isValueNode())
                 .map(JsonNode::asString)
                 .filter(s -> !s.isBlank())
                 .map(String::trim);

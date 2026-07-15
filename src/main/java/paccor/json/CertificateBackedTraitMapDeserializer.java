@@ -6,6 +6,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import paccor.model.CertificateReference;
 import paccor.tcg.credential.Trait;
 import paccor.tcg.credential.TraitMap;
@@ -35,32 +37,36 @@ abstract class CertificateBackedTraitMapDeserializer extends ValueDeserializer<T
                 continue;
             }
 
-            JsonNode fileNode = JsonUtils.get(node, false, "file").orElse(null);
-            if (fileNode != null && fileNode.isString() && !fileNode.asString().isBlank()) {
-                addFileBackedTrait(builder, referenceObjects, fileNode.asString().trim(), node);
-                continue;
-            }
+            Optional<String> filePath = JsonUtils.get(node, false, "file")
+                    .flatMap(JsonUtils::onlyNotBlankString)
+                    .map(JsonNode::asString)
+                    .map(String::trim);
 
-            Class<? extends Trait<?, ?>> traitClass = TraitDeserializer.resolveTraitClass(context, node);
-            Trait<?, ?> trait = Trait.getInstance(node, traitClass);
-            if (trait != null) {
-                builder.trait(trait);
+            if (filePath.isPresent()) {
+                addFileBackedTrait(builder, referenceObjects, filePath.get(), node);
+            } else {
+                Class<? extends Trait<?, ?>> traitClass = TraitDeserializer.resolveTraitClass(context, node);
+                Optional.ofNullable(Trait.getInstance(node, traitClass))
+                        .ifPresent(builder::trait);
             }
         }
 
         return buildResolvedCollection(builder, referenceObjects);
     }
 
-    private static List<JsonNode> elements(JsonNode root) {
-        JsonNode traitsNode = root;
-        if (root.isObject()) {
-            traitsNode = JsonUtils.get(root, false, "traits").orElse(root);
-        }
+    @Override
+    public TraitMap getNullValue(DeserializationContext ctxt) {
+        return buildResolvedCollection(TraitMap.builder(), new ArrayList<>());
+    }
 
-        if (traitsNode != null && traitsNode.isArray()) {
-            return JsonUtils.asStream(traitsNode.spliterator()).toList();
-        }
-        return List.of(traitsNode);
+    private static List<JsonNode> elements(JsonNode root) {
+        JsonNode traitsNode = root.isObject()
+                ? JsonUtils.get(root, false, "traits").orElse(root)
+                : root;
+
+        return traitsNode.isArray()
+                ? JsonUtils.asStream(traitsNode.spliterator()).collect(Collectors.toList())
+                : List.of(traitsNode);
     }
 
     private void addFileBackedTrait(

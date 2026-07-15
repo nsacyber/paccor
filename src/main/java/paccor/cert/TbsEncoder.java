@@ -228,7 +228,11 @@ public class TbsEncoder {
             addAttribute(attributes, TCGObjectIdentifier.tcgAtTcgCredentialType, new TCGCredentialType(credentialType));
         }
         if (!CertTypeResolver.isDeltaOid(credentialType)) {
-            addAttribute(attributes, TCGObjectIdentifier.tcgAtTbbSecurityAssertions, platformInfo.getTbbSecurityAssertions());
+            if (profile.specVersion() == CertSpecVersion.V2_0 && platformInfo.getTbbSecurityAssertions() != null) {
+                addAttribute(attributes, TCGObjectIdentifier.tcgAtTbbSecurityAssertionsV3, platformInfo.getTbbSecurityAssertions().toTraitMap());
+            } else {
+                addAttribute(attributes, TCGObjectIdentifier.tcgAtTbbSecurityAssertions, platformInfo.getTbbSecurityAssertions());
+            }
             addAttribute(attributes, TCGObjectIdentifier.tcgAtTcgPlatformSpecification, platformInfo.getTcgPlatformSpecification());
         }
         addAttribute(attributes, TCGObjectIdentifier.tcgAtTcgCredentialSpecification, platformInfo.getTcgCredentialSpecification());

@@ -23,6 +23,7 @@ import paccor.tcg.credential.ComponentAddress;
 import paccor.tcg.credential.TCGCredentialType;
 import paccor.tcg.credential.TCGPlatformSpecification;
 import paccor.tcg.credential.Trait;
+import paccor.tcg.credential.TraitCollection;
 import paccor.tcg.credential.TraitMap;
 import tools.jackson.databind.module.SimpleModule;
 
@@ -54,6 +55,7 @@ public class JacksonAsn1Module extends SimpleModule {
 
         addDeserializer(ComponentAddress.class, new ComponentAddressDeserializer());
         addDeserializer(Trait.class, new TraitDeserializer());
+        addDeserializer(TraitCollection.class, new TraitCollectionDeserializer());
         addDeserializer(TraitMap.class, new TraitMapDeserializer());
     }
 }

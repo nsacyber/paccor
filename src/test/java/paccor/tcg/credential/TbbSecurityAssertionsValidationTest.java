@@ -1,16 +1,17 @@
-package paccor.cert;
+package paccor.tcg.credential;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import paccor.cert.CertificateProfile;
+import paccor.cert.TbsFinalizer;
 import paccor.model.PlatformCertificateInformationModel;
-import paccor.tcg.credential.*;
 import java.util.List;
 import org.bouncycastle.asn1.ASN1Boolean;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 public class TbbSecurityAssertionsValidationTest {
 
     @Test
-    void validateTbbSecurityAssertions_v20_flagsUnsupportedTraits() {
+    void testFlagsUnsupportedTraits_V2_0() {
         PlatformCertificateInformationModel pi = new PlatformCertificateInformationModel();
         
         // Add an unsupported trait to TBB Security Assertions (BooleanTrait is not allowed)
@@ -36,7 +37,7 @@ public class TbbSecurityAssertionsValidationTest {
     }
 
     @Test
-    void validateTbbSecurityAssertions_v20_acceptsAllowedTraits() {
+    void testAcceptsAllowedTraits_V2_0() {
         PlatformCertificateInformationModel pi = new PlatformCertificateInformationModel();
         
         TraitMap traits = TraitMap.builder()
@@ -58,7 +59,7 @@ public class TbbSecurityAssertionsValidationTest {
     }
     
     @Test
-    void validateTbbSecurityAssertions_v10_doesNotFlagTraits() {
+    void testDoesNotFlagTraits_V1_1() {
         PlatformCertificateInformationModel pi = new PlatformCertificateInformationModel();
         
         // V1.0 doesn't use TraitMap for TBBSecurityAssertions in our validation logic (it uses the legacy structure)
@@ -78,14 +79,35 @@ public class TbbSecurityAssertionsValidationTest {
     @Test
     void testToTraitMapConversion() {
         TBBSecurityAssertions v1 = TBBSecurityAssertions.builder()
+                .ccInfo(CommonCriteriaTraitTest.CC_1_MEASURES)
                 .fipsLevel(FIPSLevel.builder()
                         .version(new org.bouncycastle.asn1.DERIA5String("140-2"))
                         .level(new SecurityLevel(1))
                         .build())
+                .iso9000Uri(ISO9000TraitTest.ISO9000_1.getIso9000Uri())
                 .build();
 
         TraitMap traits = v1.toTraitMap();
         Assertions.assertTrue(traits.containsKey(FIPSLevelTrait.class));
         Assertions.assertEquals(1, traits.get(FIPSLevelTrait.class).size());
+        
+        // Check that filtered trait map works
+        Assertions.assertNotNull(v1.getFipsLevel().orElse(null));
+    }
+
+    @Test
+    void testV20FormatHasNullVersion() throws Exception {
+        TraitMap traits = TraitMap.builder()
+                .trait(RTMTrait.builder().traitValue(new RTMTypes(1)).build())
+                .build();
+        
+        // Encode and decode to ensure we have pure ASN.1 primitives for the heuristic
+        org.bouncycastle.asn1.ASN1Primitive encoded = org.bouncycastle.asn1.ASN1Primitive.fromByteArray(traits.getEncoded());
+        
+        // Parse back as TBBSecurityAssertions
+        TBBSecurityAssertions parsed = TBBSecurityAssertions.getInstance(encoded);
+        
+        Assertions.assertTrue(parsed.getVersion().isEmpty(), "Version should be empty for V2.0 format, but was: " + parsed.getVersion());
+        Assertions.assertTrue(parsed.getTraits().containsKey(RTMTrait.class));
     }
 }

@@ -65,7 +65,8 @@ public class RTMTrait extends Trait<RTMTypes, RTMTrait> {
         return new RTMTraitBuilderImpl()
                 .traitType(RTMTrait.class)
                 .traitId(TCGObjectIdentifier.tcgTrIdRtm)
-                .traitCategory(TCGObjectIdentifier.tcgTrCatRtm);
+                .traitCategory(TCGObjectIdentifier.tcgTrCatRtm)
+                .traitRegistry(TCGObjectIdentifier.tcgTrRegNone);
     }
 
     /**

@@ -5,12 +5,18 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 import lombok.NonNull;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DERSequence;
 
 @JsonClassDescription("Ordered flat collection of Trait entries.")
-public final class TraitCollection implements Iterable<Trait<?, ?>> {
+public final class TraitCollection extends ASN1Object implements Iterable<Trait<?, ?>> {
     private final List<Trait<?, ?>> traits;
 
     public TraitCollection(List<? extends Trait<?, ?>> traits) {
@@ -47,6 +53,18 @@ public final class TraitCollection implements Iterable<Trait<?, ?>> {
 
     public Stream<Trait<?, ?>> stream() {
         return traits.stream();
+    }
+
+    public <T extends Trait<?, ?>> Optional<T> firstTrait(Class<T> traitType) {
+        return traits.stream()
+                .filter(traitType::isInstance)
+                .map(traitType::cast)
+                .findFirst();
+    }
+
+    public <TraitValueType extends ASN1Object, TraitType extends Trait<TraitValueType, TraitType>> Optional<TraitValueType> firstTraitValue(Class<TraitType> traitType) {
+        return firstTrait(traitType)
+                .map(TraitType::getTraitValue);
     }
 
     public <T extends Trait<?, ?>> List<T> traits(Class<T> traitType) {
@@ -95,8 +113,44 @@ public final class TraitCollection implements Iterable<Trait<?, ?>> {
         });
     }
 
+    public TraitCollection filter(Set<Class<? extends Trait<?, ?>>> allowedTypes) {
+        return new TraitCollection(traits.stream()
+                .filter(t -> allowedTypes.contains(t.getClass()))
+                .toList());
+    }
+
     public TraitMap toTraitMap() {
         return TraitMap.fromTraits(traits);
+    }
+
+    @Override
+    public ASN1Primitive toASN1Primitive() {
+        return new DERSequence(ASN1Utils.toASN1EncodableVector(traits));
+    }
+
+    public static TraitCollection fromASN1Sequence(ASN1Sequence seq) {
+        if (seq == null) return empty();
+        List<Trait<?, ?>> list = new ArrayList<>();
+        for (int i = 0; i < seq.size(); i++) {
+            ASN1Sequence traitSeq = ASN1Utils.getSequence(seq.getObjectAt(i));
+            ASN1ObjectIdentifier traitId = ASN1Utils.getOID(traitSeq.getObjectAt(0));
+            Class<? extends Trait<?, ?>> traitClass = TraitId.getTraitClassForId(traitId);
+            list.add(Trait.getInstance(traitSeq, (Class) traitClass));
+        }
+        return new TraitCollection(list);
+    }
+
+    public static TraitCollection getInstance(Object obj) {
+        if (obj == null || obj instanceof TraitCollection) {
+            return (TraitCollection) obj;
+        }
+        if (obj instanceof ASN1Sequence) {
+            return fromASN1Sequence((ASN1Sequence) obj);
+        }
+        if (obj instanceof TraitMap map) {
+            return from(map);
+        }
+        throw new IllegalArgumentException("Unknown object type: " + obj.getClass().getName());
     }
 
     @NonNull
