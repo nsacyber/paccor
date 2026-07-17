@@ -1,7 +1,6 @@
 package paccor.cert;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.math.BigInteger;
@@ -218,7 +217,7 @@ public class TbsEncoder {
                         ExtensionContext.subjectDirectoryAttributes.getOid(),
                         ExtensionContext.subjectDirectoryAttributes.isCritical(),
                         attributes));
-            } catch (IOException ignored) {}
+            } catch (Exception ignored) {}
         }
     }
 
