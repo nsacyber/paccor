@@ -14,6 +14,7 @@ Before you start:
 - Choose a device that possesses a TPM and that you can run commands with elevated privileges.
 - Pick an [Installation](setup/install.md) method for that device.
 - Open a terminal and ensure you can run with elevated privileges.
+- You may be interested to review the [CLI command options](reference/cli-commands.md).
 
 **NOTE:**
 

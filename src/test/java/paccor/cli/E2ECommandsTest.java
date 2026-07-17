@@ -1,5 +1,6 @@
 package paccor.cli;
 
+import java.util.Arrays;
 import org.bouncycastle.asn1.x509.CRLDistPoint;
 import org.bouncycastle.asn1.x509.DistributionPoint;
 import org.bouncycastle.asn1.x509.DistributionPointName;
@@ -770,6 +771,24 @@ public class E2ECommandsTest extends TestSupport {
                 "--components-json", RES_GEN1_COMP_JSON_V3
         );
         Assertions.assertEquals(0, rcValidateOk, "validate should pass components check for V3");
+
+        PlatformCertificate certificate = PlatformCertificate.load(cer.toFile());
+        Assertions.assertNotNull(certificate);
+        Assertions.assertTrue(certificate.isPublicKeyCertificate());
+        Extension sdaExt = certificate.getExtension(Extension.subjectDirectoryAttributes);
+        Assertions.assertNotNull(sdaExt);
+        SubjectDirectoryAttributes sda = SubjectDirectoryAttributes.getInstance(sdaExt.getParsedValue());
+        Assertions.assertNotNull(sda);
+        Object[] array = sda.getAttributes().toArray();
+        long size = array.length;
+        long distinct = Arrays.stream(array)
+                .filter(Attribute.class::isInstance)
+                .map(Attribute.class::cast)
+                .map(Attribute::getAttrType)
+                .distinct()
+                .count();
+        Assertions.assertEquals(distinct, size, "Duplicate attributes found in subjectDirectoryAttributes");
+
 
         // Negative: tweak a copy of components JSON (change first VALUE string)
         Path badJson = tempDir.resolve("bad-v3.json");
