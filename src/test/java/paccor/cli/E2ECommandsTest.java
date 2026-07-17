@@ -1,8 +1,6 @@
 package paccor.cli;
 
 import java.util.Arrays;
-import java.util.Optional;
-import java.util.Vector;
 import org.bouncycastle.asn1.x509.CRLDistPoint;
 import org.bouncycastle.asn1.x509.DistributionPoint;
 import org.bouncycastle.asn1.x509.DistributionPointName;
@@ -24,7 +22,6 @@ import org.bouncycastle.cert.X509AttributeCertificateHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import paccor.model.PlatformCertificateInformationModel;
 import picocli.CommandLine;
 import paccor.tcg.credential.PlatformConfigurationV2;
 import paccor.tcg.credential.PlatformConfigurationV3;
@@ -785,8 +782,9 @@ public class E2ECommandsTest extends TestSupport {
         Object[] array = sda.getAttributes().toArray();
         long size = array.length;
         long distinct = Arrays.stream(array)
-                .filter(attr -> attr instanceof Attribute)
-                .map(attr -> ((Attribute) attr).getAttrType())
+                .filter(Attribute.class::isInstance)
+                .map(Attribute.class::cast)
+                .map(Attribute::getAttrType)
                 .distinct()
                 .count();
         Assertions.assertEquals(distinct, size, "Duplicate attributes found in subjectDirectoryAttributes");
