@@ -1,6 +1,7 @@
 package paccor.cert;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.math.BigInteger;
@@ -212,11 +213,12 @@ public class TbsEncoder {
     private void addAttributes(X509v3CertificateBuilder builder) {
         SubjectDirectoryAttributes attributes = buildSubjectDirectoryAttributes();
         if (attributes != null) {
-            addExtensions((_, _, _) ->
-                    builder.addExtension(
-                            ExtensionContext.subjectDirectoryAttributes.getOid(),
-                            ExtensionContext.subjectDirectoryAttributes.isCritical(),
-                            attributes));
+            try {
+                addExtensions(builder.addExtension(
+                        ExtensionContext.subjectDirectoryAttributes.getOid(),
+                        ExtensionContext.subjectDirectoryAttributes.isCritical(),
+                        attributes));
+            } catch (IOException ignored) {}
         }
     }
 
