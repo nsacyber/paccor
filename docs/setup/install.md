@@ -9,6 +9,7 @@ This is the simplest way to get started.
        * `.deb`: Example command: `sudo apt-get install ./paccor_2.0r3_amd64.deb`
        * `.rpm`: Example command: `sudo dnf install ./paccor-2.0r3.x86_64.rpm`
        * `.zip`: Unpack the `.zip` package anywhere you like.
+       * DEB and RPM files are signed. A paccor-public-key.asc file is distributed on the Releases page and can be imported as necessary.
      * __Windows__: Unpack the `.zip` package anywhere you like.
 2. Run the executable with the help command line option.
      * If you installed via a `.deb` or `.rpm` package, the executable is available at `/opt/paccor/bin/paccor -h`.
