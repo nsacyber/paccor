@@ -14,6 +14,7 @@ import paccor.cli.pv.BigIntegerConverter;
 import paccor.cli.pv.CertKindConverter;
 import paccor.cli.pv.CertTypeConverter;
 import paccor.cli.pv.DateConverter;
+import paccor.cli.pv.OutFileConverter;
 import java.io.File;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -53,55 +54,55 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
     private CommonOptions common;
 
     // JSON data
-    @Option(names = { "-p", "--attributes-json" }, description = "Attributes JSON file", converter = ReadableFileConverter.class)
+    @Option(names = { CliOptionNames.ATTRIBUTES_JSON_SHORT, CliOptionNames.ATTRIBUTES_JSON_LONG }, description = "Attributes JSON file", converter = ReadableFileConverter.class)
     private File attrsJson;
 
-    @Option(names = { "-c", "--components-json" }, description = "Hardware manifest components JSON file", converter = ReadableFileConverter.class)
+    @Option(names = { CliOptionNames.COMPONENTS_JSON_SHORT, CliOptionNames.COMPONENTS_JSON_LONG }, description = "Hardware manifest components JSON file", converter = ReadableFileConverter.class)
     private File componentsJson;
 
-    @Option(names = { "-x", "--extensions-json" }, description = "Extensions JSON file", converter = ReadableFileConverter.class)
+    @Option(names = { CliOptionNames.EXTENSIONS_JSON_SHORT, CliOptionNames.EXTENSIONS_JSON_LONG }, description = "Extensions JSON file", converter = ReadableFileConverter.class)
     private File extJson;
 
-    @Option(names = "--in-platform-model", description = "Existing model data from JSON", converter = ReadableFileConverter.class)
+    @Option(names = CliOptionNames.IN_PLATFORM_MODEL_LONG, description = "Existing model data from JSON", converter = ReadableFileConverter.class)
     private File platformInfoJson;
 
-    @Option(names = "--in", description = "Existing to-be-signed data to merge from JSON", converter = ReadableFileConverter.class)
+    @Option(names = CliOptionNames.IN_LONG, description = "Existing to-be-signed data to merge from JSON", converter = ReadableFileConverter.class)
     private File inJson;
 
     // Most relevant certificates. Other certificates may be specified in the JSON.
-    @Option(names = { "-P", "--issuer-cert" }, description = "Issuer certificate file", converter = ReadableFileConverter.class)
+    @Option(names = { CliOptionNames.ISSUER_CERT_SHORT, CliOptionNames.ISSUER_CERT_LONG }, description = "Issuer certificate file", converter = ReadableFileConverter.class)
     private File issuerCert;
 
-    @Option(names = { "-e", "--holder-cert" }, description = "Holder/Subject certificate file", converter = ReadableFileConverter.class)
+    @Option(names = { CliOptionNames.HOLDER_CERT_SHORT, CliOptionNames.HOLDER_CERT_LONG }, description = "Holder/Subject certificate file", converter = ReadableFileConverter.class)
     private File holderCert;
 
     // Platform Certificate options required prior to finalization
-    @Option(names = { "--kind", "--cert-kind" }, description = "Certificate output kind (AC, PKC)", converter = {CertKindConverter.class})
+    @Option(names = { CliOptionNames.CERT_KIND_LONG_ALT, CliOptionNames.CERT_KIND_LONG }, description = "Certificate output kind (AC, PKC)", converter = {CertKindConverter.class})
     private CertKind certKind;
 
-    @Option(names = { "--type", "--cert-type" }, description = "Platform certificate type (base, delta, rebase)", converter = {CertTypeConverter.class})
+    @Option(names = { CliOptionNames.CERT_TYPE_LONG_ALT, CliOptionNames.CERT_TYPE_LONG }, description = "Platform certificate type (base, delta, rebase)", converter = {CertTypeConverter.class})
     private CertType certType;
 
-    @Option(names = { "-N", "--serial" }, description = "Certificate serial number", converter = {BigIntegerConverter.class})
+    @Option(names = { CliOptionNames.SERIAL_SHORT, CliOptionNames.SERIAL_LONG }, description = "Certificate serial number", converter = {BigIntegerConverter.class})
     private BigInteger serial;
 
-    @Option(names = { "-b", "--not-before" }, description = DateConverter.DATE_FORMAT, converter = {DateConverter.class})
+    @Option(names = { CliOptionNames.NOT_BEFORE_SHORT, CliOptionNames.NOT_BEFORE_LONG }, description = DateConverter.DATE_FORMAT, converter = {DateConverter.class})
     private Date notBefore;
 
-    @Option(names = { "-a", "--not-after" }, description = DateConverter.DATE_FORMAT, converter = {DateConverter.class})
+    @Option(names = { CliOptionNames.NOT_AFTER_SHORT, CliOptionNames.NOT_AFTER_LONG }, description = DateConverter.DATE_FORMAT, converter = {DateConverter.class})
     private Date notAfter;
 
-    @Option(names = "--sig-profile", description = "Signature profile ID")
+    @Option(names = CliOptionNames.SIG_PROFILE_LONG, description = "Signature profile ID")
     private String sigProfile;
 
     // Output options
-    @Option(names = { "-f", "--out" }, required = true, description = "Model data and context in JSON. Can be given to the assemble command")
+    @Option(names = { CliOptionNames.FILE_OUT_SHORT, CliOptionNames.FILE_OUT_LONG }, required = true, description = "Model data and context in JSON. Can be given to the assemble command", converter = OutFileConverter.class)
     private File outJson;
 
-    @Option(names = "--finalize", description = "Validate model data and context prior to output")
+    @Option(names = CliOptionNames.FINALIZE_LONG, description = "Validate model data and context prior to output")
     private boolean finalizeFlag;
 
-    @Option(names = "--overwrite-in-place", description = "Allow in-place overwrite when --in equals --out.")
+    @Option(names = CliOptionNames.OVERWRITE_IN_PLACE_LONG, description = "Allow in-place overwrite when --in equals --out.")
     private boolean overwriteInPlace;
 
     @Override

@@ -24,7 +24,8 @@ public class ViewCmd implements Callable<Integer>, HasCommonOptions {
     @Mixin private CommonOptions common;
 
     @Option(
-            names = {"-X", "--x509v2AttrCert", "--pkcPlatformCert", "--certificate"},
+            names = {CliOptionNames.PLATFORM_CERT_FILE_SHORT, CliOptionNames.X509V2_ATTR_CERT_LONG,
+                    CliOptionNames.PKC_PLATFORM_CERT_LONG, CliOptionNames.CERTIFICATE_LONG },
             description = "Platform certificate file",
             required = true,
             converter = ReadableFileConverter.class)
