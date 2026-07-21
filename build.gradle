@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.ospackage) // see gradle/libs.versions.toml
 }
 
-version = "2.0r7"
+version = "2.0r8"
 
 // Build is split up into multiple files.
 
