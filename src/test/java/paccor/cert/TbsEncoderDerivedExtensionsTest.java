@@ -107,6 +107,11 @@ public class TbsEncoderDerivedExtensionsTest {
         byte[] tbs = new TbsEncoder(pi, CertificateProfile.platformV2_0Pkc()).buildTbs(SIG_ALG);
 
         Assertions.assertNotNull(tbs);
+        TBSCertificate certificate = TBSCertificate.getInstance(ASN1Primitive.fromByteArray(tbs));
+        GeneralNames encodedNames = GeneralNames.getInstance(
+                certificate.getExtensions().getExtension(Extension.subjectAlternativeName).getParsedValue());
+        Assertions.assertEquals(1, encodedNames.getNames().length,
+                "PKC subjectAltName must contain one PlatformIdentifier sequence");
         GeneralNames names = subjectAlternativeNames(pi);
         Assertions.assertEquals(1, names.getNames().length);
         Assertions.assertEquals(GeneralName.otherName, names.getNames()[0].getTagNo());

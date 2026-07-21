@@ -213,10 +213,10 @@ public class TbsEncoder {
         SubjectDirectoryAttributes attributes = buildSubjectDirectoryAttributes();
         if (attributes != null) {
             try {
-                addExtensions(builder.addExtension(
+                builder.addExtension(
                         ExtensionContext.subjectDirectoryAttributes.getOid(),
                         ExtensionContext.subjectDirectoryAttributes.isCritical(),
-                        attributes));
+                        attributes);
             } catch (Exception ignored) {}
         }
     }
