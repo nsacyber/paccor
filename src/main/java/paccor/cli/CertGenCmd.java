@@ -28,6 +28,7 @@ import paccor.json.ExtensionsJsonHelper;
 import paccor.json.HardwareManifestJsonHelper;
 import paccor.json.ObjectMapperFactory;
 import paccor.model.PlatformCertificateInformationModel;
+import paccor.model.HolderInfo;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.DERNull;
@@ -228,6 +229,15 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
 
     private void applyHolderOrSubject(PlatformCertificateInformationModel pi, CertificateProfile profile) {
         if (profile.outputType() == CertKind.AC) {
+            CertType requestedType = certType != null ? certType : CertTypeResolver.inferCertType(pi);
+            PlatformCertificate previous = PlatformCertificate.loadSafe(holderCert);
+            if (requestedType != CertType.BASE && previous != null && previous.isAttributeCertificate()) {
+                HolderInfo previousHolder = CertificateResolver.resolvePlatformCertificateHolder(holderCert);
+                if (previousHolder != null) {
+                    pi.setHolder(previousHolder);
+                    return;
+                }
+            }
             pi.setHolder(CertificateResolver.resolveHolder(holderCert, holderCert));
             return;
         }

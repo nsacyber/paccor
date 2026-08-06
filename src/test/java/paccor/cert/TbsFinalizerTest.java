@@ -40,14 +40,14 @@ public class TbsFinalizerTest {
 
         List<String> issues = TbsFinalizer.validateAc(profile, pi);
         
-        Assertions.assertTrue(issues.contains("Issuer is required."));
+        Assertions.assertTrue(issues.contains("Issuer is required. Supply the Issuer Certificate."));
         Assertions.assertTrue(issues.contains("TCG credential specification is required."));
         Assertions.assertTrue(issues.contains("Serial is required."));
         Assertions.assertTrue(issues.contains("Validity is required."));
         Assertions.assertTrue(issues.contains("Holder is required for AC."));
         Assertions.assertTrue(issues.contains("Authority Key Identifier extension (" + Extension.authorityKeyIdentifier.getId() + ") is required."));
         Assertions.assertTrue(issues.contains("Certificate Policies extension (" + Extension.certificatePolicies.getId() + ") is required."));
-        Assertions.assertTrue(issues.contains("Subject Alternative Name extension (" + Extension.subjectAlternativeName.getId() + ") is required."));
+        Assertions.assertTrue(issues.contains("Subject Alternative Name is not set. Supply PLATFORM information via the hardware manifest."));
     }
 
     @Test
@@ -57,7 +57,7 @@ public class TbsFinalizerTest {
 
         List<String> issues = TbsFinalizer.validatePkc(profile, pi);
 
-        Assertions.assertTrue(issues.contains("Issuer is required."));
+        Assertions.assertTrue(issues.contains("Issuer is required. Supply the Issuer Certificate."));
         Assertions.assertTrue(issues.contains("TCG credential specification is required."));
         Assertions.assertTrue(issues.contains("Serial is required."));
         Assertions.assertTrue(issues.contains("Validity is required."));
@@ -65,7 +65,7 @@ public class TbsFinalizerTest {
         Assertions.assertTrue(issues.contains("Subject Public Key Info is required for PKC finalize."));
         Assertions.assertTrue(issues.contains("Authority Key Identifier extension (" + Extension.authorityKeyIdentifier.getId() + ") is required."));
         Assertions.assertTrue(issues.contains("Certificate Policies extension (" + Extension.certificatePolicies.getId() + ") is required."));
-        Assertions.assertTrue(issues.contains("Subject Alternative Name extension (" + Extension.subjectAlternativeName.getId() + ") is required."));
+        Assertions.assertTrue(issues.contains("Subject Alternative Name is not set. Supply PLATFORM information via the hardware manifest."));
         Assertions.assertTrue(issues.contains("Subject Key Identifier extension (" + Extension.subjectKeyIdentifier.getId() + ") is required."));
         Assertions.assertTrue(issues.contains("Basic Constraints extension (" + Extension.basicConstraints.getId() + ") is required."));
         Assertions.assertTrue(issues.contains("Extended Key Usage extension (" + Extension.extendedKeyUsage.getId() + ") is required."));
@@ -191,7 +191,7 @@ public class TbsFinalizerTest {
         pi.setPlatformTraits(null); // Missing required traits
 
         List<String> issues = TbsFinalizer.validateAc(CertificateProfile.platformV2_0Ac(), pi);
-        Assertions.assertTrue(issues.contains("Subject Alternative Name must contain a PlatformIdentifier sequence with traits."));
+        Assertions.assertTrue(issues.contains("Subject Alternative Name is not set. Supply PLATFORM information via the hardware manifest."));
     }
 
     @Test

@@ -3,6 +3,7 @@ package paccor.cert;
 import paccor.cli.CliHelper;
 import paccor.cli.CliHelper.x509type;
 import java.io.File;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Optional;
 import paccor.model.HolderInfo;
@@ -164,6 +165,43 @@ public class CertificateResolver {
     }
 
     /**
+     * Resolve a holder that identifies a previous platform certificate by
+     * that certificate's issuer and serial number.
+     *
+     * <p>This is distinct from the holder carried by an attribute
+     * certificate. A delta or rebase certificate points at the previous
+     * platform certificate, not at the EK certificate that the previous
+     * platform certificate itself identifies.</p>
+     *
+     * @param certificateFile previous platform certificate file
+     * @return HolderInfo with the previous certificate's issuer and serial,
+     *         or null if the certificate cannot be resolved
+     */
+    public static HolderInfo resolvePlatformCertificateHolder(File certificateFile) {
+        PlatformCertificate certificate = PlatformCertificate.loadSafe(certificateFile);
+        if (certificate == null) {
+            return null;
+        }
+        try {
+            if (certificate.isAttributeCertificate()) {
+                X509AttributeCertificateHolder ac = certificate.getAttributeCertificate();
+                X500Name[] issuers = ac.getIssuer().getNames();
+                if (issuers == null || issuers.length == 0) {
+                    return null;
+                }
+                return toHolderInfo(issuerSerialHolder(issuers[0], ac.getSerialNumber()));
+            }
+            if (certificate.isPublicKeyCertificate()) {
+                X509CertificateHolder pkc = certificate.getPublicKeyCertificate();
+                return toHolderInfo(issuerSerialHolder(pkc.getIssuer(), pkc.getSerialNumber()));
+            }
+        } catch (Exception ignored) {
+            // Return null for malformed or incomplete certificate metadata.
+        }
+        return null;
+    }
+
+    /**
      * Resolve ASN.1 Holder from EK cert or AC cert.
      * @param ekCert Endorsement Key certificate
      * @param acCert Attribute certificate
@@ -179,8 +217,7 @@ public class CertificateResolver {
             return null;
         }
         try {
-            GeneralNames issuerNames = toGeneralNames(ekCert.getIssuer());
-            return new Holder(new IssuerSerial(issuerNames, ekCert.getSerialNumber()));
+            return issuerSerialHolder(ekCert.getIssuer(), ekCert.getSerialNumber());
         } catch (Exception ignored) {
             return null;
         }
@@ -215,7 +252,14 @@ public class CertificateResolver {
         if (issuers == null || issuers.length == 0) {
             return null;
         }
-        return new Holder(new IssuerSerial(toGeneralNames(issuers[0]), ach.getSerialNumber()));
+        return issuerSerialHolder(issuers[0], ach.getSerialNumber());
+    }
+
+    private static Holder issuerSerialHolder(X500Name issuer, BigInteger serial) {
+        if (issuer == null || serial == null) {
+            return null;
+        }
+        return new Holder(new IssuerSerial(toGeneralNames(issuer), serial));
     }
 
     private static GeneralNames toGeneralNames(X500Name name) {
