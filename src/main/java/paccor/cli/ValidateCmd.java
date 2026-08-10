@@ -44,16 +44,16 @@ import paccor.validator.SpecificationValidator;
 public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
     @Mixin private CommonOptions common;
 
-    @Option(names = { "-X", "--x509v2AttrCert"/*backwards compatibility*/, "--pkcPlatformCert" }, description = "Platform certificate file", required = true, converter = ReadableFileConverter.class)
+    @Option(names = { CliOptionNames.PLATFORM_CERT_FILE_SHORT, CliOptionNames.X509V2_ATTR_CERT_LONG/*backwards compatibility*/, CliOptionNames.PKC_PLATFORM_CERT_LONG }, description = "Platform certificate file", required = true, converter = ReadableFileConverter.class)
     private File platformCertFile;
-    @Option(names = { "-P", "--publicKeyCert"/*backwards compatibility*/, "--issuer-cert" }, description = "Signer certificate file", converter = ReadableFileConverter.class)
+    @Option(names = { CliOptionNames.ISSUER_CERT_SHORT, CliOptionNames.ISSUER_CERT_LONG, CliOptionNames.PUBLIC_KEY_CERT_LONG/*backwards compatibility*/ }, description = "Signer certificate file", converter = ReadableFileConverter.class)
     private File signerFile;
-    @Option(names = { "-c", "--components-json" }, description = "Components JSON to verify against AC components", converter = ReadableFileConverter.class)
+    @Option(names = { CliOptionNames.COMPONENTS_JSON_SHORT, CliOptionNames.COMPONENTS_JSON_LONG }, description = "Components JSON to verify against AC components", converter = ReadableFileConverter.class)
     private File componentsJson;
-    @Option(names = { "--component-matcher" }, description = "Component matcher: NORMALIZED (default) or RAW")
+    @Option(names = CliOptionNames.COMPONENT_MATCHER_LONG, description = "Component matcher: NORMALIZED (default) or RAW")
     private String componentMatcherName;
-    @Option(names = "--prev-pcert", description = "Previous platform certificate file(s). Repeatable. Globs allowed.")
-    private List<String> prevPcerts;
+    @Option(names = CliOptionNames.PREV_PCERT_LONG, description = "Previous platform certificate file(s). Repeatable. Globs allowed.")
+    private List<String> previousPlatformCertsList;
     @Override
     public CommonOptions commonOptions() {
         return common;
@@ -331,9 +331,9 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
     }
 
     private List<File> resolvePrevCertFiles() {
-        if (prevPcerts == null || prevPcerts.isEmpty()) return List.of();
+        if (previousPlatformCertsList == null || previousPlatformCertsList.isEmpty()) return List.of();
         List<File> out = new ArrayList<>();
-        for (String spec : prevPcerts) {
+        for (String spec : previousPlatformCertsList) {
             if (spec == null || spec.isBlank()) continue;
             if (hasGlob(spec)) {
                 out.addAll(expandGlob(spec));
@@ -345,7 +345,7 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
     }
 
     private boolean hasPrevPcerts() {
-        return prevPcerts != null && !prevPcerts.isEmpty();
+        return previousPlatformCertsList != null && !previousPlatformCertsList.isEmpty();
     }
 
     private static boolean hasGlob(String spec) {

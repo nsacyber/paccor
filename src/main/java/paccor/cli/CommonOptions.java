@@ -9,11 +9,11 @@ import picocli.CommandLine.Option;
  */
 @Command
 public class CommonOptions {
-    @Option(names = "--log-level", defaultValue = "info")
+    @Option(names = CliOptionNames.LOG_LEVEL_LONG, defaultValue = "info")
     String logLevel;
-    @Option(names = "--log-file")
+    @Option(names = CliOptionNames.LOG_FILE_LONG)
     File logFile;
-    @Option(names = { "-q", "--quiet" })
+    @Option(names = {CliOptionNames.QUIET_SHORT, CliOptionNames.QUIET_LONG})
     boolean quiet;
 
     /**

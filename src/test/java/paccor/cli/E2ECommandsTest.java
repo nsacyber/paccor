@@ -674,6 +674,16 @@ public class E2ECommandsTest extends TestSupport {
                 "--prev-pcert", cerBase.toString()
         );
         Assertions.assertEquals(0, rcValidateOk4, "validate should pass components check");
+
+        // Verify delta holder points to base
+        X509AttributeCertificateHolder baseAc = PlatformCertificate.loadSafe(cerBase.toFile()).getAttributeCertificate();
+        X509AttributeCertificateHolder deltaAc = PlatformCertificate.loadSafe(cerDelta.toFile()).getAttributeCertificate();
+        Assertions.assertEquals(baseAc.getIssuer().getNames()[0],
+                deltaAc.getHolder().getIssuer()[0],
+                "delta holder should identify the base platform certificate issuer");
+        Assertions.assertEquals(baseAc.getSerialNumber(),
+                deltaAc.getHolder().getSerialNumber(),
+                "delta holder should identify the base platform certificate serial");
     }
 
     @Test

@@ -62,7 +62,7 @@ public record TbsFinalizer(String tbsB64, String shaHex) {
     private static List<String> checkCommonFields(PlatformCertificateInformationModel pi) {
         List<String> issues = new ArrayList<>();
         if (pi.getIssuer() == null || pi.getIssuer().nameDerB64() == null || pi.getIssuer().nameDerB64().isBlank()) {
-            issues.add("Issuer is required.");
+            issues.add("Issuer is required. Supply the Issuer Certificate.");
         }
         if (pi.getTcgCredentialSpecification() == null) {
             issues.add("TCG credential specification is required.");
@@ -224,7 +224,7 @@ public record TbsFinalizer(String tbsB64, String shaHex) {
                                         TCGObjectIdentifier.tcgTrCatPlatformModel,
                                         TCGObjectIdentifier.tcgTrCatPlatformVersion),
                                 issues),
-                        () -> issues.add("Subject Alternative Name must contain a PlatformIdentifier sequence with traits.")
+                        () -> issues.add("Subject Alternative Name is not set. Supply PLATFORM information via the hardware manifest.")
                 );
     }
 

@@ -32,47 +32,47 @@ import picocli.CommandLine.Option;
 public class AssembleCmd implements Callable<Integer>, HasCommonOptions {
     @Mixin
     private CommonOptions common;
-    @Option(names = { "-i", "--in", "--tbs" }, required = true, description = "Input to-be-signed data from JSON", converter = ReadableFileConverter.class)
+    @Option(names = { CliOptionNames.IN_SHORT, CliOptionNames.IN_LONG, CliOptionNames.TBS_LONG }, required = true, description = "Input to-be-signed data from JSON", converter = ReadableFileConverter.class)
     private File inJson;
-    @Option(names = { "-f", "--out" }, required = true)
+    @Option(names = { CliOptionNames.FILE_OUT_SHORT, CliOptionNames.FILE_OUT_LONG }, required = true)
     private File outFile;
-    @Option(names = "--pem", description = "PEM output")
+    @Option(names = CliOptionNames.PEM_LONG, description = "PEM output")
     private boolean pem;
-    @Option(names = "--sig-encoding", defaultValue = "der", description = "${COMPLETION-CANDIDATES} (default: ${DEFAULT-VALUE})", converter={CertSigEncodingConverter.class})
+    @Option(names = CliOptionNames.SIG_ENCODING_LONG, defaultValue = "der", description = "${COMPLETION-CANDIDATES} (default: ${DEFAULT-VALUE})", converter={CertSigEncodingConverter.class})
     private CertSigEncoding sigEncoding = CertSigEncoding.DER;
-    @Option(names = { "-P", "--issuer-cert" }, description = "Certificate containing the public key that signs the input. Required for all signing modes (detached, local, pkcs11, remote).", converter = ReadableFileConverter.class)
+    @Option(names = { CliOptionNames.ISSUER_CERT_SHORT, CliOptionNames.ISSUER_CERT_LONG }, description = "Certificate containing the public key that signs the input. Required for all signing modes (detached, local, pkcs11, remote).", converter = ReadableFileConverter.class)
     private File issuerCert;
     // Provided signature options
-    @Option(names = "--signature", description = "Detached signature (Base64)")
+    @Option(names = CliOptionNames.SIGNATURE_LONG, description = "Detached signature (Base64)")
     private String signatureB64;
     // Local options
-    @Option(names = { "-k", "--local-key" }, description = "Sign locally with a private key file (PKCS#8, PKCS#1, or PKCS#12)", converter = ReadableFileConverter.class)
+    @Option(names = { CliOptionNames.LOCAL_KEY_SHORT, CliOptionNames.LOCAL_KEY_LONG }, description = "Sign locally with a private key file (PKCS#8, PKCS#1, or PKCS#12)", converter = ReadableFileConverter.class)
     private File localKey;
-    @Option(names = "--local-key-password", description = "Password for a PKCS#12 local key")
+    @Option(names = CliOptionNames.LOCAL_KEY_PASSWORD_LONG, description = "Password for a PKCS#12 local key")
     private String localKeyPassword;
-    @Option(names = "--local-key-password-file", description = "File containing the password for a PKCS#12 local key", converter = ReadableFileConverter.class)
+    @Option(names = CliOptionNames.LOCAL_KEY_PASSWORD_FILE_LONG, description = "File containing the password for a PKCS#12 local key", converter = ReadableFileConverter.class)
     private File localKeyPasswordFile;
     // PKCS#11 options
-    @Option(names = "--pkcs11-module", description = "Path to PKCS#11 module (.so/.dll)")
+    @Option(names = CliOptionNames.PKCS11_MODULE_LONG, description = "Path to PKCS#11 module (.so/.dll)")
     private File pkcs11Module;
-    @Option(names = "--pkcs11-slot", description = "PKCS#11 slot list index (0 = first token)")
+    @Option(names = CliOptionNames.PKCS11_SLOT_LONG, description = "PKCS#11 slot list index (0 = first token)")
     private Integer pkcs11Slot;
-    @Option(names = "--pkcs11-token-label", description = "PKCS#11 token label")
+    @Option(names = CliOptionNames.PKCS11_TOKEN_LABEL_LONG, description = "PKCS#11 token label")
     private String pkcs11TokenLabel;
-    @Option(names = "--pkcs11-key-alias", description = "Alias/label of private key on token")
+    @Option(names = CliOptionNames.PKCS11_KEY_ALIAS_LONG, description = "Alias/label of private key on token")
     private String pkcs11KeyAlias;
-    @Option(names = "--pkcs11-key-id", description = "Hex ID of private key on token")
+    @Option(names = CliOptionNames.PKCS11_KEY_ID_LONG, description = "Hex ID of private key on token")
     private String pkcs11KeyIdHex;
-    @Option(names = "--pkcs11-pin", description = "PIN for the PKCS#11 token (alternatively use PKCS11_PIN env var)")
+    @Option(names = CliOptionNames.PKCS11_PIN_LONG, description = "PIN for the PKCS#11 token (alternatively use PKCS11_PIN env var)")
     private String pkcs11Pin;
-    @Option(names = "--pkcs11-pin-file", description = "File containing PIN for the PKCS#11 token")
+    @Option(names = CliOptionNames.PKCS11_PIN_FILE_LONG, description = "File containing PIN for the PKCS#11 token")
     private File pkcs11PinFile;
     // Remote signer options
-    @Option(names = "--remote-url", description = "Remote signer URL")
+    @Option(names = CliOptionNames.REMOTE_URL_LONG, description = "Remote signer URL")
     private String remoteUrl;
-    @Option(names = "--remote-auth", description = "Remote signer auth descriptor, e.g., bearer:<token> or header:Name=Value")
+    @Option(names = CliOptionNames.REMOTE_AUTH_LONG, description = "Remote signer auth descriptor, e.g., bearer:<token> or header:Name=Value")
     private String remoteAuth;
-    @Option(names = "--remote-timeout", description = "Remote signer timeout ms", defaultValue = "15000")
+    @Option(names = CliOptionNames.REMOTE_TIMEOUT_LONG, description = "Remote signer timeout ms", defaultValue = "15000")
     private int remoteTimeoutMs;
 
     @Override
