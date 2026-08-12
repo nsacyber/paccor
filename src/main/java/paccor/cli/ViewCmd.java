@@ -56,6 +56,11 @@ public class ViewCmd implements Callable<Integer>, HasCommonOptions {
         println("Certificate Type: " + valueOrUnknown(certificate.getCertType()));
         println("Certificate Spec Version: " + valueOrUnknown(certificate.resolvedSpecVersion()));
         println("Declared TCG Credential Spec: " + info.describeCredSpec());
+        println("Certificate Serial Number: " + valueOrUnknown(certificate.serialNumber()));
+        println("Validity:");
+        println("  Not Before: " + valueOrUnknown(certificate.extractNotBefore()));
+        println("  Not After: " + valueOrUnknown(certificate.extractNotAfter()));
+        println("Signature Algorithm:" + valueOrUnknown(certificate.extractSignatureAlgorithm()));
         println((certificate.certKind() == CertKind.AC ? "Holder: " : "Subject: ") + info.describeSubject());
         println("Issuer: " + info.describeIssuer());
         println("Serial: " + info.getCertSerialNumber());
