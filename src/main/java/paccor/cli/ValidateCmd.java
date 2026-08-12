@@ -73,9 +73,9 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
     private String componentMatcherName;
     @Option(names = CliOptionNames.PREV_PCERT_LONG, description = "Previous platform certificate file(s). Repeatable. Globs allowed.")
     private List<String> previousPlatformCertsList;
-    @Option(names = CliOptionNames.TRUST_ANCHOR_LONG, description = "Trust-anchor certificate bundle(s). Repeatable. Globs allowed.")
+    @Option(names = CliOptionNames.TRUST_ANCHOR_LONG, description = "Trust anchor(s). Repeatable. Globs allowed. If provided, the issuer cert must be self-signed or chain to a self-signed trust anchor.")
     private List<String> trustAnchorList;
-    @Option(names = CliOptionNames.CRL_LONG, description = "CRL file(s) for platform-certificate revocation checking. Repeatable. Globs allowed.")
+    @Option(names = CliOptionNames.CRL_LONG, description = "CRL file(s) for revocation checking. Repeatable. Globs allowed.")
     private List<String> crlList;
     @Override
     public CommonOptions commonOptions() {
