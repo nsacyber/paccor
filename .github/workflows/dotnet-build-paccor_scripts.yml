@@ -39,10 +39,6 @@ jobs:
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 10.0.x
-    - name: Remove problem matcher for now
-      run: |
-        echo "::remove-matcher owner=csc::"
-        echo "::remove-matcher owner=dotnet::"
     - name: Restore dependencies
       working-directory: dotnet/paccor_scripts
       run: dotnet restore
