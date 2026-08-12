@@ -1,26 +1,45 @@
 package paccor.cli;
 
 import paccor.cert.PlatformCertificate;
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
+import java.security.GeneralSecurityException;
+import java.security.cert.CertPathBuilder;
+import java.security.cert.CertStore;
+import java.security.cert.CollectionCertStoreParameters;
+import java.security.cert.CertificateFactory;
+import java.security.cert.PKIXBuilderParameters;
+import java.security.cert.TrustAnchor;
+import java.security.cert.X509CRL;
+import java.security.cert.X509Certificate;
+import javax.security.auth.x500.X500Principal;
 import paccor.cli.pv.ReadableFileConverter;
 import paccor.json.HardwareManifestJsonHelper;
 import paccor.normalization.PlatformConfigurationNormalizer;
 import paccor.crypto.PcBcContentVerifierProviderBuilder;
 import org.bouncycastle.cert.CertException;
 import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.X509CRLHolder;
+import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.operator.ContentVerifierProvider;
 import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
 import org.bouncycastle.operator.OperatorCreationException;
@@ -54,6 +73,10 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
     private String componentMatcherName;
     @Option(names = CliOptionNames.PREV_PCERT_LONG, description = "Previous platform certificate file(s). Repeatable. Globs allowed.")
     private List<String> previousPlatformCertsList;
+    @Option(names = CliOptionNames.TRUST_ANCHOR_LONG, description = "Trust-anchor certificate bundle(s). Repeatable. Globs allowed.")
+    private List<String> trustAnchorList;
+    @Option(names = CliOptionNames.CRL_LONG, description = "CRL file(s) for platform-certificate revocation checking. Repeatable. Globs allowed.")
+    private List<String> crlList;
     @Override
     public CommonOptions commonOptions() {
         return common;
@@ -70,10 +93,12 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
         }
 
         boolean signatureOk = checkSignatureOptionAndValidate(certificate, signerFile);
+        boolean trustOk = checkTrustAnchorOptionAndValidate(signerFile);
+        boolean crlOk = checkCrlOptionAndValidate(certificate, signerFile);
         boolean specificationOk = validateSpecification(certificate);
         boolean componentsOk = checkComponentsOptionAndValidate(certificate, componentsJson);
 
-        return reportOverall(componentsOk && signatureOk && specificationOk).code();
+        return reportOverall(componentsOk && signatureOk && trustOk && crlOk && specificationOk).code();
     }
 
     private ContentVerifierProvider buildVerifierProvider(X509CertificateHolder signer) throws OperatorCreationException {
@@ -133,6 +158,146 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
             return certificate != null && certificate.isSignatureValid(cvp);
         } catch (OperatorCreationException | CertException ignored) {}
         return false;
+    }
+
+    private boolean checkTrustAnchorOptionAndValidate(File signerFile) {
+        if (trustAnchorList == null || trustAnchorList.isEmpty()) return true;
+        if (signerFile == null || !signerFile.exists()) {
+            return reportTrust(false, "No issuer certificate was provided.");
+        }
+        X509CertificateHolder signer = CliHelper.loadPKCSafe(signerFile.getPath());
+        if (signer == null) return reportTrust(false, "Could not read issuer certificate.");
+        boolean ok = validateTrustPath(signer, resolveFiles(trustAnchorList));
+        return reportTrust(ok, ok ? null : "Issuer certificate does not chain to a supplied trust anchor.");
+    }
+
+    private boolean reportTrust(boolean ok, String detail) {
+        if (!common.quiet) {
+            System.out.println("Trust-anchor validation: " + (ok ? "OK" : "FAILED"));
+            if (!ok && detail != null && shouldPrintDetails()) System.out.println(detail);
+        }
+        return ok;
+    }
+
+    private boolean validateTrustPath(X509CertificateHolder signer, List<File> files) {
+        try {
+            X509Certificate target = toJcaCertificate(signer);
+            List<X509Certificate> all = loadJcaCertificates(files);
+            Set<TrustAnchor> anchors = new HashSet<>();
+            List<X509Certificate> intermediates = new ArrayList<>();
+            for (X509Certificate cert : all) {
+                if (isSelfSigned(cert)) anchors.add(new TrustAnchor(cert, null));
+                else intermediates.add(cert);
+            }
+            if (anchors.isEmpty()) return false;
+            for (TrustAnchor anchor : anchors) {
+                if (target.equals(anchor.getTrustedCert())) return true;
+            }
+            java.security.cert.X509CertSelector selector = new java.security.cert.X509CertSelector();
+            selector.setCertificate(target);
+            PKIXBuilderParameters params = new PKIXBuilderParameters(anchors, selector);
+            params.setRevocationEnabled(false);
+            params.addCertStore(CertStore.getInstance("Collection",
+                    new CollectionCertStoreParameters(intermediates)));
+            CertPathBuilder.getInstance("PKIX").build(params);
+            return true;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private boolean checkCrlOptionAndValidate(PlatformCertificate certificate, File signerFile) {
+        if (crlList == null || crlList.isEmpty()) return true;
+        if (signerFile == null || !signerFile.exists()) return reportCrl(false, "No issuer certificate was provided.");
+        X509CertificateHolder signer = CliHelper.loadPKCSafe(signerFile.getPath());
+        if (signer == null) return reportCrl(false, "Could not read issuer certificate.");
+        boolean ok = validateCrls(certificate, signer, resolveFiles(crlList));
+        return reportCrl(ok, ok ? null : "No applicable valid CRL was found, or the platform certificate is revoked.");
+    }
+
+    private boolean reportCrl(boolean ok, String detail) {
+        if (!common.quiet) {
+            System.out.println("CRL validation: " + (ok ? "OK" : "FAILED"));
+            if (!ok && detail != null && shouldPrintDetails()) System.out.println(detail);
+        }
+        return ok;
+    }
+
+    private boolean validateCrls(PlatformCertificate platform, X509CertificateHolder signer, List<File> files) {
+        try {
+            X509Certificate issuer = toJcaCertificate(signer);
+            java.math.BigInteger serial = platform.isPublicKeyCertificate()
+                    ? platform.getPublicKeyCertificate().getSerialNumber()
+                    : platform.getAttributeCertificate().getSerialNumber();
+            X500Principal issuerName = issuer.getSubjectX500Principal();
+            boolean applicable = false;
+            for (X509CRL crl : loadCrls(files)) {
+                if (!crl.getIssuerX500Principal().equals(issuerName)) continue;
+                if (crl.getThisUpdate() == null || crl.getThisUpdate().after(new java.util.Date())) continue;
+                if (crl.getNextUpdate() != null && crl.getNextUpdate().before(new java.util.Date())) continue;
+                crl.verify(issuer.getPublicKey());
+                applicable = true;
+                if (crl.getRevokedCertificate(serial) != null) return false;
+            }
+            return applicable;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private static X509Certificate toJcaCertificate(X509CertificateHolder holder)
+            throws GeneralSecurityException, IOException {
+        return (X509Certificate) CertificateFactory.getInstance("X.509")
+                .generateCertificate(new ByteArrayInputStream(holder.getEncoded()));
+    }
+
+    private static boolean isSelfSigned(X509Certificate certificate) {
+        try {
+            certificate.verify(certificate.getPublicKey());
+            return certificate.getSubjectX500Principal().equals(certificate.getIssuerX500Principal());
+        } catch (GeneralSecurityException ignored) {
+            return false;
+        }
+    }
+
+    private static List<X509Certificate> loadJcaCertificates(List<File> files) throws Exception {
+        List<X509Certificate> out = new ArrayList<>();
+        for (File file : files) for (X509CertificateHolder holder : loadCertificateBundle(file)) out.add(toJcaCertificate(holder));
+        return out;
+    }
+
+    private static List<X509CertificateHolder> loadCertificateBundle(File file) throws Exception {
+        List<X509CertificateHolder> out = new ArrayList<>();
+        byte[] bytes = Files.readAllBytes(file.toPath());
+        try (PEMParser parser = new PEMParser(new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.US_ASCII))) {
+            Object object;
+            while ((object = parser.readObject()) != null) if (object instanceof X509CertificateHolder holder) out.add(holder);
+        } catch (Exception ignored) { }
+        if (out.isEmpty()) out.add(new X509CertificateHolder(bytes));
+        return out;
+    }
+
+    private static List<X509CRL> loadCrls(List<File> files) throws Exception {
+        List<X509CRL> out = new ArrayList<>();
+        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+        for (File file : files) {
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            boolean parsedPem = false;
+            try (PEMParser parser = new PEMParser(new InputStreamReader(new ByteArrayInputStream(bytes), StandardCharsets.US_ASCII))) {
+                Object object;
+                while ((object = parser.readObject()) != null) {
+                    if (object instanceof X509CRLHolder holder) {
+                        out.add((X509CRL) factory.generateCRL(new ByteArrayInputStream(holder.getEncoded())));
+                        parsedPem = true;
+                    }
+                }
+            } catch (Exception ignored) { }
+            if (!parsedPem) {
+                Collection<? extends java.security.cert.CRL> crls = factory.generateCRLs(new ByteArrayInputStream(bytes));
+                for (java.security.cert.CRL crl : crls) if (crl instanceof X509CRL x509crl) out.add(x509crl);
+            }
+        }
+        return out;
     }
 
     private boolean validateSpecification(PlatformCertificate certificate) {
@@ -331,9 +496,13 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
     }
 
     private List<File> resolvePrevCertFiles() {
-        if (previousPlatformCertsList == null || previousPlatformCertsList.isEmpty()) return List.of();
+        return resolveFiles(previousPlatformCertsList);
+    }
+
+    private static List<File> resolveFiles(List<String> specs) {
+        if (specs == null || specs.isEmpty()) return List.of();
         List<File> out = new ArrayList<>();
-        for (String spec : previousPlatformCertsList) {
+        for (String spec : specs) {
             if (spec == null || spec.isBlank()) continue;
             if (hasGlob(spec)) {
                 out.addAll(expandGlob(spec));
