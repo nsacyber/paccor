@@ -1,5 +1,6 @@
 package paccor.crypto;
 
+import org.bouncycastle.operator.OperatorCreationException;
 import paccor.cli.CliHelper;
 import paccor.exception.InvalidKeyException;
 import paccor.exception.PaccorException;
@@ -39,12 +40,16 @@ public final class SignatureService {
     public static boolean verifyWithCert(File issuerCert, AlgorithmIdentifier algId, byte[] tbs, byte[] sig) {
         try {
             X509CertificateHolder cert = CliHelper.loadCert(issuerCert.getPath(), CliHelper.x509type.CERTIFICATE);
-            ContentVerifierProvider cvp = new PcBcContentVerifierProviderBuilder(new DefaultDigestAlgorithmIdentifierFinder()).build(cert);
+            ContentVerifierProvider cvp = buildWithDefault(cert);
             ContentVerifier verifier = cvp.get(algId);
             try (OutputStream os = verifier.getOutputStream()) { os.write(tbs); }
             return verifier.verify(sig);
         } catch (Exception e) {
             return false;
         }
+    }
+
+    public static final ContentVerifierProvider buildWithDefault(X509CertificateHolder cert) throws OperatorCreationException {
+        return new PcBcContentVerifierProviderBuilder(new DefaultDigestAlgorithmIdentifierFinder()).build(cert);
     }
 }
