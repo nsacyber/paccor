@@ -7,7 +7,7 @@
     <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageId>paccor.paccor_scripts</PackageId>
-    <PackageVersion>2.5.2</PackageVersion>
+    <PackageVersion>2.6.0</PackageVersion>
     <PackageTags>paccor;platform;certificate;hardware;manifest;scripts;component;class;registry;evidence;collection</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <NoWarn>$(NoWarn);NU5110</NoWarn>
+    <NoWarn>$(NoWarn);NU5110,NU5111</NoWarn> <!--Warnings related to inclusion of scripts managed outside this project.-->
   </PropertyGroup>
 
   <Target Name="CopyFiles" BeforeTargets="PreBuildEvent">
@@ -46,14 +46,9 @@
   </Target>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\HardwareManifestPlugin\HardwareManifestPlugin\HardwareManifestPlugin.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="paccor.HardwareManifestPlugin" Version="2.1.0" />
     <!--Source Link -->
-    <PackageReference Include="Google.Protobuf" Version="3.33.5" /><!-- Google.Protobuf reference required for MessageParser -->
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.103" PrivateAssets="All" />
-    <PackageReference Include="PlatformCertificate.Proto" Version="2.1.0" />
   </ItemGroup>
   <ItemGroup>
     <!--Package resources -->

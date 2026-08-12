@@ -1,14 +1,17 @@
 ﻿using HardwareManifestPlugin;
 using HardwareManifestProto;
+using System;
+using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace paccor_scripts {
     public sealed class PaccorComponentScriptsPlugin : HardwareManifestPluginBase {
-        public static readonly string Scripts = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(PaccorComponentScriptsPlugin).Assembly.Location)!, "scripts"));
-        public static readonly string LinuxComponents = Path.GetFullPath(Path.Combine(Scripts, "tcg_ccr.sh"));
-        public static readonly string WinPath = Path.GetFullPath(Path.Combine(Scripts, "windows"));
-        public static readonly string WinTempOutput = Path.GetFullPath(Path.Combine(WinPath, "out.json"));
-        public static readonly string WinComponents = Path.GetFullPath(Path.Combine(WinPath, "tcg_ccr.ps1"));
+        private static readonly string Scripts = Path.GetFullPath(Path.Combine(Path.GetDirectoryName(typeof(PaccorComponentScriptsPlugin).Assembly.Location)!, "scripts"));
+        private static readonly string LinuxComponents = Path.GetFullPath(Path.Combine(Scripts, "tcg_ccr.sh"));
+        private static readonly string WinPath = Path.GetFullPath(Path.Combine(Scripts, "windows"));
+        private static readonly string WinTempOutput = Path.GetFullPath(Path.Combine(WinPath, "out.json"));
+        private static readonly string WinComponents = Path.GetFullPath(Path.Combine(WinPath, "tcg_ccr.ps1"));
 
         public static readonly string TraitDescription = "paccor component gathering scripts";
         public static readonly string TraitDescriptionUri = "https://github.com/nsacyber/paccor/scripts";
@@ -25,14 +28,14 @@ namespace paccor_scripts {
             string json = "";
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
                 Task<Tuple<int, string, string>> task = Task.Run(RunWindows);
-                Tuple<int, string, string> results = task.Result;
+                Tuple<int, string, string> _ = task.Result;
                 if (task.Exception != null) {
                     throw task.Exception;
                 }
-                // The allcomponents powershell script writes output to a file to preserve binary data
+                // The allcomponents PowerShell script writes output to a file to preserve binary data
                 // that can get corrupted during redirection
-                if (System.IO.File.Exists(WinTempOutput)) {
-                    json = System.IO.File.ReadAllText(WinTempOutput);
+                if (File.Exists(WinTempOutput)) {
+                    json = File.ReadAllText(WinTempOutput);
                 }
             } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
                 Task<Tuple<int, string, string>> task = Task.Run(RunLinux);
@@ -51,11 +54,11 @@ namespace paccor_scripts {
         }
 
         private async Task<Tuple<int, string, string>> RunWindows() {
-            return await Path.GetFullPath(WinComponents).ToString().Powershell(WinTempOutput);
+            return await Path.GetFullPath(WinComponents).Powershell(WinTempOutput);
         }
 
         private async Task<Tuple<int, string, string>> RunLinux() {
-            return await Path.GetFullPath(LinuxComponents).ToString().Bash();
+            return await Path.GetFullPath(LinuxComponents).Bash();
         }
     }
 }

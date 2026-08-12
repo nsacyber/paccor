@@ -3,10 +3,9 @@
 namespace paccor_scripts {
     public static class ShellHelper {
         public static Task<Tuple<int, string, string>> Bash(this string cmd) {
-            var escapedArgs = cmd.Replace("\"", "\\\"");
             ProcessStartInfo info = new() {
-                FileName = "bash",
-                Arguments = $"\"{escapedArgs}\" /dev/stdout",
+                FileName = "/bin/bash",
+                ArgumentList = { cmd, "/dev/stdout" },
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -30,27 +29,28 @@ namespace paccor_scripts {
 
         private static Task<Tuple<int, string, string>> Execute(ProcessStartInfo info) {
             TaskCompletionSource<Tuple<int, string, string>> source = new();
-            Process process = new() {
-                StartInfo = info,
-                EnableRaisingEvents = true
-            };
-
-            process.Exited += (sender, args) => {
-                source.SetResult(new Tuple<int, string, string>(process.ExitCode, process.StandardError.ReadToEnd(), process.StandardOutput.ReadToEnd()));
-                if (process.ExitCode != 0) {
-                    source.SetException(new Exception($"Command `{process.StartInfo.FileName} {process.StartInfo.Arguments}` failed with exit code `{process.ExitCode}`"));
-                }
-
-                process.Dispose();
-            };
+            
+            using Process process = new();
+            process.StartInfo = info;
+            process.EnableRaisingEvents = true;
 
             try {
                 process.Start();
+                
+                string output = process.StandardOutput.ReadToEnd();
+                string error = process.StandardError.ReadToEnd();
+                
                 process.WaitForExit();
+                
+                int exitCode = process.ExitCode;
+
+                if (exitCode == 0) {
+                    source.SetResult(new Tuple<int, string, string>(exitCode, error, output));
+                } else {
+                    source.SetException(new Exception($"Command `{info.FileName} {info.Arguments}` failed with exit code `{exitCode}`"));
+                }
             } catch (Exception e) {
                 source.SetException(e);
-            } finally {
-                process.Dispose();
             }
 
             return source.Task;
