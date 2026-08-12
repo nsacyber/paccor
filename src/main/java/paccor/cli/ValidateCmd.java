@@ -22,6 +22,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.stream.Stream;
+import java.math.BigInteger;
+import java.security.cert.CRL;
 import java.security.GeneralSecurityException;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.CertStore;
@@ -29,8 +31,10 @@ import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.CertificateFactory;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.TrustAnchor;
+import java.security.cert.X509CertSelector;
 import java.security.cert.X509CRL;
 import java.security.cert.X509Certificate;
+import java.util.Date;
 import javax.security.auth.x500.X500Principal;
 import paccor.cli.pv.ReadableFileConverter;
 import paccor.json.HardwareManifestJsonHelper;
@@ -162,13 +166,12 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
 
     private boolean checkTrustAnchorOptionAndValidate(File signerFile) {
         if (trustAnchorList == null || trustAnchorList.isEmpty()) return true;
-        if (signerFile == null || !signerFile.exists()) {
-            return reportTrust(false, "No issuer certificate was provided.");
-        }
-        X509CertificateHolder signer = CliHelper.loadPKCSafe(signerFile.getPath());
-        if (signer == null) return reportTrust(false, "Could not read issuer certificate.");
-        boolean ok = validateTrustPath(signer, resolveFiles(trustAnchorList));
-        return reportTrust(ok, ok ? null : "Issuer certificate does not chain to a supplied trust anchor.");
+        return loadSigner(signerFile)
+                .map(signer -> validateTrustPath(signer, resolveFiles(trustAnchorList)))
+                .map(ok -> reportTrust(ok, ok ? null : "Issuer certificate does not chain to a supplied trust anchor."))
+                .orElseGet(() -> reportTrust(false, signerFile == null || !signerFile.exists()
+                        ? "No issuer certificate was provided."
+                        : "Could not read issuer certificate."));
     }
 
     private boolean reportTrust(boolean ok, String detail) {
@@ -190,10 +193,8 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
                 else intermediates.add(cert);
             }
             if (anchors.isEmpty()) return false;
-            for (TrustAnchor anchor : anchors) {
-                if (target.equals(anchor.getTrustedCert())) return true;
-            }
-            java.security.cert.X509CertSelector selector = new java.security.cert.X509CertSelector();
+            if (anchors.stream().map(TrustAnchor::getTrustedCert).anyMatch(target::equals)) return true;
+            X509CertSelector selector = new X509CertSelector();
             selector.setCertificate(target);
             PKIXBuilderParameters params = new PKIXBuilderParameters(anchors, selector);
             params.setRevocationEnabled(false);
@@ -208,11 +209,19 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
 
     private boolean checkCrlOptionAndValidate(PlatformCertificate certificate, File signerFile) {
         if (crlList == null || crlList.isEmpty()) return true;
-        if (signerFile == null || !signerFile.exists()) return reportCrl(false, "No issuer certificate was provided.");
-        X509CertificateHolder signer = CliHelper.loadPKCSafe(signerFile.getPath());
-        if (signer == null) return reportCrl(false, "Could not read issuer certificate.");
-        boolean ok = validateCrls(certificate, signer, resolveFiles(crlList));
-        return reportCrl(ok, ok ? null : "No applicable valid CRL was found, or the platform certificate is revoked.");
+        return loadSigner(signerFile)
+                .map(signer -> validateCrls(certificate, signer, resolveFiles(crlList)))
+                .map(ok -> reportCrl(ok, ok ? null : "No applicable valid CRL was found, or the platform certificate is revoked."))
+                .orElseGet(() -> reportCrl(false, signerFile == null || !signerFile.exists()
+                        ? "No issuer certificate was provided."
+                        : "Could not read issuer certificate."));
+    }
+
+    private static Optional<X509CertificateHolder> loadSigner(File file) {
+        return Optional.ofNullable(file)
+                .filter(File::exists)
+                .map(File::getPath)
+                .map(CliHelper::loadPKCSafe);
     }
 
     private boolean reportCrl(boolean ok, String detail) {
@@ -226,15 +235,14 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
     private boolean validateCrls(PlatformCertificate platform, X509CertificateHolder signer, List<File> files) {
         try {
             X509Certificate issuer = toJcaCertificate(signer);
-            java.math.BigInteger serial = platform.isPublicKeyCertificate()
-                    ? platform.getPublicKeyCertificate().getSerialNumber()
-                    : platform.getAttributeCertificate().getSerialNumber();
+            BigInteger serial = platformSerial(platform);
             X500Principal issuerName = issuer.getSubjectX500Principal();
+            Date now = new Date();
             boolean applicable = false;
             for (X509CRL crl : loadCrls(files)) {
                 if (!crl.getIssuerX500Principal().equals(issuerName)) continue;
-                if (crl.getThisUpdate() == null || crl.getThisUpdate().after(new java.util.Date())) continue;
-                if (crl.getNextUpdate() != null && crl.getNextUpdate().before(new java.util.Date())) continue;
+                if (crl.getThisUpdate() == null || crl.getThisUpdate().after(now)) continue;
+                if (Optional.ofNullable(crl.getNextUpdate()).filter(date -> date.before(now)).isPresent()) continue;
                 crl.verify(issuer.getPublicKey());
                 applicable = true;
                 if (crl.getRevokedCertificate(serial) != null) return false;
@@ -243,6 +251,12 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
         } catch (Exception ignored) {
             return false;
         }
+    }
+
+    private static BigInteger platformSerial(PlatformCertificate platform) {
+        return platform.isPublicKeyCertificate()
+                ? platform.getPublicKeyCertificate().getSerialNumber()
+                : platform.getAttributeCertificate().getSerialNumber();
     }
 
     private static X509Certificate toJcaCertificate(X509CertificateHolder holder)
@@ -293,8 +307,8 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
                 }
             } catch (Exception ignored) { }
             if (!parsedPem) {
-                Collection<? extends java.security.cert.CRL> crls = factory.generateCRLs(new ByteArrayInputStream(bytes));
-                for (java.security.cert.CRL crl : crls) if (crl instanceof X509CRL x509crl) out.add(x509crl);
+                Collection<? extends CRL> crls = factory.generateCRLs(new ByteArrayInputStream(bytes));
+                for (CRL crl : crls) if (crl instanceof X509CRL x509crl) out.add(x509crl);
             }
         }
         return out;
