@@ -5,6 +5,7 @@ import paccor.cert.CertSpecVersion;
 import paccor.cert.CertType;
 import paccor.cert.CertificateProfile;
 import paccor.cert.CertificateResolver;
+import paccor.cert.CertificateIdentifierChain;
 import paccor.cert.CertTypeResolver;
 import paccor.cert.ExtensionAssembler;
 import paccor.cert.PlatformCertificate;
@@ -18,9 +19,12 @@ import paccor.cli.pv.OutFileConverter;
 import java.io.File;
 import java.math.BigInteger;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 import java.util.concurrent.Callable;
 import paccor.cli.pv.ReadableFileConverter;
 import paccor.json.AttributesJsonHelper;
@@ -29,7 +33,7 @@ import paccor.json.HardwareManifestJsonHelper;
 import paccor.json.ObjectMapperFactory;
 import paccor.model.PlatformCertificateInformationModel;
 import paccor.model.HolderInfo;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import paccor.model.CertificateReference;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.DERNull;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
@@ -38,12 +42,8 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import paccor.crypto.SignatureProfiles;
-import paccor.tcg.credential.CertificateIdentifier;
-import paccor.tcg.credential.CertificateIdentifierTrait;
 import paccor.tcg.credential.TCGCredentialType;
-import paccor.tcg.credential.TCGObjectIdentifier;
 import paccor.tcg.credential.TCGSpecificationVersion;
-import paccor.tcg.credential.TraitMap;
 
 /**
  * Generate the PlatformCertificateInformationModel using direct import or JSON data files.
@@ -69,6 +69,11 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
 
     @Option(names = CliOptionNames.IN_LONG, description = "Existing to-be-signed data to merge from JSON", converter = ReadableFileConverter.class)
     private File inJson;
+
+    @Option(names = CliOptionNames.PREV_PCERT_LONG,
+            description = "Single previous platform certificate used as the V2.0 chain seed. Use previousPlatformCertificates JSON for additional entries.",
+            split = ",")
+    private List<String> previousPlatformCerts;
 
     // Most relevant certificates. Other certificates may be specified in the JSON.
     @Option(names = { CliOptionNames.ISSUER_CERT_SHORT, CliOptionNames.ISSUER_CERT_LONG }, description = "Issuer certificate file", converter = ReadableFileConverter.class)
@@ -114,6 +119,10 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
     @Override
     public Integer call() throws Exception {
         if (!validateOutputPath()) {
+            return ClientExitCodes.USAGE_ERROR.code();
+        }
+        if (previousPlatformCerts != null && previousPlatformCerts.size() > 1) {
+            common.printError("--prev-pcert accepts one chain seed; use previousPlatformCertificates JSON for additional history.");
             return ClientExitCodes.USAGE_ERROR.code();
         }
 
@@ -195,6 +204,7 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
         if (attributes != null) {
             pi.applyAttributes(attributes);
         }
+        appendExplicitPreviousPlatformCertificates(pi);
     }
 
     private CertificateProfile resolveProfile(
@@ -210,8 +220,8 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
             pi.setIssuer(CertificateResolver.resolveIssuer(issuerCert));
         }
         if (holderCert != null) {
-            applyHolderOrSubject(pi, profile);
             maybeAttachPreviousPlatformCertificates(pi, profile);
+            applyHolderOrSubject(pi, profile);
         }
         if (serial != null) {
             pi.setCertSerialNumber(serial);
@@ -231,7 +241,19 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
         if (profile.outputType() == CertKind.AC) {
             CertType requestedType = certType != null ? certType : CertTypeResolver.inferCertType(pi);
             PlatformCertificate previous = PlatformCertificate.loadSafe(holderCert);
-            if (requestedType != CertType.BASE && previous != null && previous.isAttributeCertificate()) {
+            if (profile.specVersion() == CertSpecVersion.V2_0
+                    && requestedType == CertType.DELTA
+                    && previous != null) {
+                HolderInfo baseHolder = resolveLatestBaseOrRebaseHolder(pi, previous);
+                if (baseHolder != null) {
+                    pi.setHolder(baseHolder);
+                    return;
+                }
+            }
+            if (profile.specVersion() != CertSpecVersion.V2_0
+                    && requestedType != CertType.BASE
+                    && previous != null
+                    && previous.isAttributeCertificate()) {
                 HolderInfo previousHolder = CertificateResolver.resolvePlatformCertificateHolder(holderCert);
                 if (previousHolder != null) {
                     pi.setHolder(previousHolder);
@@ -330,22 +352,77 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
 
     private void maybeAttachPreviousPlatformCertificates(PlatformCertificateInformationModel pi, CertificateProfile profile) {
         if (pi == null || holderCert == null || profile == null) return;
-        if (pi.getPreviousPlatformCertificates() != null) return;
         if (profile.outputType() != CertKind.AC) return;
 
         PlatformCertificate pc = PlatformCertificate.loadSafe(holderCert);
         if (pc == null || pc.certKind() != CertKind.AC) return;
-        CertificateIdentifier id = pc.getCertificateIdentifier();
-        CertType prevType = pc.getCertType();
+        CertType requestedType = certType != null ? certType : CertTypeResolver.inferCertType(pi);
 
-        ASN1ObjectIdentifier category = Optional.ofNullable(CertTypeResolver.toTraitCategory(prevType))
-                .orElse(TCGObjectIdentifier.tcgTrCatPlatformCertificate);
+        if (profile.specVersion() != CertSpecVersion.V2_0
+                || requestedType == CertType.BASE) {
+            if (pi.getPreviousPlatformCertificates() != null) return;
+        }
 
-        CertificateIdentifierTrait trait = CertificateIdentifierTrait.builder()
-                .traitCategory(category)
-                .traitValue(id)
-                .build();
+        CertificateIdentifierChain.append(
+                pi,
+                pc,
+                profile.specVersion() == CertSpecVersion.V2_0 && requestedType != CertType.BASE);
+    }
 
-        pi.setPreviousPlatformCertificates(TraitMap.fromTraits(List.of(trait)));
+    private void appendExplicitPreviousPlatformCertificates(PlatformCertificateInformationModel pi) {
+        if (previousPlatformCerts == null || previousPlatformCerts.isEmpty()) return;
+        for (File file : GlobFileResolver.resolve(previousPlatformCerts)) {
+            PlatformCertificate certificate = PlatformCertificate.loadSafe(file);
+            if (certificate == null || certificate.getCertificateIdentifier() == null) continue;
+            CertificateIdentifierChain.append(pi, certificate, true);
+        }
+    }
+
+    /**
+     * V2.0 delta holder is the holder of the referenced Base/Rebase
+     * certificate, not a newly constructed reference to the -e certificate.
+     */
+    private HolderInfo resolveLatestBaseOrRebaseHolder(
+            PlatformCertificateInformationModel pi,
+            PlatformCertificate supplied) {
+        return reversedReferences(pi)
+                .flatMap(List::stream)
+                .filter(this::isBaseOrRebase)
+                .map(this::holderFromReference)
+                .flatMap(Optional::stream)
+                .findFirst()
+                .or(() -> holderFromBaseOrRebase(supplied))
+                .orElse(null);
+    }
+
+    private Stream<List<CertificateReference>> reversedReferences(PlatformCertificateInformationModel pi) {
+        return Optional.ofNullable(pi.getPreviousPlatformCertificateObjects())
+                .map(ArrayList::new)
+                .map(this::reverse)
+                .stream();
+    }
+
+    private List<CertificateReference> reverse(List<CertificateReference> references) {
+        Collections.reverse(references);
+        return references;
+    }
+
+    private boolean isBaseOrRebase(CertificateReference reference) {
+        return reference != null
+                && (reference.certType() == CertType.BASE || reference.certType() == CertType.REBASE);
+    }
+
+    private Optional<HolderInfo> holderFromReference(CertificateReference reference) {
+        return Optional.ofNullable(reference.file())
+                .map(File::new)
+                .map(PlatformCertificate::loadSafe)
+                .map(CertificateResolver::resolveHolder);
+    }
+
+    private Optional<HolderInfo> holderFromBaseOrRebase(PlatformCertificate certificate) {
+        return Optional.ofNullable(certificate)
+                .filter(candidate -> candidate.getCertType() == CertType.BASE
+                        || candidate.getCertType() == CertType.REBASE)
+                .map(CertificateResolver::resolveHolder);
     }
 }

@@ -32,6 +32,7 @@ public record TbsFinalizer(String tbsB64, String shaHex) {
     public static List<String> validateAc(CertificateProfile profile, PlatformCertificateInformationModel pi) {
         List<String> issues = checkCommonFields(pi);
         issues.addAll(checkSpecification(profile, pi));
+        validateV20Relationship(profile, pi, issues);
         issues.addAll(checkAcFields(pi));
         validateTbbSecurityAssertions(profile.specVersion(), pi, issues);
         validateV2Traits(profile.specVersion(), pi, issues);
@@ -42,6 +43,7 @@ public record TbsFinalizer(String tbsB64, String shaHex) {
     public static List<String> validatePkc(CertificateProfile profile, PlatformCertificateInformationModel pi) {
         List<String> issues = checkCommonFields(pi);
         issues.addAll(checkSpecification(profile, pi));
+        validateV20Relationship(profile, pi, issues);
         issues.addAll(checkPkcFields(pi));
         validateTbbSecurityAssertions(profile.specVersion(), pi, issues);
         validateV2Traits(profile.specVersion(), pi, issues);
@@ -98,6 +100,25 @@ public record TbsFinalizer(String tbsB64, String shaHex) {
             issues.add("Certificate type " + certType + " is not supported for " + profile.specVersion() + ".");
         }
         return issues;
+    }
+
+    /**
+     * V2.0 Delta and Rebase certificates should carry platform history in the
+     * PreviousPlatformCertificates attribute.
+     */
+    private static void validateV20Relationship(
+            CertificateProfile profile,
+            PlatformCertificateInformationModel pi,
+            List<String> issues) {
+        if (profile == null || profile.specVersion() != CertSpecVersion.V2_0 || pi == null) {
+            return;
+        }
+        CertType certType = CertTypeResolver.inferCertType(pi);
+        if ((certType == CertType.DELTA || certType == CertType.REBASE)
+                && (pi.getPreviousPlatformCertificates() == null
+                    || pi.getPreviousPlatformCertificates().isEmpty())) {
+            issues.add("V2.0 " + certType + " certificate requires previousPlatformCertificates.");
+        }
     }
 
     private static List<String> checkAcFields(PlatformCertificateInformationModel pi) {
