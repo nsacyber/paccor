@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import lombok.Builder;
 import paccor.cert.PlatformCertificate;
+import paccor.cert.SubjectAlternativeNameHelper;
 import paccor.cli.GlobFileResolver;
 import paccor.json.HardwareManifestJsonHelper;
 import paccor.normalization.PlatformConfigurationNormalizer;
@@ -38,6 +39,11 @@ public final class ComponentValidationService {
         if (manifest == null) return false;
 
         ComponentMatcher matcher = ValidateMatcher.resolve(matcherName);
+        boolean platformIdentifiersOk = comparePlatformIdentifiers(
+                manifest.platformTraits(),
+                SubjectAlternativeNameHelper.extractPlatformTraits(
+                        certificate.subjectAlternativeNames(), certificate.resolvedSpecVersion()),
+                matcher);
         List<TraitMap> expected = normalizeExpected(
                 manifest.pcV1(), manifest.pcV2(), manifest.pcV3(),
                 certificate.hasAttribute(TCGObjectIdentifier.tcgAtPlatformConfigurationV1),
@@ -45,12 +51,23 @@ public final class ComponentValidationService {
         PlatformConfigurationV3 actual = certificate.canonicalizedPlatformConfigurationV3();
         PlatformConfigurationV3 materialized = materializeWithPrevious(certificate, actual);
         boolean valid = !hasPreviousCertificates() || materialized != null;
-        boolean result = valid && Optional.ofNullable(materialized)
+        boolean result = platformIdentifiersOk && valid && Optional.ofNullable(materialized)
                 .map(configuration -> compare(expected,
                         PlatformConfigurationNormalizer.componentsForValidation(configuration), matcher))
                 .orElse(false);
         report("Components validation: " + (result ? "OK" : "FAILED"));
         return result;
+    }
+
+    private boolean comparePlatformIdentifiers(
+            TraitMap expected,
+            TraitMap actual,
+            ComponentMatcher matcher) {
+        if (expected == null || expected.isEmpty()) {
+            return true;
+        }
+        return actual != null && !actual.isEmpty()
+                && matcher.matchV3(List.of(expected), List.of(actual));
     }
 
     private boolean compare(List<TraitMap> expected, List<TraitMap> actual, ComponentMatcher matcher) {
