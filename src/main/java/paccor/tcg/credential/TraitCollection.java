@@ -8,7 +8,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import lombok.NonNull;
-import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.ASN1Primitive;
@@ -53,6 +52,18 @@ public final class TraitCollection extends ASN1Object implements Iterable<Trait<
 
     public Stream<Trait<?, ?>> stream() {
         return traits.stream();
+    }
+
+    public TraitCollection append(Trait<?, ?> trait) {
+        if (trait == null) return this;
+        return appendAll(fromTraits(List.of(trait)));
+    }
+
+    public TraitCollection appendAll(TraitCollection other) {
+        if (other == null || other.isEmpty()) return this;
+        List<Trait<?, ?>> combined = new ArrayList<>(traits);
+        combined.addAll(other.traits);
+        return new TraitCollection(combined);
     }
 
     public <T extends Trait<?, ?>> Optional<T> firstTrait(Class<T> traitType) {

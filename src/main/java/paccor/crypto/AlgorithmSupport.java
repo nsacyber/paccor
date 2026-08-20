@@ -1,5 +1,6 @@
 package paccor.crypto;
 
+import java.util.Optional;
 import paccor.cert.CertSigEncoding;
 import paccor.exception.PaccorException;
 import paccor.exception.SignatureFailedException;
@@ -226,6 +227,13 @@ public class AlgorithmSupport {
         if (isRsaPkcs1(oid)) return "SHA384withRSA";  // default for unknown RSA
 
         throw new UnsupportedAlgorithmException(oid);
+    }
+
+    public static String printSignatureNameOrOid(AlgorithmIdentifier algId) {
+        return Optional.ofNullable(algId)
+                .map(AlgorithmIdentifier::getAlgorithm)
+                .map(oid -> OID_TO_JCA_SIGNATURE.getOrDefault(oid, oid.getId()))
+                .orElse(null);
     }
 
     /**

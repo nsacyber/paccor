@@ -1,6 +1,7 @@
 package paccor.cert;
 
 import jakarta.validation.constraints.NotNull;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import paccor.cli.CliHelper;
 import java.io.File;
 import java.math.BigInteger;
@@ -388,6 +389,14 @@ public final class PlatformCertificate {
             return getAttributeCertificate().getNotAfter();
         }
         return null;
+    }
+
+    public AlgorithmIdentifier extractSignatureAlgorithm() {
+        return isPublicKeyCertificate()
+                ? getPublicKeyCertificate().getSignatureAlgorithm()
+                : isAttributeCertificate()
+                    ? getAttributeCertificate().getSignatureAlgorithm()
+                    : null;
     }
 
     public Extensions extractExtensions() {

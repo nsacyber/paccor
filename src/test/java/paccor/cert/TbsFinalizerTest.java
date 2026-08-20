@@ -28,6 +28,7 @@ import paccor.tcg.credential.PlatformPropertiesV2;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERUTF8String;
 import paccor.tcg.credential.TCGSpecificationVersion;
+import paccor.tcg.credential.TCGCredentialType;
 
 public class TbsFinalizerTest {
     private static final AlgorithmIdentifier SIG_ALG =
@@ -283,6 +284,26 @@ public class TbsFinalizerTest {
         List<String> issues = TbsFinalizer.validateAc(CertificateProfile.platformV2_0Ac(), pi);
         Assertions.assertTrue(issues.contains("Component[0] is missing required trait category: " + TCGObjectIdentifier.tcgTrCatComponentStatus.getId()));
         Assertions.assertTrue(issues.contains("Property[0] in Delta Platform Certificate SHALL contain the status field."));
+    }
+
+    @Test
+    void validateAc_v20_deltaRequiresPreviousPlatformCertificates() {
+        PlatformCertificateInformationModel pi = sampleV20Model();
+        pi.setTcgCredentialType(new TCGCredentialType(TCGObjectIdentifier.tcgKpDeltaPlatformAttributeCertificate));
+
+        List<String> issues = TbsFinalizer.validateAc(CertificateProfile.platformV2_0Ac(), pi);
+
+        Assertions.assertTrue(issues.contains("V2.0 DELTA certificate requires previousPlatformCertificates."));
+    }
+
+    @Test
+    void validateAc_v20_rebaseRequiresPreviousPlatformCertificates() {
+        PlatformCertificateInformationModel pi = sampleV20Model();
+        pi.setTcgCredentialType(new TCGCredentialType(TCGObjectIdentifier.tcgKpAdditionalPlatformAttributeCertificate));
+
+        List<String> issues = TbsFinalizer.validateAc(CertificateProfile.platformV2_0Ac(), pi);
+
+        Assertions.assertTrue(issues.contains("V2.0 REBASE certificate requires previousPlatformCertificates."));
     }
 
     @Test

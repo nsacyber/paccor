@@ -57,6 +57,8 @@ public final class CliOptionNames {
     public static final String PUBLIC_KEY_CERT_LONG = "--publicKeyCert";
     public static final String COMPONENT_MATCHER_LONG = "--component-matcher";
     public static final String PREV_PCERT_LONG = "--prev-pcert";
+    public static final String TRUST_ANCHOR_LONG = "--trust-anchor";
+    public static final String CRL_LONG = "--crl";
     public static final String CERTIFICATE_LONG = "--certificate";
 
 }

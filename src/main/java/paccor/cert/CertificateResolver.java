@@ -87,13 +87,13 @@ public class CertificateResolver {
         }
 
         // Try to load as AC
-        X509AttributeCertificateHolder ac = loadACSafe(holderCert);
+        X509AttributeCertificateHolder ac = CliHelper.loadCertSafe(holderCert, x509type.ATTRIBUTE_CERTIFICATE);
         if (ac != null) {
             return CertKind.AC;
         }
 
         // Try to load as X.509
-        X509CertificateHolder x509 = loadX509Safe(holderCert);
+        X509CertificateHolder x509 = CliHelper.loadCertSafe(holderCert, x509type.CERTIFICATE);
         if (x509 != null) {
             // Check for TCG EK extended key usage
             if (hasTcgEkExtendedKeyUsage(x509)) {
@@ -130,8 +130,8 @@ public class CertificateResolver {
      * @return HolderInfo with ASN.1 Holder, or null if not resolvable
      */
     public static HolderInfo resolveHolder(File ekCertFile, File acCertFile) {
-        X509CertificateHolder ekCert = loadX509Safe(ekCertFile);
-        X509AttributeCertificateHolder acCert = loadACSafe(acCertFile);
+        X509CertificateHolder ekCert = CliHelper.loadCertSafe(ekCertFile, x509type.CERTIFICATE);
+        X509AttributeCertificateHolder acCert = CliHelper.loadCertSafe(acCertFile, x509type.ATTRIBUTE_CERTIFICATE);
         return resolveHolder(ekCert, acCert);
     }
 
@@ -145,7 +145,7 @@ public class CertificateResolver {
             X509CertificateHolder ekCert,
             X509AttributeCertificateHolder acCert) {
         Holder holderAsn1 = resolveHolderAsn1(ekCert, acCert);
-        return toHolderInfo(holderAsn1);
+        return HolderInfo.fromHolder(holderAsn1);
     }
 
     /**
@@ -158,7 +158,7 @@ public class CertificateResolver {
             return null;
         }
         try {
-            return toHolderInfo(certificate.getAttributeCertificate().toASN1Structure().getAcinfo().getHolder());
+            return HolderInfo.fromHolder(certificate.getAttributeCertificate().toASN1Structure().getAcinfo().getHolder());
         } catch (Exception ignored) {
             return null;
         }
@@ -189,11 +189,11 @@ public class CertificateResolver {
                 if (issuers == null || issuers.length == 0) {
                     return null;
                 }
-                return toHolderInfo(issuerSerialHolder(issuers[0], ac.getSerialNumber()));
+                return HolderInfo.fromHolder(issuerSerialHolder(issuers[0], ac.getSerialNumber()));
             }
             if (certificate.isPublicKeyCertificate()) {
                 X509CertificateHolder pkc = certificate.getPublicKeyCertificate();
-                return toHolderInfo(issuerSerialHolder(pkc.getIssuer(), pkc.getSerialNumber()));
+                return HolderInfo.fromHolder(issuerSerialHolder(pkc.getIssuer(), pkc.getSerialNumber()));
             }
         } catch (Exception ignored) {
             // Return null for malformed or incomplete certificate metadata.
@@ -281,7 +281,7 @@ public class CertificateResolver {
      * @return SubjectInfo with subject DN and SPKI, or null if not resolvable
      */
     public static SubjectInfo resolveSubject(File subjectCertFile) {
-        X509CertificateHolder cert = loadX509Safe(subjectCertFile);
+        X509CertificateHolder cert = CliHelper.loadCertSafe(subjectCertFile, x509type.CERTIFICATE);
         return resolveSubject(cert);
     }
 
@@ -325,7 +325,7 @@ public class CertificateResolver {
      * @return NameInfo with issuer DN, or null if not resolvable
      */
     public static NameInfo resolveIssuer(File issuerCertFile) {
-        X509CertificateHolder cert = loadX509Safe(issuerCertFile);
+        X509CertificateHolder cert = CliHelper.loadCertSafe(issuerCertFile, x509type.CERTIFICATE);
         return resolveIssuer(cert);
     }
 
@@ -387,42 +387,11 @@ public class CertificateResolver {
 
     // ========== Helper Methods ==========
 
-    private static X509CertificateHolder loadX509Safe(File file) {
-        if (file == null || !file.exists()) return null;
-        try {
-            return CliHelper.loadCert(file.getPath(), x509type.CERTIFICATE);
-        } catch (Exception ignored) {}
-        return null;
-    }
-
-    private static X509AttributeCertificateHolder loadACSafe(File file) {
-        if (file == null || !file.exists()) return null;
-        try {
-            return CliHelper.loadCert(file.getPath(), x509type.ATTRIBUTE_CERTIFICATE);
-        } catch (Exception ignored) {}
-        return null;
-    }
-
     private static String x500ToDerB64(X500Name name) {
         try {
             return Base64.toBase64String(name.getEncoded());
         } catch (Exception e) {
             return null;
         }
-    }
-
-    private static HolderInfo toHolderInfo(Holder holderAsn1) {
-        if (holderAsn1 == null) {
-            return null;
-        }
-        String holderDerB64 = null;
-        try {
-            holderDerB64 = Base64.toBase64String(holderAsn1.getEncoded("DER"));
-        } catch (Exception ignored) {}
-
-        return HolderInfo.builder()
-                .holder(holderAsn1)
-                .holderDerB64(holderDerB64)
-                .build();
     }
 }

@@ -6,6 +6,7 @@ import java.io.File;
 import java.util.List;
 import java.util.concurrent.Callable;
 import paccor.cli.pv.ReadableFileConverter;
+import paccor.crypto.AlgorithmSupport;
 import paccor.model.PlatformCertificateInformationModel;
 import paccor.normalization.PlatformConfigurationNormalizer;
 import picocli.CommandLine.Command;
@@ -56,6 +57,10 @@ public class ViewCmd implements Callable<Integer>, HasCommonOptions {
         println("Certificate Type: " + valueOrUnknown(certificate.getCertType()));
         println("Certificate Spec Version: " + valueOrUnknown(certificate.resolvedSpecVersion()));
         println("Declared TCG Credential Spec: " + info.describeCredSpec());
+        println("Validity:");
+        println("  Not Before: " + valueOrUnknown(certificate.extractNotBefore()));
+        println("  Not After: " + valueOrUnknown(certificate.extractNotAfter()));
+        println("Signature Algorithm: " + valueOrUnknown(AlgorithmSupport.printSignatureNameOrOid(certificate.extractSignatureAlgorithm())));
         println((certificate.certKind() == CertKind.AC ? "Holder: " : "Subject: ") + info.describeSubject());
         println("Issuer: " + info.describeIssuer());
         println("Serial: " + info.getCertSerialNumber());

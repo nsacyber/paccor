@@ -1,7 +1,10 @@
 package paccor.cli;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.bouncycastle.cert.X509CRLHolder;
 import paccor.cert.CertKind;
 import paccor.exception.CertificateLoadException;
 import paccor.exception.PaccorException;
@@ -44,7 +47,8 @@ public class CliHelper {
         PRIVATE_KEY("PRIVATE KEY", PrivateKeyInfo.class),
         RSA_PRIVATE_KEY("RSA PRIVATE KEY", PrivateKeyInfo.class),
         DSA_PRIVATE_KEY("DSA PRIVATE KEY", PrivateKeyInfo.class),
-        EC_PRIVATE_KEY("EC PRIVATE KEY", PrivateKeyInfo.class);
+        EC_PRIVATE_KEY("EC PRIVATE KEY", PrivateKeyInfo.class),
+        X509_CRL("X509 CRL", X509CRLHolder.class);
         
         private final String pemType;
         private final Class<? extends Encodable> clazz;
@@ -149,19 +153,13 @@ public class CliHelper {
 
     @SuppressWarnings("unchecked")
     public static final <T extends Encodable> T loadCert(final String filename, final x509type type) throws IOException {
-        T cert = null;
-        // Read and parse file
-        Object readObject = readPemObject(CliHelper.derToPem(filename, type));
-        
-        // Retrieve desired type
+        Object readObject = loadObjects(new File(filename), type).stream().findFirst().orElse(null);
         if (type.getClazz().isInstance(readObject)) {
-            cert = (T)readObject;
+            return (T) readObject;
         } else if ((type == x509type.RSA_PRIVATE_KEY || type == x509type.EC_PRIVATE_KEY || type == x509type.DSA_PRIVATE_KEY) && readObject instanceof PEMKeyPair pemKeyPairObj) {
-            cert = (T)(pemKeyPairObj.getPrivateKeyInfo());
-        } else {
-            throw new IOException(filename + " was not a valid " + type.getPemObjectType());
+            return (T) pemKeyPairObj.getPrivateKeyInfo();
         }
-        return cert;
+        throw new IOException(filename + " was not a valid " + type.getPemObjectType());
     }
 
     public static final <T extends Encodable> T loadCertSafe(final String filename, final x509type type) {
@@ -207,30 +205,84 @@ public class CliHelper {
         }
     }
 
-    private static Object readPemObject(byte[] data) throws IOException {
-        InputStreamReader isr = null;
-        PEMParser p = null;
-        Object readObject = null;
+    public static final List<X509CertificateHolder> loadCertificates(List<File> files) {
+        return loadObjects(files, x509type.CERTIFICATE).stream()
+                .filter(X509CertificateHolder.class::isInstance)
+                .map(X509CertificateHolder.class::cast)
+                .toList();
+    }
+
+    public static final List<X509CRLHolder> loadCrls(List<File> files) {
+        return loadObjects(files, x509type.X509_CRL).stream()
+                .filter(X509CRLHolder.class::isInstance)
+                .map(X509CRLHolder.class::cast)
+                .toList();
+    }
+
+    private static List<Object> loadObjects(File file, x509type type) throws IOException {
+        byte[] bytes = Files.readAllBytes(file.toPath());
         try {
-            isr = new InputStreamReader(new ByteArrayInputStream(data));
-            p = new PEMParser(isr);
-            readObject = p.readObject();
-        } catch (Exception e) {
-            // Check if it's "unexpected object: org.bouncycastle.asn1.ASN1Integer"
-            if (e.getMessage() != null && e.getMessage().contains("ASN1Integer")) {
-                throw new IOException("Failed to parse PEM object: likely trying to parse a PKC as an AC", e);
+            List<Object> objects = readPemObjects(bytes);
+            if (!objects.isEmpty()) {
+                return objects;
             }
-            if (e instanceof IOException ioe) throw ioe;
-            throw new IOException("Failed to read PEM object", e);
-        } finally {
-            if (p != null) {
-                p.close();
-            }
-            if (isr != null) {
-                isr.close();
+        } catch (IOException ignored) {
+            // Fall through to DER parsing below.
+        }
+        Object object = readPemObject(bytesToPem(bytes, type).getBytes(StandardCharsets.US_ASCII));
+        if (object == null) {
+            throw new IOException(file + " did not contain a " + type.getPemObjectType());
+        }
+        return List.of(object);
+    }
+
+    private static List<Object> loadObjects(List<File> files, x509type type) {
+        List<Object> objects = new ArrayList<>();
+        for (File file : files) {
+            try {
+                objects.addAll(loadObjects(file, type));
+            } catch (IOException ignored) {
+                // Ignore unreadable files.
             }
         }
-        return readObject;
+        return objects;
+    }
+
+    private static Object readPemObject(byte[] data) throws IOException {
+        try (InputStreamReader reader = new InputStreamReader(
+                new ByteArrayInputStream(data), StandardCharsets.US_ASCII);
+                PEMParser parser = new PEMParser(reader)) {
+            return parser.readObject();
+        } catch (Exception e) {
+            throw pemReadException(e);
+        }
+    }
+
+    private static List<Object> readPemObjects(byte[] data) throws IOException {
+        List<Object> objects = new ArrayList<>();
+        try (InputStreamReader reader = new InputStreamReader(
+                new ByteArrayInputStream(data), StandardCharsets.US_ASCII);
+                PEMParser parser = new PEMParser(reader)) {
+            Object object;
+            while ((object = parser.readObject()) != null) {
+                objects.add(object);
+            }
+        } catch (Exception e) {
+            // Preserve successfully parsed objects if a later PEM object is malformed.
+            if (!objects.isEmpty()) {
+                return objects;
+            }
+            throw pemReadException(e);
+        }
+        return objects;
+    }
+
+    private static IOException pemReadException(Exception e) {
+        if (e.getMessage() != null && e.getMessage().contains("ASN1Integer")) {
+            return new IOException("Failed to parse PEM object: likely trying to parse a PKC as an AC", e);
+        }
+        if (e instanceof IOException ioe) return ioe;
+        return new IOException("Failed to read PEM object", e);
     }
 
     public static Object readPemObjectSafe(byte[] bytes) {
