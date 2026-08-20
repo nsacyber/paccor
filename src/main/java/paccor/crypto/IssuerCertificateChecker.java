@@ -1,10 +1,7 @@
 package paccor.crypto;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.cert.CertPathBuilder;
 import java.security.cert.CertStore;
@@ -17,23 +14,14 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import org.bouncycastle.cert.CertException;
 import org.bouncycastle.cert.X509CertificateHolder;
-import org.bouncycastle.openssl.PEMParser;
 import org.bouncycastle.operator.ContentVerifierProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 import paccor.cert.PlatformCertificate;
 
 /** Validates platform-certificate signatures and issuer certificate paths. */
-public final class IssuerValidator {
-    public Optional<X509CertificateHolder> load(File issuerFile) {
-        return Optional.ofNullable(issuerFile)
-                .filter(File::exists)
-                .map(File::getPath)
-                .map(paccor.cli.CliHelper::loadPKCSafe);
-    }
-
+public final class IssuerCertificateChecker {
     public boolean validateSignature(PlatformCertificate platform, X509CertificateHolder issuer) {
         try {
             ContentVerifierProvider verifier = SignatureService.buildWithDefault(issuer);
@@ -43,12 +31,12 @@ public final class IssuerValidator {
         }
     }
 
-    public boolean validateTrustPath(X509CertificateHolder issuer, List<File> trustStoreFiles) {
+    public boolean validateTrustPath(X509CertificateHolder issuer, List<X509CertificateHolder> trustStoreCertificates) {
         try {
             X509Certificate target = toJcaCertificate(issuer);
-            List<X509Certificate> certificates = loadCertificates(trustStoreFiles);
+            List<X509Certificate> certificates = toJcaCertificates(trustStoreCertificates);
             var anchors = certificates.stream()
-                    .filter(IssuerValidator::isSelfSigned)
+                    .filter(IssuerCertificateChecker::isSelfSigned)
                     .map(certificate -> new TrustAnchor(certificate, null))
                     .collect(java.util.stream.Collectors.toCollection(HashSet::new));
             List<X509Certificate> intermediates = certificates.stream()
@@ -76,29 +64,11 @@ public final class IssuerValidator {
                 .generateCertificate(new ByteArrayInputStream(holder.getEncoded()));
     }
 
-    private static List<X509Certificate> loadCertificates(List<File> files) throws Exception {
+    private static List<X509Certificate> toJcaCertificates(List<X509CertificateHolder> holders) throws Exception {
         List<X509Certificate> certificates = new ArrayList<>();
-        for (File file : files) {
-            for (X509CertificateHolder holder : loadBundle(file)) {
-                certificates.add(toJcaCertificate(holder));
-            }
+        for (X509CertificateHolder holder : holders) {
+            certificates.add(toJcaCertificate(holder));
         }
-        return certificates;
-    }
-
-    private static List<X509CertificateHolder> loadBundle(File file) throws Exception {
-        List<X509CertificateHolder> certificates = new ArrayList<>();
-        byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
-        try (PEMParser parser = new PEMParser(new InputStreamReader(
-                new ByteArrayInputStream(bytes), StandardCharsets.US_ASCII))) {
-            Object object;
-            while ((object = parser.readObject()) != null) {
-                if (object instanceof X509CertificateHolder certificate) certificates.add(certificate);
-            }
-        } catch (Exception ignored) {
-            // Fall through to DER parsing below.
-        }
-        if (certificates.isEmpty()) certificates.add(new X509CertificateHolder(bytes));
         return certificates;
     }
 

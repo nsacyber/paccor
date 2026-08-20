@@ -6,7 +6,7 @@ import org.bouncycastle.util.encoders.Base64;
 
 @Builder
 public record HolderInfo(Holder holder, String holderDerB64) {
-    public static HolderInfo fromDerB64(String b64) {
+    public static final HolderInfo fromDerB64(String b64) {
         if (b64 == null) return null;
         try {
             return HolderInfo.builder()
@@ -16,6 +16,21 @@ public record HolderInfo(Holder holder, String holderDerB64) {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    public static final HolderInfo fromHolder(Holder holderAsn1) {
+        if (holderAsn1 == null) {
+            return null;
+        }
+        String holderDerB64 = null;
+        try {
+            holderDerB64 = Base64.toBase64String(holderAsn1.getEncoded("DER"));
+        } catch (Exception ignored) {}
+
+        return HolderInfo.builder()
+                .holder(holderAsn1)
+                .holderDerB64(holderDerB64)
+                .build();
     }
 
     public Holder resolvedHolder() {

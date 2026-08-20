@@ -7,7 +7,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import paccor.cli.pv.ReadableFileConverter;
-import paccor.crypto.IssuerValidator;
+import paccor.crypto.IssuerCertificateChecker;
 import paccor.crypto.RevocationChecker;
 import org.bouncycastle.cert.X509CertificateHolder;
 import picocli.CommandLine.Command;
@@ -22,7 +22,7 @@ import paccor.validator.ValidationReport;
 @Command(name = "validate", mixinStandardHelpOptions = true, description = "Validate signature, and optionally components and certificate profile")
 public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
     @Mixin private CommonOptions common;
-    private final IssuerValidator issuerValidator = new IssuerValidator();
+    private final IssuerCertificateChecker issuerChecker = new IssuerCertificateChecker();
     private final RevocationChecker revocationChecker = new RevocationChecker();
 
     @Option(names = { CliOptionNames.PLATFORM_CERT_FILE_SHORT, CliOptionNames.X509V2_ATTR_CERT_LONG/*backwards compatibility*/, CliOptionNames.PKC_PLATFORM_CERT_LONG }, description = "Platform certificate file", required = true, converter = ReadableFileConverter.class)
@@ -54,16 +54,19 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
             return reportOverall(false, ClientExitCodes.USAGE_ERROR).code();
         }
 
-        Optional<X509CertificateHolder> signer = issuerValidator.load(signerFile);
-        boolean signatureOk = signer.map(value -> issuerValidator.validateSignature(certificate, value))
+        Optional<X509CertificateHolder> signer = Optional.ofNullable(
+                signerFile == null ? null : CliHelper.loadPKCSafe(signerFile.getPath()));
+        boolean signatureOk = signer.map(value -> issuerChecker.validateSignature(certificate, value))
                 .map(this::reportSignature)
                 .orElseGet(() -> reportSignature(false));
         boolean trustOk = trustAnchorList == null || trustAnchorList.isEmpty()
-                || signer.map(value -> issuerValidator.validateTrustPath(value, GlobFileResolver.resolve(trustAnchorList)))
+                || signer.map(value -> issuerChecker.validateTrustPath(value,
+                        CliHelper.loadCertificates(GlobFileResolver.resolve(trustAnchorList))))
                         .map(this::reportTrust)
                         .orElseGet(() -> reportTrust(false));
         boolean crlOk = crlList == null || crlList.isEmpty()
-                || signer.map(value -> revocationChecker.validate(certificate, value, GlobFileResolver.resolve(crlList)))
+                || signer.map(value -> revocationChecker.validate(certificate, value,
+                        CliHelper.loadCrls(GlobFileResolver.resolve(crlList))))
                         .map(this::reportCrl)
                         .orElseGet(() -> reportCrl(false));
         boolean specificationOk = validateSpecification(certificate);
