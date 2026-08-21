@@ -25,6 +25,10 @@ public final class LogBootstrap {
         INFO,
         WARN,
         ERROR;
+
+        public Level toLevel() {
+            return LogBootstrap.toLevel(this);
+        }
     }
 
     private LogBootstrap() {}
