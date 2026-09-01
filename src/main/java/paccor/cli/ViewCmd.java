@@ -108,9 +108,7 @@ public class ViewCmd implements Callable<Integer>, HasCommonOptions {
     }
 
     private void println(String text) {
-        if (!common.quiet) {
-            System.out.println(text);
-        }
+        common.printInfo(text);
     }
 
     private static String valueOrUnknown(Object value) {

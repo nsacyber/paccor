@@ -26,9 +26,11 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.IntStream;
+import java.util.logging.Logger;
 
 @Builder
 public record TbsFinalizer(String tbsB64, String shaHex) {
+    private static final Logger LOGGER = Logger.getLogger(TbsFinalizer.class.getName());
     public static List<String> validateAc(CertificateProfile profile, PlatformCertificateInformationModel pi) {
         List<String> issues = checkCommonFields(pi);
         issues.addAll(checkSpecification(profile, pi));
@@ -333,7 +335,7 @@ public record TbsFinalizer(String tbsB64, String shaHex) {
                 ? validateAc(profile, pi)
                 : validatePkc(profile, pi);
         if (!issues.isEmpty()) {
-            issues.forEach(msg -> System.err.println("Finalize check: " + msg));
+            issues.forEach(msg -> LOGGER.warning("Finalize check: " + msg));
             throw new IllegalStateException("Finalize failed: profile constraints not met.");
         }
         if (rr.tbsB64() == null) throw new IllegalStateException("--finalize could not rebuild TBS; check inputs and sig-profile");

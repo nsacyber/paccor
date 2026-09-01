@@ -1,6 +1,8 @@
 package paccor.cli;
 
 import java.io.File;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -9,26 +11,28 @@ import picocli.CommandLine.Option;
  */
 @Command
 public class CommonOptions {
-    @Option(names = CliOptionNames.LOG_LEVEL_LONG, defaultValue = "info")
+    private static final Logger LOGGER = Logger.getLogger(CommonOptions.class.getName());
+
+    @Option(names = CliOptionNames.LOG_LEVEL_LONG, description = "Options: " + LogBootstrap.AVAILABLE_LEVELS, defaultValue = "INFO")
     String logLevel;
-    @Option(names = CliOptionNames.LOG_FILE_LONG)
+    @Option(names = CliOptionNames.LOG_FILE_LONG, description = "Path to save rotating logs. If null or omitted, file logging is disabled.")
     File logFile;
-    @Option(names = {CliOptionNames.QUIET_SHORT, CliOptionNames.QUIET_LONG})
+    @Option(names = {CliOptionNames.QUIET_SHORT, CliOptionNames.QUIET_LONG}, description = "Suppress console logging.")
     boolean quiet;
 
     /**
-     * Print info message if not in quiet mode.
-     * @param msg Message to print.
+     * Logs an informational message. Console visibility is controlled by LogBootstrap.
+     * @param msg Message to log.
      */
     public void printInfo(String msg){
-        if (!quiet) System.out.println(msg);
+        LOGGER.log(Level.INFO, msg);
     }
 
     /**
-     * Print an error message if not in quiet mode.
-     * @param msg Message to print.
+     * Logs an error message. Console visibility is controlled by LogBootstrap.
+     * @param msg Message to log.
      */
     public void printError(String msg){
-        if (!quiet) System.err.println(msg);
+        LOGGER.log(Level.SEVERE, msg);
     }
 }

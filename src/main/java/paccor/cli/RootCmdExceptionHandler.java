@@ -20,7 +20,6 @@ public class RootCmdExceptionHandler implements CommandLine.IExecutionExceptionH
         if (cause instanceof PaccorException pe) {
             if (opts != null) {
                 LogBootstrap.init(opts.logLevel, opts.logFile, opts.quiet);
-                opts.printError("Error: " + toUserMessage(pe));
             }
             Logger logger = Logger.getLogger(cmd.getCommandName());
             if (shouldLogThrowable(opts)) {
@@ -33,7 +32,6 @@ public class RootCmdExceptionHandler implements CommandLine.IExecutionExceptionH
 
         if (opts != null) {
             LogBootstrap.init(opts.logLevel, opts.logFile, opts.quiet);
-            opts.printError("Unexpected error: " + cause.getMessage());
         }
         Logger logger = Logger.getLogger(cmd.getCommandName());
         if (shouldLogThrowable(opts)) {
