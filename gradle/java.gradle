@@ -3,6 +3,12 @@ java {
     withJavadocJar()
 }
 
+tasks.named("jar") {
+    manifest {
+        attributes("Implementation-Version": project.version)
+    }
+}
+
 dependencies {
     // Versions and module coordinates in
     // <project>/gradle/libs.versions.toml

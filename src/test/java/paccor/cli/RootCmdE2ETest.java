@@ -45,6 +45,21 @@ class RootCmdE2ETest extends TestSupport {
     }
 
     @Test
+    void testVersionOptionPrintsVersion() throws Exception {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintStream original = System.out;
+        try {
+            System.setOut(new PrintStream(out, true, StandardCharsets.UTF_8));
+            int rc = RootCmd.commandLine().execute("--version");
+            Assertions.assertEquals(0, rc);
+        } finally {
+            System.setOut(original);
+        }
+
+        Assertions.assertFalse(out.toString(StandardCharsets.UTF_8).isBlank());
+    }
+
+    @Test
     void testViewCommandShowsCertificateSummary() throws Exception {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         PrintStream original = System.out;

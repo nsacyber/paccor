@@ -1,11 +1,21 @@
 ﻿using System.Diagnostics;
+using System.Text.RegularExpressions;
 
 namespace Pcie;
-public static class ShellHelper {
-    public static Task<Tuple<int, string, string>> Ethtool(string arguments) {
+public static partial class ShellHelper {
+    [GeneratedRegex(@"^[a-zA-Z0-9_-]$")]
+    private static partial Regex InterfaceNameRegex();
+
+    public static Task<Tuple<int, string, string>> Ethtool(string interfaceName) {
+        if (!InterfaceNameRegex().IsMatch(interfaceName)) {
+            TaskCompletionSource<Tuple<int, string, string>> source = new();
+            source.SetException(new Exception(""));
+            return source.Task;
+        }
+
         ProcessStartInfo info = new() {
             FileName = "bash",
-            Arguments = $"-c \"ethtool {arguments}\"",
+            ArgumentList = { "-P", interfaceName },
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -13,11 +23,11 @@ public static class ShellHelper {
         };
         return Execute(info);
     }
-    public static Task<Tuple<int, string, string>> Powershell(string arguments) {
-        char ch = '"'; // couldn't get escaping to work properly without this method
+
+    public static Task<Tuple<int, string, string>> Powershell(string encodedCommand) {
         ProcessStartInfo info = new() {
             FileName = "powershell.exe",
-            Arguments = "-NoProfile -ExecutionPolicy Bypass -Command " + ch + arguments  + ch,
+            Arguments = $"-NoProfile -EncodedCommand {encodedCommand}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -35,9 +45,8 @@ public static class ShellHelper {
 
         try {
             process.Start();
-            
-            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
 
+            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
             Task<string> errorTask = process.StandardError.ReadToEndAsync();
 
             process.WaitForExit();

@@ -1,10 +1,12 @@
 package paccor.cli;
 
+import paccor.cli.pv.VersionProvider;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine;
 
 @Command(name = "paccor", description = "Platform Certificate Creator CLI", mixinStandardHelpOptions = true,
+    versionProvider = VersionProvider.class,
     subcommands = {
         CertGenCmd.class,
         AssembleCmd.class,

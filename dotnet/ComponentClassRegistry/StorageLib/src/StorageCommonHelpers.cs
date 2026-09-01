@@ -93,7 +93,6 @@ public static class StorageCommonHelpers {
             process.Start();
 
             Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
-
             Task<string> errorTask = process.StandardError.ReadToEndAsync();
 
             process.WaitForExit();
