@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import lombok.NonNull;
 import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1Boolean;
@@ -35,6 +37,8 @@ import org.bouncycastle.asn1.DERUTF8String;
  * Common methods to transform ASN1 objects.
  */
 public class ASN1Utils {
+    private static final Logger LOGGER = Logger.getLogger(ASN1Utils.class.getName());
+
     /**
      * Given a list of ASN1Objects, put all elements into an ASN1 vector.
      * @param list List of ASN1Encodable objects, usually ASN1Objects
@@ -119,7 +123,9 @@ public class ASN1Utils {
         }
         try {
             return decoder.apply(obj);
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            LOGGER.log(Level.FINE, "tagAware decoding of obj failed, but allowing to continue.");
+        }
 
         return defaultAnswer;
     }

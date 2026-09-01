@@ -23,7 +23,7 @@ import paccor.validator.ValidationReport;
 @Command(name = "validate", mixinStandardHelpOptions = true, description = "Validate signature, and optionally components and certificate profile")
 public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
     private static final Logger LOGGER = Logger.getLogger(ValidateCmd.class.getName());
-    
+
     @Mixin private CommonOptions common;
     private final IssuerCertificateChecker issuerChecker = new IssuerCertificateChecker();
     private final RevocationChecker revocationChecker = new RevocationChecker();

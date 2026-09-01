@@ -36,9 +36,7 @@ public class Pkcs12Helper {
      */
     public static final X509Credential loadPkcs12Key(final String filename, final char[] password) throws IOException {
         KeyStore.PasswordProtection pw = null;
-        FileInputStream fis = null;
-        try {
-            fis = new FileInputStream(filename);
+        try (FileInputStream fis = new FileInputStream(filename)) {
             pw = password != null
                     ? CliHelper.passwordProtection(password)
                     : CliHelper.getPassword("Enter password for " + filename + ":");
@@ -55,9 +53,6 @@ public class Pkcs12Helper {
         } catch (GeneralSecurityException e) {
             throw new IOException(e);
         } finally {
-            if (fis != null) {
-                fis.close();
-            }
             try {
                 if (pw != null) {
                     pw.destroy();

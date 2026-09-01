@@ -1,6 +1,8 @@
 package paccor.crypto;
 
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import paccor.cert.CertSigEncoding;
 import paccor.exception.PaccorException;
 import paccor.exception.SignatureFailedException;
@@ -51,6 +53,8 @@ import org.bouncycastle.crypto.signers.MLDSASigner;
  * Centralized algorithm support utilities for CLI commands.
  */
 public class AlgorithmSupport {
+    private static final Logger LOGGER = Logger.getLogger(AlgorithmSupport.class.getName());
+
     private static final Map<ASN1ObjectIdentifier, String> OID_TO_JCA_SIGNATURE = Map.ofEntries(
             // ECDSA
             Map.entry(X9ObjectIdentifiers.ecdsa_with_SHA1, "SHA1withECDSA"),
@@ -305,12 +309,26 @@ public class AlgorithmSupport {
      * @return The DER-encoded signature
      */
     public static byte[] ecdsaP1363ToDer(byte[] sig) {
+        if (sig == null || sig.length == 0 || sig.length % 2 != 0) {
+            String msg = "P1363 signature size is invalid.";
+            LOGGER.log(Level.FINE, msg);
+            throw new RuntimeException(msg);
+        }
+
         int len = sig.length / 2;
         BigInteger r = new BigInteger(1, Arrays.copyOfRange(sig, 0, len));
         BigInteger s = new BigInteger(1, Arrays.copyOfRange(sig, len, sig.length));
         try {
-            return new DERSequence(new ASN1Encodable[]{ new ASN1Integer(r), new ASN1Integer(s) }).getEncoded("DER");
-        } catch (Exception e) { throw new RuntimeException(e); }
+            return new DERSequence(
+                        new ASN1Encodable[] {
+                                new ASN1Integer(r),
+                                new ASN1Integer(s)
+                        }
+                    ).getEncoded("DER");
+        } catch (Exception e) {
+            LOGGER.log(Level.FINE, "P1363 signature conversion failed", e);
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -347,6 +365,7 @@ public class AlgorithmSupport {
             }
             return signer.getSignature();
         } catch (IOException | OperatorCreationException e) {
+            LOGGER.log(Level.FINE, "Signature failed", e);
             throw new SignatureFailedException(e.getMessage(), e);
         }
     }
