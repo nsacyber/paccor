@@ -1,39 +1,58 @@
 using System.Collections.Immutable;
-using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 
 namespace StorageLib.Linux;
 
 [SupportedOSPlatform("linux")]
-public class StorageLinux {
+public static class StorageLinux {
+    
     public static string[] GetPhysicalDevicePaths(ImmutableList<StorageDiskDescriptor> paths, StorageLinuxConstants.BlockType type) {
         string[] matches = paths
-                            .Where(x => (x is StorageLinuxDiskDescriptor) && ((StorageLinuxDiskDescriptor)x).BlockType == type)
+                            .Where(x => (x is StorageLinuxDiskDescriptor descriptor) && descriptor.BlockType == type)
                             .Select(x => x.DiskId)
                             .Distinct()
                             .ToArray();
         return matches;
     }
+    
+    private const int DiscoveryAttempts = 3;
 
     public static ImmutableList<StorageDiskDescriptor> GetPhysicalDevicePaths() {
-        // Lsblk is asked to output columns NAME,MAJ:MIN with paths in place of NAME and without headers 
-        Task<Tuple<int, string, string>> task = StorageLinuxImports.LsblkPhysicalDisks();
+        Exception? lastException = null;
 
-        Tuple<int, string, string> results = task.Result;
-        if (task.Exception != null) {
-            return [];
+        for (int attempt = 0; attempt < DiscoveryAttempts; attempt++) {
+            try {
+                return AttemptPhysicalDevicePathResolution();
+            }
+            catch (Exception exception) {
+                lastException = exception;
+
+                if (attempt + 1 < DiscoveryAttempts) {
+                    int delayMilliseconds = 100 * (1 << attempt);
+                    Thread.Sleep(delayMilliseconds);
+                }
+            }
         }
 
-        string lsblkOutput = results.Item3; // lsblkOutput should have each PD on separate line with form: path maj:min
+        String errMsg = $"Unable to enumerate physical storage devices after {DiscoveryAttempts} attempts.";
+        throw new InvalidOperationException(errMsg, lastException);
+    }
+    
+    private static ImmutableList<StorageDiskDescriptor> AttemptPhysicalDevicePathResolution()
+    {
+        Tuple<int, string, string> lsblk =
+            StorageLinuxImports.LsblkPhysicalDisks()
+                .GetAwaiter()
+                .GetResult();
 
-        task = StorageLinuxImports.ListDisksById();
-        results = task.Result;
-        if (task.Exception != null) {
-            return [];
-        }
-        
-        string disksById = results.Item3; // Custom format. Each line: path under /dev/,path under /dev/disk/by-id
+        Tuple<int, string, string> byId =
+            StorageLinuxImports.ListDisksById()
+                .GetAwaiter()
+                .GetResult();
+
+        string lsblkOutput = lsblk.Item3; // lsblkOutput should have each PD on separate line with form: path maj:min
+        string disksById = byId.Item3; // Custom format. Each line: path under /dev/,path under /dev/disk/by-id
         Dictionary<string, List<string>> parsingDisksById = [];
         foreach (string disk in disksById.Split(Environment.NewLine, StringSplitOptions.TrimEntries)) {
             string[] line = disk.Split(',', StringSplitOptions.TrimEntries);
@@ -56,8 +75,7 @@ public class StorageLinux {
         foreach (string dev in devs) {
             string[] devInfo = dev.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             if (devInfo.Length >= 2 && Regex.IsMatch(devInfo[1], "^[0-9]+:[0-9]+$")) {
-                List<string> pathsById = parsingDisksById[devInfo[0]];
-                if (pathsById.Count == 0) {
+                if (!parsingDisksById.TryGetValue(devInfo[0], out List<string>? pathsById) || pathsById.Count == 0) {
                     continue;
                 }
                 
