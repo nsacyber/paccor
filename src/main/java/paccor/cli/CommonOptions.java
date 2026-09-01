@@ -35,4 +35,12 @@ public class CommonOptions {
     public void printError(String msg){
         LOGGER.log(Level.SEVERE, msg);
     }
+
+    /**
+     * Logs a warning. Console visibility is controlled by LogBootstrap.
+     * @param msg Warning message.
+     */
+    public void printWarning(String msg){
+        LOGGER.log(Level.WARNING, msg);
+    }
 }

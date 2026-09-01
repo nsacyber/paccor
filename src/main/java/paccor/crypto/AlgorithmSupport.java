@@ -241,6 +241,32 @@ public class AlgorithmSupport {
     }
 
     /**
+     * Returns whether the signature algorithm uses SHA-1.
+     * {@code RSA-PSS the digest is carried in the algorithm parameters rather than in the signature algorithm OID.}
+     * @param algId the signature algorithm identifier
+     * @return true if the signature uses SHA-1
+     */
+    public static boolean isSha1Signature(AlgorithmIdentifier algId) {
+        if (algId == null) {
+            return false;
+        }
+
+        ASN1ObjectIdentifier oid = algId.getAlgorithm();
+        if (oid.equals(X9ObjectIdentifiers.ecdsa_with_SHA1) || oid.equals(PKCSObjectIdentifiers.sha1WithRSAEncryption)) {
+            return true;
+        }
+        if (!oid.equals(PKCSObjectIdentifiers.id_RSASSA_PSS) || algId.getParameters() == null) {
+            return false;
+        }
+        try {
+            RSASSAPSSparams params = RSASSAPSSparams.getInstance(algId.getParameters());
+            return OIWObjectIdentifiers.idSHA1.equals(params.getHashAlgorithm().getAlgorithm());
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
      * Returns the JCA hash algorithm name for the given OID.
      * @param oid The OID
      * @return The JCA hash algorithm name

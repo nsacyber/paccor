@@ -321,6 +321,9 @@ public record TbsFinalizer(String tbsB64, String shaHex) {
         String tbsB64 = null;
         String shaHex = null;
         if (algId != null && platformInfo != null && platformInfo.getIssuer() != null) {
+            if (AlgorithmSupport.isSha1Signature(algId)) {
+                LOGGER.warning("WARNING: finalizing a certificate that uses SHA-1; SHA-1 is deprecated and should only be used for legacy compatibility.");
+            }
             var tbsBuilder = new TbsEncoder(platformInfo, profile);
             byte[] tbs = tbsBuilder.buildTbs(algId);
             tbsB64 = Base64.toBase64String(tbs);
