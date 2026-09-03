@@ -4,6 +4,8 @@ import java.math.BigInteger;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.X509CRLHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -14,6 +16,8 @@ import paccor.cert.PlatformCertificate;
  * Performs CRL checks for platform certificates.
 */
 public final class RevocationChecker {
+    private static final Logger LOGGER = Logger.getLogger(RevocationChecker.class.getName());
+
     /**
      * CRL validation for PKC and attribute certificates.
      * @param platform the platform certificate
@@ -33,6 +37,7 @@ public final class RevocationChecker {
             return !usableCrls.isEmpty()
                     && usableCrls.stream().noneMatch(crl -> crl.getRevokedCertificate(serial) != null);
         } catch (Exception ignored) {
+            LOGGER.log(Level.FINE, "validate check failed, but allowing to continue.");
             return false;
         }
     }
@@ -51,6 +56,7 @@ public final class RevocationChecker {
         try {
             return crl.isSignatureValid(verifier);
         } catch (Exception ignored) {
+            LOGGER.log(Level.FINE, "isSignatureValid check failed, but allowing to continue.");
             return false;
         }
     }

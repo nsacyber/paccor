@@ -6,10 +6,10 @@ using System.Runtime.Versioning;
 namespace StorageLib.Linux;
 
 [SupportedOSPlatform("linux")]
-public class StorageLinuxImports {
-    public const string libcName = "libc";
+public static class StorageLinuxImports {
+    private const string LibcName = "libc";
 
-    [DllImport(libcName, SetLastError = true)]
+    [DllImport(LibcName, SetLastError = true)]
     public static extern int ioctl(SafeFileHandle fd, uint op, IntPtr data);
 
     public async static Task<Tuple<int, string, string>> LsblkPhysicalDisks() {

@@ -1,6 +1,8 @@
 package paccor.crypto;
 
 import java.util.Optional;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import paccor.cert.CertSigEncoding;
 import paccor.exception.PaccorException;
 import paccor.exception.SignatureFailedException;
@@ -51,6 +53,8 @@ import org.bouncycastle.crypto.signers.MLDSASigner;
  * Centralized algorithm support utilities for CLI commands.
  */
 public class AlgorithmSupport {
+    private static final Logger LOGGER = Logger.getLogger(AlgorithmSupport.class.getName());
+
     private static final Map<ASN1ObjectIdentifier, String> OID_TO_JCA_SIGNATURE = Map.ofEntries(
             // ECDSA
             Map.entry(X9ObjectIdentifiers.ecdsa_with_SHA1, "SHA1withECDSA"),
@@ -76,9 +80,16 @@ public class AlgorithmSupport {
             Map.entry(NISTObjectIdentifiers.id_hash_ml_dsa_87_with_sha512, "ML-DSA-87-with-SHA512")
     );
     private static final Map<ASN1ObjectIdentifier, String> OID_TO_JCA_HASH = Map.ofEntries(
+            Map.entry(NISTObjectIdentifiers.id_sha224, "SHA-224"),
             Map.entry(NISTObjectIdentifiers.id_sha256, "SHA-256"),
             Map.entry(NISTObjectIdentifiers.id_sha384, "SHA-384"),
             Map.entry(NISTObjectIdentifiers.id_sha512, "SHA-512"),
+            Map.entry(NISTObjectIdentifiers.id_sha512_224, "SHA-512/224"),
+            Map.entry(NISTObjectIdentifiers.id_sha512_256, "SHA-512/256"),
+            Map.entry(NISTObjectIdentifiers.id_sha3_224, "SHA3-224"),
+            Map.entry(NISTObjectIdentifiers.id_sha3_256, "SHA3-256"),
+            Map.entry(NISTObjectIdentifiers.id_sha3_384, "SHA3-384"),
+            Map.entry(NISTObjectIdentifiers.id_sha3_512, "SHA3-512"),
             Map.entry(OIWObjectIdentifiers.idSHA1, "SHA-1")
     );
 
@@ -237,12 +248,40 @@ public class AlgorithmSupport {
     }
 
     /**
+     * Returns whether the signature algorithm uses SHA-1.
+     * {@code RSA-PSS the digest is carried in the algorithm parameters rather than in the signature algorithm OID.}
+     * @param algId the signature algorithm identifier
+     * @return true if the signature uses SHA-1
+     */
+    public static boolean isSha1Signature(AlgorithmIdentifier algId) {
+        if (algId == null) {
+            return false;
+        }
+
+        ASN1ObjectIdentifier oid = algId.getAlgorithm();
+        if (oid.equals(X9ObjectIdentifiers.ecdsa_with_SHA1) || oid.equals(PKCSObjectIdentifiers.sha1WithRSAEncryption)) {
+            return true;
+        }
+        if (!oid.equals(PKCSObjectIdentifiers.id_RSASSA_PSS) || algId.getParameters() == null) {
+            return false;
+        }
+        try {
+            RSASSAPSSparams params = RSASSAPSSparams.getInstance(algId.getParameters());
+            return OIWObjectIdentifiers.idSHA1.equals(params.getHashAlgorithm().getAlgorithm());
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+    }
+
+    /**
      * Returns the JCA hash algorithm name for the given OID.
      * @param oid The OID
      * @return The JCA hash algorithm name
      */
-    public static String jcaHashName(ASN1ObjectIdentifier oid) {
-        return OID_TO_JCA_HASH.getOrDefault(oid, "SHA-384");
+    public static String jcaHashName(ASN1ObjectIdentifier oid) throws InvalidAlgorithmParameterException {
+        return Optional.ofNullable(OID_TO_JCA_HASH.get(oid))
+                .orElseThrow(() -> new InvalidAlgorithmParameterException(
+                                        "Unsupported hash algorithm OID: " + (oid == null ? "null" : oid.getId())));
     }
 
     /**
@@ -250,12 +289,20 @@ public class AlgorithmSupport {
      * @param jcaHashName The JCA hash name
      * @return The MGF1ParameterSpec for the given hash name
      */
-    public static MGF1ParameterSpec mgf1ParameterSpec(String jcaHashName) {
+    public static MGF1ParameterSpec mgf1ParameterSpec(String jcaHashName) throws InvalidAlgorithmParameterException {
         return switch (jcaHashName) {
             case "SHA-1" -> MGF1ParameterSpec.SHA1;
+            case "SHA-224" -> MGF1ParameterSpec.SHA224;
+            case "SHA-256" -> MGF1ParameterSpec.SHA256;
             case "SHA-384" -> MGF1ParameterSpec.SHA384;
             case "SHA-512" -> MGF1ParameterSpec.SHA512;
-            default -> MGF1ParameterSpec.SHA256;
+            case "SHA-512/224" -> MGF1ParameterSpec.SHA512_224;
+            case "SHA-512/256" -> MGF1ParameterSpec.SHA512_256;
+            case "SHA3-224" -> MGF1ParameterSpec.SHA3_224;
+            case "SHA3-256" -> MGF1ParameterSpec.SHA3_256;
+            case "SHA3-384" -> MGF1ParameterSpec.SHA3_384;
+            case "SHA3-512" -> MGF1ParameterSpec.SHA3_512;
+            default -> throw new InvalidAlgorithmParameterException("Unsupported JCA hash name: " + jcaHashName);
         };
     }
 
@@ -305,12 +352,26 @@ public class AlgorithmSupport {
      * @return The DER-encoded signature
      */
     public static byte[] ecdsaP1363ToDer(byte[] sig) {
+        if (sig == null || sig.length == 0 || sig.length % 2 != 0) {
+            String msg = "P1363 signature size is invalid.";
+            LOGGER.log(Level.FINE, msg);
+            throw new RuntimeException(msg);
+        }
+
         int len = sig.length / 2;
         BigInteger r = new BigInteger(1, Arrays.copyOfRange(sig, 0, len));
         BigInteger s = new BigInteger(1, Arrays.copyOfRange(sig, len, sig.length));
         try {
-            return new DERSequence(new ASN1Encodable[]{ new ASN1Integer(r), new ASN1Integer(s) }).getEncoded("DER");
-        } catch (Exception e) { throw new RuntimeException(e); }
+            return new DERSequence(
+                        new ASN1Encodable[] {
+                                new ASN1Integer(r),
+                                new ASN1Integer(s)
+                        }
+                    ).getEncoded("DER");
+        } catch (Exception e) {
+            LOGGER.log(Level.FINE, "P1363 signature conversion failed", e);
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -347,6 +408,7 @@ public class AlgorithmSupport {
             }
             return signer.getSignature();
         } catch (IOException | OperatorCreationException e) {
+            LOGGER.log(Level.FINE, "Signature failed", e);
             throw new SignatureFailedException(e.getMessage(), e);
         }
     }

@@ -36,18 +36,26 @@ namespace paccor_scripts {
 
             try {
                 process.Start();
-                
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-                
+
+                Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
+
+                Task<string> errorTask = process.StandardError.ReadToEndAsync();
+
                 process.WaitForExit();
-                
+
+                string output = outputTask.GetAwaiter().GetResult();
+                string error = errorTask.GetAwaiter().GetResult();
+
                 int exitCode = process.ExitCode;
 
                 if (exitCode == 0) {
                     source.SetResult(new Tuple<int, string, string>(exitCode, error, output));
                 } else {
-                    source.SetException(new Exception($"Command `{info.FileName} {info.Arguments}` failed with exit code `{exitCode}`"));
+                    if (error.IsWhiteSpace()) {
+                        error = "<empty>";
+                    }
+                    error = "Error message: " + error;
+                    source.SetException(new Exception($"Command `{info.FileName} {info.Arguments}` failed with exit code `{exitCode}`. {error}"));
                 }
             } catch (Exception e) {
                 source.SetException(e);

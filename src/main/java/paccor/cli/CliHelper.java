@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.security.KeyStore;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -64,26 +63,6 @@ public class CliHelper {
         public final String getPemObjectType() {
             return pemType;
         }
-    }
-    
-    /**
-     * Read a file as bytes, convert to PEM, and blindly assign it the supplied PEM type.
-     * If the file data appears to already be in PEM format,
-     * the file data will remain unchanged. 
-     * @param filename File name including the path
-     * @param type {@link x509type} enumerated option
-     * @return byte array of the file data in PEM format
-     * @throws IOException If the file could not be read,
-     * or any other reason from Files#readAllBytes(Path).
-     */
-    public static final byte[] derToPem(final String filename, final x509type type) throws IOException {
-        byte[] buffer = Files.readAllBytes(Paths.get(filename));
-        
-        if (!containsPemBlock(buffer, type)) { // If the buffer contains a PEM block, trust the PEM parser
-            buffer = bytesToPem(buffer, type).getBytes();
-        }
-        
-        return buffer;
     }
 
     /**
@@ -292,15 +271,27 @@ public class CliHelper {
             return null;
         }
     }
-    
-    public static final String bytesToPem(final byte[] array, final x509type type) {
+
+    /**
+     * Convert to PEM and blindly assign it the supplied PEM type.
+     * @param data probably DER encoded data
+     * @param type {@link x509type} enumerated option
+     * @return PEM formatted string
+     */
+    public static final String bytesToPem(final byte[] data, final x509type type) {
         return type.getPemHeader()
-                + Base64.toBase64String(array)
+                + Base64.toBase64String(data)
                 + type.getPemFooter();
     }
 
-    public static byte[] bytesToPem(final byte[] array, CertKind type){
-        return bytesToPem(array, type == CertKind.AC ? x509type.ATTRIBUTE_CERTIFICATE : x509type.CERTIFICATE).getBytes(StandardCharsets.US_ASCII);
+    /**
+     * Convert to PEM and blindly assign it x509type associated with {@link CertKind}.
+     * @param data probably DER encoded data
+     * @param type {@link CertKind} enumerated option
+     * @return byte array of the file data in PEM format
+     */
+    public static byte[] bytesToPem(final byte[] data, CertKind type){
+        return bytesToPem(data, type == CertKind.AC ? x509type.ATTRIBUTE_CERTIFICATE : x509type.CERTIFICATE).getBytes(StandardCharsets.US_ASCII);
     }
 
     /**

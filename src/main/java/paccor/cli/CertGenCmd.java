@@ -70,9 +70,7 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
     @Option(names = CliOptionNames.IN_LONG, description = "Existing to-be-signed data to merge from JSON", converter = ReadableFileConverter.class)
     private File inJson;
 
-    @Option(names = CliOptionNames.PREV_PCERT_LONG,
-            description = "Single previous platform certificate used as the V2.0 chain seed. Use previousPlatformCertificates JSON for additional entries.",
-            split = ",")
+    @Option(names = CliOptionNames.PREV_PCERT_LONG, description = "Single previous platform certificate used as the V2.0 chain seed. Use previousPlatformCertificates JSON for additional entries.", split = ",")
     private List<String> previousPlatformCerts;
 
     // Most relevant certificates. Other certificates may be specified in the JSON.

@@ -17,7 +17,7 @@ These options are accepted by each command:
 
 | Option | Meaning |
 | --- | --- |
-| `--log-level` | Logging verbosity. `DEBUG` and `TRACE` also enable extra validation detail in `validate`. |
+| `--log-level` | JUL logging level, such as `FINE`, `FINER`, `INFO`, or `WARNING`. `FINE` and more verbose levels also enable extra validation detail in `validate`. |
 | `--log-file` | Write logs to a file. |
 | `-q`, `--quiet` | Suppress normal output. |
 | `-h`, `--help` | Show command help. |

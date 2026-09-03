@@ -1,11 +1,13 @@
 package paccor.crypto;
 
+import java.util.logging.Logger;
 import org.bouncycastle.operator.OperatorCreationException;
 import paccor.cli.CliHelper;
 import paccor.exception.InvalidKeyException;
 import paccor.exception.PaccorException;
 import java.io.File;
 import java.io.OutputStream;
+import java.util.logging.Level;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -18,6 +20,8 @@ import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
  * Uses AlgorithmSupport for algorithm-specific checks.
  */
 public final class SignatureService {
+    private static final Logger LOGGER = Logger.getLogger(SignatureService.class.getName());
+
     private SignatureService() {}
 
     public static byte[] sign(byte[] tbs, AlgorithmIdentifier algId, File keyFile) throws PaccorException {
@@ -45,6 +49,7 @@ public final class SignatureService {
             try (OutputStream os = verifier.getOutputStream()) { os.write(tbs); }
             return verifier.verify(sig);
         } catch (Exception e) {
+            LOGGER.log(Level.FINE, "Signature verification failed", e);
             return false;
         }
     }

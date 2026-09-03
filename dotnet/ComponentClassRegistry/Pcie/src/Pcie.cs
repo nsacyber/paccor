@@ -1,6 +1,7 @@
 ﻿using PcieLib;
 using PcieWinCfgMgr;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Pcie;
 
@@ -39,6 +40,10 @@ public class Pcie {
         }
 
         bool gotInstanceIds = PciWinCfgMgr.GetAllPciDeviceInstanceIds(out List<string> pciDeviceInstanceIds);
+        
+        if (!gotInstanceIds) {
+            return false;
+        }
 
         foreach (string pciDeviceInstanceId in pciDeviceInstanceIds) {
             bool gotConfig = PciWinCfgMgr.CreateMockConfigBufferFromPciDeviceInstanceId(out byte[] config, out bool isLittleEndian, pciDeviceInstanceId);
@@ -55,7 +60,7 @@ public class Pcie {
                 case "0280":
                 case "0D11":
                     // Ask NetAdapter for the permanent address.
-                    Task<Tuple<int, string, string>> task = Task.Run(() => PowershellMAC(pciDeviceInstanceId));
+                    Task<Tuple<int, string, string>> task = Task.Run(() => PowershellMac(pciDeviceInstanceId));
                     bool foundMac = ParseMacAddressFromResults(out string mac, task);
                     if (foundMac) {
                         device.NetworkMac = Convert.FromHexString(mac);
@@ -165,10 +170,14 @@ public class Pcie {
     }
 
     private static async Task<Tuple<int, string, string>> EthtoolP(string interfaceName) {
-        return await ShellHelper.Ethtool("-P " + interfaceName);
+        return await ShellHelper.Ethtool(interfaceName); // -P argument was integrated into ShellHelper.Ethtool
     }
-    private static async Task<Tuple<int, string, string>> PowershellMAC(string interfaceId) {
-        return await ShellHelper.Powershell("Get-NetAdapter | where PNPDeviceID -eq '" + interfaceId + "' | select MacAddress -ExpandProperty MacAddress");
+    private static async Task<Tuple<int, string, string>> PowershellMac(string interfaceId) {
+        string escapedId = interfaceId.Replace("'", "''");
+        string cmd = $"Get-NetAdapter | where PNPDeviceID -eq '{escapedId}' | select MacAddress -ExpandProperty MacAddress";
+        byte[] bytes = Encoding.Unicode.GetBytes(cmd);
+        string encoded = Convert.ToBase64String(bytes);
+        return await ShellHelper.Powershell(encoded);
     }
 
     public static byte[] CatReadAllBytes(string path) {

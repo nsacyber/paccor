@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.logging.Logger;
 import paccor.cli.pv.ReadableFileConverter;
 import paccor.crypto.IssuerCertificateChecker;
 import paccor.crypto.RevocationChecker;
@@ -21,6 +22,8 @@ import paccor.validator.ValidationReport;
 
 @Command(name = "validate", mixinStandardHelpOptions = true, description = "Validate signature, and optionally components and certificate profile")
 public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
+    private static final Logger LOGGER = Logger.getLogger(ValidateCmd.class.getName());
+
     @Mixin private CommonOptions common;
     private final IssuerCertificateChecker issuerChecker = new IssuerCertificateChecker();
     private final RevocationChecker revocationChecker = new RevocationChecker();
@@ -48,9 +51,7 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
     public Integer call() {
         PlatformCertificate certificate = PlatformCertificate.load(platformCertFile);
         if (certificate == null) {
-            if (!common.quiet) {
-                System.out.println("Could not read platform certificate provided.");
-            }
+            common.printError("Could not read platform certificate provided.");
             return reportOverall(false, ClientExitCodes.USAGE_ERROR).code();
         }
 
@@ -71,8 +72,6 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
                         .orElseGet(() -> reportCrl(false));
         boolean specificationOk = validateSpecification(certificate);
         boolean componentsOk = ComponentValidationService.builder()
-                .quiet(common.quiet)
-                .logLevel(common.logLevel)
                 .previousPlatformCertificates(previousPlatformCertsList)
                 .build()
                 .validate(certificate, componentsJson, componentMatcherName);
@@ -88,46 +87,38 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
     }
 
     private boolean reportSignature(boolean ok) {
-        report("Signature validation: " + (ok ? "OK" : "FAILED"));
+        common.printInfo("Signature validation: " + (ok ? "OK" : "FAILED"));
         return ok;
     }
     private boolean reportTrust(boolean ok) {
-        report("Trust-anchor validation: " + (ok ? "OK" : "FAILED"));
+        common.printInfo("Trust-anchor validation: " + (ok ? "OK" : "FAILED"));
         return ok;
     }
     private boolean reportCrl(boolean ok) {
-        report("CRL validation: " + (ok ? "OK" : "FAILED"));
+        common.printInfo("CRL validation: " + (ok ? "OK" : "FAILED"));
         return ok;
     }
     private boolean reportSpecification(SpecificationValidationReport report) {
-        report("Specification validation: " + (report.ok() ? "OK" : "FAILED"));
+        common.printInfo("Specification validation: " + (report.ok() ? "OK" : "FAILED"));
         return report.ok();
     }
     private ClientExitCodes reportOverall(boolean ok) {
         return reportOverall(ok, ok ? ClientExitCodes.SUCCESS : ClientExitCodes.VALIDATION_FAILED);
     }
     private ClientExitCodes reportOverall(boolean ok, ClientExitCodes exitCode) {
-        report("Platform Certificate validation: " + (ok ? "OK" : "FAILED"));
+        common.printInfo("Platform Certificate validation: " + (ok ? "OK" : "FAILED"));
         return exitCode;
     }
 
     private boolean validateSpecification(PlatformCertificate certificate) {
         SpecificationValidationReport report = SpecificationValidator.validate(certificate);
-        if (!report.ok() && shouldPrintDetails()) {
+        if (!report.ok()) {
             String detail = report.detail();
             if (!detail.isBlank()) {
-                System.out.println(detail);
+                LOGGER.fine(detail);
             }
         }
         return reportSpecification(report);
-    }
-
-    private boolean shouldPrintDetails() {
-        if (common == null || common.logLevel == null) {
-            return false;
-        }
-        String logLevel = common.logLevel.trim().toUpperCase(Locale.ROOT);
-        return "DEBUG".equals(logLevel) || "TRACE".equals(logLevel);
     }
 
     public static ComponentMatcher resolveMatcher() {
@@ -145,12 +136,8 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
             case "STRICT":
                 return ComponentMatcher.RAW;
             default:
-                System.err.println("Unknown --component-matcher: " + name + ", using NORMALIZED");
+                LOGGER.warning("Unknown --component-matcher: " + name + ", using NORMALIZED");
                 return ComponentMatcher.NORMALIZED;
         }
-    }
-
-    private void report(String message) {
-        if (!common.quiet) System.out.println(message);
     }
 }

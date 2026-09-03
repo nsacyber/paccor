@@ -19,6 +19,7 @@ import paccor.crypto.ProvidedSignatureStrategy;
 import paccor.crypto.RemoteSignatureStrategy;
 import paccor.crypto.SignatureService;
 import paccor.crypto.SignatureStrategy;
+import paccor.crypto.AlgorithmSupport;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
@@ -119,6 +120,7 @@ public class AssembleCmd implements Callable<Integer>, HasCommonOptions {
         byte[] outDer = CliHelper.assembleDer(tbs, algId, sig);
         byte[] out = maybeToPem(outDer, env.getType());
         writeBytes(outFile, out);
+        warnIfSha1(algId);
         common.printInfo("Wrote assembled credential" + (local ? " (locally signed)" : "") + " to " + outFile.getAbsolutePath());
         return ClientExitCodes.SUCCESS.code();
     }
@@ -245,6 +247,12 @@ public class AssembleCmd implements Callable<Integer>, HasCommonOptions {
         }
         if (env.getTbsDerB64() != null && env.getType() == CertKind.PKC && !CliHelper.parsesAsPkc(env.getTbsDerB64())) {
             common.printError("WARN: Envelope type PKC but TBS looks like AC AttributeCertificateInfo");
+        }
+    }
+
+    private void warnIfSha1(AlgorithmIdentifier algId) {
+        if (AlgorithmSupport.isSha1Signature(algId)) {
+            common.printWarning("WARNING: assembled certificate uses SHA-1; SHA-1 is deprecated and should only be used for legacy compatibility.");
         }
     }
 

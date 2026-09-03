@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.Logger;
 import lombok.Builder;
 import paccor.cert.PlatformCertificate;
 import paccor.cert.SubjectAlternativeNameHelper;
@@ -22,17 +23,17 @@ import paccor.tcg.credential.TraitMap;
 /** Validates expected components, including previous-platform-certificate materialization. */
 @Builder
 public final class ComponentValidationService {
-    private final boolean quiet;
-    private final String logLevel;
+    private static final Logger LOGGER = Logger.getLogger(ComponentValidationService.class.getName());
+
     private final List<String> previousPlatformCertificates;
 
     public boolean validate(PlatformCertificate certificate, File jsonFile, String matcherName) {
         if (jsonFile == null || !jsonFile.exists()) {
-            report("Component validation: Skipped. No components JSON provided.");
+            LOGGER.info("Component validation: Skipped. No components JSON provided.");
             return false;
         }
         if (certificate.requiresPreviousPlatformCertificates() && !hasPreviousCertificates()) {
-            error("Component validation for delta or rebase certificates requires --prev-pcert.");
+            LOGGER.warning("Component validation for delta or rebase certificates requires --prev-pcert.");
             return false;
         }
         HardwareManifestJsonHelper manifest = HardwareManifestJsonHelper.readComponents(jsonFile);
@@ -55,7 +56,7 @@ public final class ComponentValidationService {
                 .map(configuration -> compare(expected,
                         PlatformConfigurationNormalizer.componentsForValidation(configuration), matcher))
                 .orElse(false);
-        report("Components validation: " + (result ? "OK" : "FAILED"));
+        LOGGER.info("Components validation: " + (result ? "OK" : "FAILED"));
         return result;
     }
 
@@ -66,13 +67,16 @@ public final class ComponentValidationService {
         if (expected == null || expected.isEmpty()) {
             return true;
         }
-        return actual != null && !actual.isEmpty()
+        boolean matches = actual != null && !actual.isEmpty()
                 && matcher.matchV3(List.of(expected), List.of(actual));
+        if (!matches) LOGGER.fine(() -> "Platform identifier validation failed; expected=" + expected
+                + ", actual=" + actual);
+        return matches;
     }
 
     private boolean compare(List<TraitMap> expected, List<TraitMap> actual, ComponentMatcher matcher) {
         ComponentValidationReport report = ComponentValidator.compareComponents(expected, actual, matcher);
-        if (!report.ok() && detailsEnabled()) System.out.println(report.detail());
+        if (!report.ok()) LOGGER.fine(report.detail());
         return report.ok();
     }
 
@@ -173,15 +177,15 @@ public final class ComponentValidationService {
             PlatformConfigurationV3 accumulated,
             CertificateIdentifierTrait trait,
             Map<CertificateIdentifier, PlatformConfigurationV3> resolved) {
-        if (trait == null || trait.getTraitValue() == null) return ChainProgress.success(accumulated);
+        if (trait == null) return ChainProgress.success(accumulated);
         PlatformConfigurationV3 next = resolved.get(trait.getTraitValue());
         if (next == null) {
-            error("Missing previous platform certificate: " + trait.getTraitValue());
+            LOGGER.warning("Missing previous platform certificate: " + trait.getTraitValue());
             return ChainProgress.failure();
         }
         if (ComponentValidator.isDeltaTrait(trait)) {
             if (!PlatformConfigurationNormalizer.hasStatusTraits(next)) {
-                error("Delta certificate without StatusTrait is not supported: " + trait.getTraitValue());
+                LOGGER.warning("Delta certificate without StatusTrait is not supported: " + trait.getTraitValue());
                 return ChainProgress.failure();
             }
             return ChainProgress.success(accumulated == null
@@ -215,12 +219,12 @@ public final class ComponentValidationService {
             }
         }
         if (baseCount > 1) {
-            error("Previous platform certificates contain more than one base certificate.");
+            LOGGER.warning("Previous platform certificates contain more than one base certificate.");
             return null;
         }
         int start = rebase >= 0 ? rebase : base;
         if (start < 0) {
-            error("No base or rebase certificate found in PreviousPlatformCertificates.");
+            LOGGER.warning("No base or rebase certificate found in PreviousPlatformCertificates.");
             return null;
         }
         return new ChainStart(start);
@@ -241,19 +245,6 @@ public final class ComponentValidationService {
         return previousPlatformCertificates != null && !previousPlatformCertificates.isEmpty();
     }
 
-    private boolean detailsEnabled() {
-        String level = Optional.ofNullable(logLevel).orElse("").trim().toUpperCase();
-        return "DEBUG".equals(level) || "TRACE".equals(level);
-    }
-
-    private void report(String message) {
-        if (!quiet) System.out.println(message);
-    }
-
-    private void error(String message) {
-        if (!quiet) System.err.println(message);
-    }
-
     private record ChainStart(int index) {}
     private record ChainProgress(PlatformConfigurationV3 configuration, boolean failed) {
         private static ChainProgress success(PlatformConfigurationV3 configuration) {
@@ -270,7 +261,7 @@ public final class ComponentValidationService {
             return Optional.ofNullable(name)
                     .map(value -> value.toUpperCase(java.util.Locale.ROOT))
                     .filter(value -> value.equals("RAW") || value.equals("STRICT"))
-                    .map(value -> ComponentMatcher.RAW)
+                    .map(_ -> ComponentMatcher.RAW)
                     .orElse(ComponentMatcher.NORMALIZED);
         }
     }

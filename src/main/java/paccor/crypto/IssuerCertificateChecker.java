@@ -5,6 +5,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.bouncycastle.cert.CertException;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.path.CertPath;
@@ -20,6 +22,8 @@ import paccor.cert.PlatformCertificate;
 
 /** Validates platform-certificate signatures and issuer certificate paths. */
 public final class IssuerCertificateChecker {
+    private static final Logger LOGGER = Logger.getLogger(IssuerCertificateChecker.class.getName());
+
     public boolean validateSignature(PlatformCertificate platform, X509CertificateHolder issuer) {
         try {
             ContentVerifierProvider verifier = SignatureService.buildWithDefault(issuer);
@@ -80,7 +84,7 @@ public final class IssuerCertificateChecker {
             List<X509CertificateHolder> result = findPath(parent, certificates, anchors, path, seen);
             if (result != null) return result;
         }
-        path.remove(path.size() - 1);
+        path.removeLast();
         seen.remove(current);
         return null;
     }
@@ -94,6 +98,7 @@ public final class IssuerCertificateChecker {
             return certificate.getSubject().equals(certificate.getIssuer())
                     && certificate.isSignatureValid(PQC_VERIFIER_BUILDER.build(certificate));
         } catch (Exception ignored) {
+            LOGGER.log(Level.FINE, "isSelfSigned check failed, but allowing to continue.");
             return false;
         }
     }
