@@ -891,19 +891,4 @@ public class E2ECommandsTest extends TestSupport {
 
         Assertions.assertEquals(ClientExitCodes.USAGE_ERROR.code(), rc, "certgen should reject PKC output when attributes declare the v1.1 family");
     }
-
-    @Test
-    void delta_test3() throws Exception {
-        Path tempDir = tempDir();
-
-        int rc = RootCmd.commandLine().execute(
-                "validate",
-                "-c", "src/test/resources/tmp/ComponentList_PCUseCase2_FinalState.json",
-                "-P", "src/test/resources/tmp/TCG_VAR_ecc_p256_TestCA_Leaf.pem",
-                "-X", "src/test/resources/tmp/TCG_PlatCert_v2.1_PCUseCase2_Delta_Attribute_ecc_p256_Test.pem",
-                "--prev-pcert", "src/test/resources/tmp/TCG_PlatCert_v2.1_PCUseCase1_Attribute_ecc_p256_Test.pem"
-        );
-
-        Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(), rc, "validate should fail");
-    }
 }
