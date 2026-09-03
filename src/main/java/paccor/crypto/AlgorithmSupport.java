@@ -80,9 +80,16 @@ public class AlgorithmSupport {
             Map.entry(NISTObjectIdentifiers.id_hash_ml_dsa_87_with_sha512, "ML-DSA-87-with-SHA512")
     );
     private static final Map<ASN1ObjectIdentifier, String> OID_TO_JCA_HASH = Map.ofEntries(
+            Map.entry(NISTObjectIdentifiers.id_sha224, "SHA-224"),
             Map.entry(NISTObjectIdentifiers.id_sha256, "SHA-256"),
             Map.entry(NISTObjectIdentifiers.id_sha384, "SHA-384"),
             Map.entry(NISTObjectIdentifiers.id_sha512, "SHA-512"),
+            Map.entry(NISTObjectIdentifiers.id_sha512_224, "SHA-512/224"),
+            Map.entry(NISTObjectIdentifiers.id_sha512_256, "SHA-512/256"),
+            Map.entry(NISTObjectIdentifiers.id_sha3_224, "SHA3-224"),
+            Map.entry(NISTObjectIdentifiers.id_sha3_256, "SHA3-256"),
+            Map.entry(NISTObjectIdentifiers.id_sha3_384, "SHA3-384"),
+            Map.entry(NISTObjectIdentifiers.id_sha3_512, "SHA3-512"),
             Map.entry(OIWObjectIdentifiers.idSHA1, "SHA-1")
     );
 
@@ -271,8 +278,10 @@ public class AlgorithmSupport {
      * @param oid The OID
      * @return The JCA hash algorithm name
      */
-    public static String jcaHashName(ASN1ObjectIdentifier oid) {
-        return OID_TO_JCA_HASH.getOrDefault(oid, "SHA-384");
+    public static String jcaHashName(ASN1ObjectIdentifier oid) throws InvalidAlgorithmParameterException {
+        return Optional.ofNullable(OID_TO_JCA_HASH.get(oid))
+                .orElseThrow(() -> new InvalidAlgorithmParameterException(
+                                        "Unsupported hash algorithm OID: " + (oid == null ? "null" : oid.getId())));
     }
 
     /**
@@ -280,12 +289,20 @@ public class AlgorithmSupport {
      * @param jcaHashName The JCA hash name
      * @return The MGF1ParameterSpec for the given hash name
      */
-    public static MGF1ParameterSpec mgf1ParameterSpec(String jcaHashName) {
+    public static MGF1ParameterSpec mgf1ParameterSpec(String jcaHashName) throws InvalidAlgorithmParameterException {
         return switch (jcaHashName) {
             case "SHA-1" -> MGF1ParameterSpec.SHA1;
+            case "SHA-224" -> MGF1ParameterSpec.SHA224;
+            case "SHA-256" -> MGF1ParameterSpec.SHA256;
             case "SHA-384" -> MGF1ParameterSpec.SHA384;
             case "SHA-512" -> MGF1ParameterSpec.SHA512;
-            default -> MGF1ParameterSpec.SHA256;
+            case "SHA-512/224" -> MGF1ParameterSpec.SHA512_224;
+            case "SHA-512/256" -> MGF1ParameterSpec.SHA512_256;
+            case "SHA3-224" -> MGF1ParameterSpec.SHA3_224;
+            case "SHA3-256" -> MGF1ParameterSpec.SHA3_256;
+            case "SHA3-384" -> MGF1ParameterSpec.SHA3_384;
+            case "SHA3-512" -> MGF1ParameterSpec.SHA3_512;
+            default -> throw new InvalidAlgorithmParameterException("Unsupported JCA hash name: " + jcaHashName);
         };
     }
 
