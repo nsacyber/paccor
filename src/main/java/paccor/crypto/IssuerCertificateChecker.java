@@ -26,6 +26,9 @@ public final class IssuerCertificateChecker {
 
     public boolean validateSignature(PlatformCertificate platform, X509CertificateHolder issuer) {
         try {
+            if (platform != null && AlgorithmSupport.isSha1Signature(platform.extractSignatureAlgorithm())) {
+                LOGGER.warning("WARNING: Validating a certificate that uses SHA-1; SHA-1 is deprecated and should only be used for legacy compatibility.");
+            }
             ContentVerifierProvider verifier = SignatureService.buildWithDefault(issuer);
             return platform != null && platform.isSignatureValid(verifier);
         } catch (OperatorCreationException | CertException e) {
