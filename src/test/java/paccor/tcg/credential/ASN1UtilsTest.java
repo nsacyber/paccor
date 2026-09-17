@@ -15,6 +15,7 @@ import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERSequence;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import paccor.exception.MalformedCredentialException;
 
 public class ASN1UtilsTest {
     @Test
@@ -131,6 +132,20 @@ public class ASN1UtilsTest {
 
         Assertions.assertNotNull(result);
         Assertions.assertEquals(0, result.size()); // 0 because rtmType is tagged [2]
+    }
+
+    @Test
+    public void testRequireUntaggedElementsRejectsTaggedRequiredElements() {
+        ASN1EncodableVector vector = new ASN1EncodableVector();
+        vector.add(new org.bouncycastle.asn1.DERTaggedObject(false, 0, new ASN1Integer(1)));
+        vector.add(new org.bouncycastle.asn1.DERTaggedObject(false, 1, new ASN1Integer(2)));
+
+        MalformedCredentialException exception = Assertions.assertThrows(
+                MalformedCredentialException.class,
+                () -> ASN1Utils.requireUntagged(new DERSequence(vector), 2));
+
+        Assertions.assertTrue(exception.getMessage().contains("required 2"));
+        Assertions.assertTrue(exception.getMessage().contains("found 0"));
     }
 
     @Test

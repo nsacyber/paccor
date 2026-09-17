@@ -87,7 +87,7 @@ public class TCGSpecificationVersion extends ASN1Object {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}
 
-        List<ASN1Object> untaggedElements = ASN1Utils.listUntaggedElements(seq);
+        List<ASN1Object> untaggedElements = ASN1Utils.requireUntagged(seq, SEQUENCE_SIZE);
 
 		TCGSpecificationVersion.TCGSpecificationVersionBuilder builder = TCGSpecificationVersion.builder()
 				.majorVersion(ASN1Integer.getInstance(untaggedElements.get(0)))

@@ -86,7 +86,7 @@ public class HashedCertificateIdentifier extends ASN1Object {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
         }
 
-        List<ASN1Object> untaggedElements = ASN1Utils.listUntaggedElements(seq);
+        List<ASN1Object> untaggedElements = ASN1Utils.requireUntagged(seq, SEQUENCE_SIZE);
 
         HashedCertificateIdentifier.HashedCertificateIdentifierBuilder builder = HashedCertificateIdentifier.builder()
                 .hashAlgorithm(AlgorithmIdentifier.getInstance(ASN1Utils.getSequence(untaggedElements.get(0))))
