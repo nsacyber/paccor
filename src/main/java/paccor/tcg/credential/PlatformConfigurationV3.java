@@ -139,6 +139,7 @@ public class PlatformConfigurationV3 extends ASN1Object {
          * @param seq ASN1Sequence
          */
         public final void platformComponentsFromSequence(@NonNull ASN1Sequence seq) {
+            Definitions.checkCollectionSize(seq);
             Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, TraitMap::getInstance))
                     .map(List::of)
                     .orElseGet(() -> Stream.of(seq.toArray()).map(TraitMap::getInstance).toList())
@@ -149,10 +150,12 @@ public class PlatformConfigurationV3 extends ASN1Object {
          * @param seq ASN1Sequence
          */
         public final void platformPropertiesFromSequence(@NonNull ASN1Sequence seq) {
+            Definitions.checkCollectionSize(seq);
             Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, PlatformPropertiesV2::getInstance))
                     .map(List::of)
                     .orElseGet(() -> Stream.of(seq.toArray()).map(PlatformPropertiesV2::getInstance).toList())
                     .forEach(this::platformProperty);
         }
+
     }
 }
