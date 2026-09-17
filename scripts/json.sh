@@ -84,27 +84,27 @@ JSON_COMPONENT_TEMPLATE='
         }'
 JSON_PROPERTY_TEMPLATE='
         {
-            \"'"$JSON_NAME"'\": \"%s\",
-            \"'"$JSON_VALUE"'\": \"%s\"
+            \"'"$JSON_NAME"'\": %s,
+            \"'"$JSON_VALUE"'\": %s
         }
 '
 JSON_PROPERTY_TEMPLATE_OPT='
         {
-            \"'"$JSON_NAME"'\": \"%s\",
-            \"'"$JSON_VALUE"'\": \"%s\",
-            \"'"$JSON_PROP_STATUS"'\": \"%s\"
+            \"'"$JSON_NAME"'\": %s,
+            \"'"$JSON_VALUE"'\": %s,
+            \"'"$JSON_PROP_STATUS"'\": %s
         }
 '
 JSON_ADDRESSES_TEMPLATE=' \"'"$JSON_ADDRESSES"'\": [%s]'
 JSON_ETHERNETMAC_TEMPLATE=' {
-                \"'"$JSON_ETHERNETMAC"'\": \"%s\" } '
+                \"'"$JSON_ETHERNETMAC"'\": %s } '
 JSON_WLANMAC_TEMPLATE=' {
-                \"'"$JSON_WLANMAC"'\": \"%s\" } '
+                \"'"$JSON_WLANMAC"'\": %s } '
 JSON_BLUETOOTHMAC_TEMPLATE=' {
-                \"'"$JSON_BLUETOOTHMAC"'\": \"%s\" } '
+                \"'"$JSON_BLUETOOTHMAC"'\": %s } '
 JSON_COMPONENTCLASS_TEMPLATE=' \"'"$JSON_COMPONENTCLASS"'\": {
-        \"'"$JSON_COMPONENTCLASSREGISTRY"'\": \"%s\",
-        \"'"$JSON_COMPONENTCLASSVALUE"'\": \"%s\"
+        \"'"$JSON_COMPONENTCLASSREGISTRY"'\": %s,
+        \"'"$JSON_COMPONENTCLASSVALUE"'\": %s
     }'
 # shellcheck disable=SC2034
 JSON_ATTRIBUTECERTIDENTIFIER_TEMPLATE=' \"'"$JSON_ATTRIBUTECERTIDENTIFIER"'\": {
@@ -133,13 +133,18 @@ JSON_STATUS_TEMPLATE='
     }'
 
 ### JSON Constructor Aides
+jsonEscape () {
+    # Encode a shell value as a JSON string, including its surrounding quotes.
+    # This protects hardware-derived values from changing the manifest structure.
+    jq -Rn --arg value "${1-}" '$value'
+}
 jsonComponentClass () {
     # variable contains the format string
     # shellcheck disable=SC2059
-    printf "$JSON_COMPONENTCLASS_TEMPLATE" "${1}" "${2}"
+    printf "$JSON_COMPONENTCLASS_TEMPLATE" "$(jsonEscape "${1-}")" "$(jsonEscape "${2-}")"
 }
 jsonManufacturer () {
-    manufacturer=$(printf '\"'"$JSON_MANUFACTURER"'\": \"%s\"' "${1}")
+    manufacturer=$(printf '\"'"$JSON_MANUFACTURER"'\": %s' "$(jsonEscape "${1-}")")
     #tmpManufacturerId=$(queryForPen "${1}")
     #if [ -n "$tmpManufacturerId" ] && [ "$tmpManufacturerId" != "$PEN_ROOT" ]; then
     #    tmpManufacturerId=$(jsonManufacturerId "$tmpManufacturerId")
@@ -148,40 +153,40 @@ jsonManufacturer () {
     printf "%s" "$manufacturer"
 }
 jsonModel () {
-    printf '\"'"$JSON_MODEL"'\": \"%s\"' "${1}"
+    printf '\"'"$JSON_MODEL"'\": %s' "$(jsonEscape "${1-}")"
 }
 jsonSerial () {
-    printf '\"'"$JSON_SERIAL"'\": \"%s\"' "${1}"
+    printf '\"'"$JSON_SERIAL"'\": %s' "$(jsonEscape "${1-}")"
 }
 jsonRevision () {
-    printf '\"'"$JSON_REVISION"'\": \"%s\"' "${1}"
+    printf '\"'"$JSON_REVISION"'\": %s' "$(jsonEscape "${1-}")"
 }
 jsonManufacturerId () {
-    printf '\"'"$JSON_MANUFACTURERID"'\": \"%s\"' "${1}"
+    printf '\"'"$JSON_MANUFACTURERID"'\": %s' "$(jsonEscape "${1-}")"
 }
 jsonFieldReplaceable () {
-    printf '\"'"$JSON_FIELDREPLACEABLE"'\": \"%s\"' "${1}"
+    printf '\"'"$JSON_FIELDREPLACEABLE"'\": %s' "$(jsonEscape "${1-}")"
 }
 jsonEthernetMac () {
     # variable contains the format string
     # shellcheck disable=SC2059
-    printf "$JSON_ETHERNETMAC_TEMPLATE" "${1}"
+    printf "$JSON_ETHERNETMAC_TEMPLATE" "$(jsonEscape "${1-}")"
 }
 jsonWlanMac () {
     # variable contains the format string
     # shellcheck disable=SC2059
-    printf "$JSON_WLANMAC_TEMPLATE" "${1}"
+    printf "$JSON_WLANMAC_TEMPLATE" "$(jsonEscape "${1-}")"
 }
 jsonBluetoothMac () {
     # variable contains the format string
     # shellcheck disable=SC2059
-    printf "$JSON_BLUETOOTHMAC_TEMPLATE" "${1}"
+    printf "$JSON_BLUETOOTHMAC_TEMPLATE" "$(jsonEscape "${1-}")"
 }
 jsonPlatformModel () {
-    printf '\"'"$JSON_PLATFORMMODEL"'\": \"%s\"' "${1}"
+    printf '\"'"$JSON_PLATFORMMODEL"'\": %s' "$(jsonEscape "${1-}")"
 }
 jsonPlatformManufacturerStr () {
-    manufacturer=$(printf '\"'"$JSON_PLATFORMMANUFACTURERSTR"'\": \"%s\"' "${1}")
+    manufacturer=$(printf '\"'"$JSON_PLATFORMMANUFACTURERSTR"'\": %s' "$(jsonEscape "${1-}")")
     #tmpManufacturerId=$(queryForPen "${1}")
     #if [ -n "$tmpManufacturerId" ] && [ "$tmpManufacturerId" != "$PEN_ROOT" ]; then
     #    tmpManufacturerId=$(jsonPlatformManufacturerId "$tmpManufacturerId")
@@ -190,13 +195,13 @@ jsonPlatformManufacturerStr () {
     printf "%s" "$manufacturer"
 }
 jsonPlatformVersion () {
-    printf '\"'"$JSON_PLATFORMVERSION"'\": \"%s\"' "${1}"
+    printf '\"'"$JSON_PLATFORMVERSION"'\": %s' "$(jsonEscape "${1-}")"
 }
 jsonPlatformSerial () {
-    printf '\"'"$JSON_PLATFORMSERIAL"'\": \"%s\"' "${1}"
+    printf '\"'"$JSON_PLATFORMSERIAL"'\": %s' "$(jsonEscape "${1-}")"
 }
 jsonPlatformManufacturerId () {
-    printf '\"'"$JSON_PLATFORMMANUFACTURERID"'\": \"%s\"' "${1}"
+    printf '\"'"$JSON_PLATFORMMANUFACTURERID"'\": %s' "$(jsonEscape "${1-}")"
 }
 queryForPen () {
     pen=$(grep -B 1 "^[ \t]*""${1}""$" "$ENTERPRISE_NUMBERS_FILE" | sed -n '1p' | tr -d '[:space:]')
@@ -207,22 +212,22 @@ jsonProperty () {
         if [ -n "${3}" ]; then
             # variable contains the format string
             # shellcheck disable=SC2059
-            printf "$JSON_PROPERTY_TEMPLATE_OPT" "${1}" "${2}" "${3}"
+            printf "$JSON_PROPERTY_TEMPLATE_OPT" "$(jsonEscape "${1}")" "$(jsonEscape "${2}")" "$(jsonEscape "${3}")"
         else
             # variable contains the format string
             # shellcheck disable=SC2059
-            printf "$JSON_PROPERTY_TEMPLATE" "${1}" "${2}"
+            printf "$JSON_PROPERTY_TEMPLATE" "$(jsonEscape "${1}")" "$(jsonEscape "${2}")"
         fi
     fi
 }
 jsonUri () {
-    printf '\"'"$JSON_URI"'\": \"%s\"' "${1}"
+    printf '\"'"$JSON_URI"'\": %s' "$(jsonEscape "${1-}")"
 }
 jsonHashAlg () {
-    printf '\"'"$JSON_HASHALG"'\": \"%s\"' "${1}"
+    printf '\"'"$JSON_HASHALG"'\": %s' "$(jsonEscape "${1-}")"
 }
 jsonHashValue () {
-    printf '\"'"$JSON_HASHVALUE"'\": \"%s\"' "${1}"
+    printf '\"'"$JSON_HASHVALUE"'\": %s' "$(jsonEscape "${1-}")"
 }
 toCSV () {
     local value=""
