@@ -55,6 +55,7 @@ class PlatformCertificateTest {
         Assertions.assertFalse(info.describeIssuer().isBlank());
     }
 
+
     @Test
     void testLoadPemAttributeCertificateFromBytes() throws Exception {
         byte[] bytes = Files.readAllBytes(ATTRIBUTE_CERT.toPath());
@@ -135,7 +136,6 @@ class PlatformCertificateTest {
     @Test
     void testInvalidBytesReturnsNull() {
         byte[] bytes = "not a certificate".getBytes();
-
         Assertions.assertNull(PlatformCertificate.load(bytes));
         Assertions.assertNull(PlatformCertificate.loadSafe(bytes));
     }
