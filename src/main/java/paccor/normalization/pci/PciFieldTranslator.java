@@ -93,25 +93,18 @@ public final class PciFieldTranslator implements TraitValueTranslator {
      * VPD string (MN = Manufacturer Name) is preserved as-is.
      */
     private String normalizeManufacturerField(String input) {
-        String[] parts = input.split(":", 3);
-
-        String vendorId = "";
-        String subsysVendorId = "";
-        String vpdMN = "";
-
-        if (parts.length > 0) {
-            // translateVendorId handles both hex IDs and vendor names
-            vendorId = translateVendorId(parts[0].trim());
+        String[] parts = input.split(":", -1);
+        if (parts.length != 3) {
+            throw new IllegalArgumentException("PCI manufacturer field must have three colon-delimited fields");
         }
 
-        if (parts.length > 1) {
-            // Subsystem vendor IDs are also vendor IDs
-            subsysVendorId = translateVendorId(parts[1].trim());
-        }
+        // translateVendorId handles both hex IDs and vendor names
+        String vendorId = translateVendorId(parts[0].trim());
 
-        if (parts.length > 2) {
-            vpdMN = parts[2]; // VPD preserved as-is (no trim, no case change)
-        }
+        // Subsystem vendor IDs are also vendor IDs
+        String subsysVendorId = translateVendorId(parts[1].trim());
+
+        String vpdMN = parts[2]; // VPD preserved as-is (no trim, no case change)
 
         return vendorId + ":" + subsysVendorId + ":" + vpdMN;
     }
@@ -125,27 +118,20 @@ public final class PciFieldTranslator implements TraitValueTranslator {
      * VPD string (PN = Part Number) is preserved as-is.
      */
     private String normalizeModelField(String input) {
-        String[] parts = input.split(":", 3);
-
-        String deviceId = "";
-        String subsysId = "";
-        String vpdPN = "";
-
-        if (parts.length > 0) {
-            // Device ID translation requires vendor context
-            // Keep as normalized hex
-            deviceId = HexNormalizer.normalize(parts[0].trim(), 2);
+        String[] parts = input.split(":", -1);
+        if (parts.length != 3) {
+            throw new IllegalArgumentException("PCI model field must have three colon-delimited fields");
         }
 
-        if (parts.length > 1) {
-            // Subsystem ID translation requires vendor+device context
-            // Keep as normalized hex
-            subsysId = HexNormalizer.normalize(parts[1].trim(), 2);
-        }
+        // Device ID translation requires vendor context
+        // Keep as normalized hex
+        String deviceId = HexNormalizer.normalize(parts[0].trim(), 2);
 
-        if (parts.length > 2) {
-            vpdPN = parts[2]; // VPD preserved as-is
-        }
+        // Subsystem ID translation requires vendor+device context
+        // Keep as normalized hex
+        String subsysId = HexNormalizer.normalize(parts[1].trim(), 2);
+
+        String vpdPN = parts[2]; // VPD preserved as-is
 
         return deviceId + ":" + subsysId + ":" + vpdPN;
     }
@@ -157,18 +143,13 @@ public final class PciFieldTranslator implements TraitValueTranslator {
      * Serial number is hex, VPD string (SN = Serial Number) is preserved as-is.
      */
     private String normalizeSerialField(String input) {
-        String[] parts = input.split(":", 2);
-
-        String serialNum = "";
-        String vpdSN = "";
-
-        if (parts.length > 0) {
-            serialNum = HexNormalizer.normalize(parts[0].trim(), 8);
+        String[] parts = input.split(":", -1);
+        if (parts.length != 2) {
+            throw new IllegalArgumentException("PCI serial field must have two colon-delimited fields");
         }
 
-        if (parts.length > 1) {
-            vpdSN = parts[1]; // VPD preserved as-is
-        }
+        String serialNum = HexNormalizer.normalize(parts[0].trim(), 8);
+        String vpdSN = parts[1]; // VPD preserved as-is
 
         return serialNum + ":" + vpdSN;
     }

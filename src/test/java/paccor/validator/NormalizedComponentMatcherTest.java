@@ -133,7 +133,7 @@ public class NormalizedComponentMatcherTest {
             .trait(UTF8StringTrait.builder()
                 .traitCategory(TCGObjectIdentifier.tcgTrCatComponentManufacturer)
                 .traitRegistry(TCGObjectIdentifier.tcgRegistryComponentClassPcie)
-                .traitValue(new DERUTF8String("8086"))  // lowercase
+                .traitValue(new DERUTF8String("8086::"))  // lowercase
                 .build())
             .build();
 
@@ -141,7 +141,7 @@ public class NormalizedComponentMatcherTest {
             .trait(UTF8StringTrait.builder()
                 .traitCategory(TCGObjectIdentifier.tcgTrCatComponentManufacturer)
                 .traitRegistry(TCGObjectIdentifier.tcgRegistryComponentClassPcie)
-                .traitValue(new DERUTF8String("Intel Corporation"))
+                .traitValue(new DERUTF8String("Intel Corporation::"))
                 .build())
             .build();
 
@@ -157,7 +157,7 @@ public class NormalizedComponentMatcherTest {
                 .trait(UTF8StringTrait.builder()
                         .traitCategory(TCGObjectIdentifier.tcgTrCatComponentManufacturer)
                         .traitRegistry(TCGObjectIdentifier.tcgRegistryComponentClassPcie)
-                        .traitValue(new DERUTF8String("8086"))  // lowercase
+                        .traitValue(new DERUTF8String("8086::"))  // lowercase
                         .build())
                 .build();
 
@@ -165,7 +165,7 @@ public class NormalizedComponentMatcherTest {
                 .trait(UTF8StringTrait.builder()
                         .traitCategory(TCGObjectIdentifier.tcgTrCatComponentManufacturer)
                         .traitRegistry(TCGObjectIdentifier.tcgRegistryComponentClassPcie)
-                        .traitValue(new DERUTF8String("Intel Corporations"))
+                        .traitValue(new DERUTF8String("Intel Corporations::"))
                         .build())
                 .build();
 

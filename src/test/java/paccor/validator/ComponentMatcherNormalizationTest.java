@@ -59,14 +59,14 @@ public class ComponentMatcherNormalizationTest {
                 .trait(UTF8StringTrait.builder()
                         .traitCategory(TCGObjectIdentifier.tcgTrCatComponentManufacturer)
                         .traitRegistry(ComponentMatcher.PCI_REGISTRY_OID)
-                        .traitValue(new DERUTF8String("Intel Corporation"))
+                        .traitValue(new DERUTF8String("Intel Corporation::"))
                         .build())
                 .build();
         TraitMap actual = TraitMap.builder()
                 .trait(UTF8StringTrait.builder()
                         .traitCategory(TCGObjectIdentifier.tcgTrCatComponentManufacturer)
                         .traitRegistry(ComponentMatcher.PCI_REGISTRY_OID)
-                        .traitValue(new DERUTF8String("8086"))
+                        .traitValue(new DERUTF8String("8086::"))
                         .build())
                 .build();
 
