@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using System.Text;
 
 namespace PcieLib;
@@ -95,7 +96,8 @@ public class PcieDevice {
     public static byte[] SeekDsn(byte[] inData, bool littleEndian = true) {
         byte[] dsn = [];
         int pos = 0;
-        while((pos+12) < inData.Length) {
+        HashSet<int> seen = [];
+        while((pos+12) < inData.Length && seen.Add(pos)) {
             byte[] capIdBytes = inData[pos..(pos + 2)];
             if (littleEndian) {
                 Array.Reverse(capIdBytes);
@@ -115,7 +117,7 @@ public class PcieDevice {
                 }
                 ushort nextCap = BinaryPrimitives.ReadUInt16BigEndian(nextCapBytes);
                 nextCap >>= 4;
-                if (nextCap == 0) {
+                if (nextCap < 0x100) {
                     break;
                 }
                 pos = nextCap - 0x100; // inData is not given the initial 256 bytes of the config space

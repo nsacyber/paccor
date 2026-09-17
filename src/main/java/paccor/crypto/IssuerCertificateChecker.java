@@ -28,7 +28,8 @@ public final class IssuerCertificateChecker {
         try {
             ContentVerifierProvider verifier = SignatureService.buildWithDefault(issuer);
             return platform != null && platform.isSignatureValid(verifier);
-        } catch (OperatorCreationException | CertException ignored) {
+        } catch (OperatorCreationException | CertException e) {
+            LOGGER.log(Level.FINE, "Issuer Certificate Checker validate signature check threw", e);
             return false;
         }
     }
