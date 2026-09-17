@@ -25,7 +25,7 @@ lshwParse () {
         parsing+="$line"$'\n'
     done <<< "$str"
     
-    numItemsDec=$(printf "%d" "0x"${#items[@]})
+    numItemsDec=${#items[@]}
     for ((i = 0 ; i < numItemsDec ; i++ )); do
         matchesType=""
         if (printf "%s" "${items[$i]}" | grep --quiet -e "^\*-$type:\?[0-9A-Fa-f]*[[:space:]]*\(DISABLED\)\?$"); then

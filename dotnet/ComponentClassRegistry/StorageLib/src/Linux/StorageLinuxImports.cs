@@ -20,10 +20,10 @@ public static class StorageLinuxImports {
         return await Bash("find /dev/disk/by-id -type l ! -name \"*-part*\" -a \\( -name \"ata-*\" -o -name \"scsi-*\" -o -name \"nvme-*\" \\) -exec readlink -nf {} ';' -exec echo \",{}\" ';' 2> /dev/null");
     }
     
-    private static Task<Tuple<int, string, string>> Bash(string arguments) {
+    private static Task<Tuple<int, string, string>> Bash(this string cmd) {
         ProcessStartInfo info = new() {
-            FileName = "bash",
-            Arguments = $"-c \"{arguments}\"",
+            FileName = "/bin/bash",
+            ArgumentList = { "-c", cmd },
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,

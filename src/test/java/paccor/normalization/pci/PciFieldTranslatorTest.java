@@ -67,7 +67,7 @@ class PciFieldTranslatorTest {
 
     @Test
     void manufacturer_simpleVendorId_normalizes() {
-        DERUTF8String input = new DERUTF8String("8086");
+        DERUTF8String input = new DERUTF8String("8086::");
         DERUTF8String result = (DERUTF8String) translator.translate(
                 null,
                 TCGObjectIdentifier.tcgTrCatComponentManufacturer,
@@ -79,7 +79,7 @@ class PciFieldTranslatorTest {
 
     @Test
     void manufacturer_vendorIdMixedCase_normalizes() {
-        DERUTF8String input = new DERUTF8String("8086");
+        DERUTF8String input = new DERUTF8String("8086::");
         DERUTF8String result = (DERUTF8String) translator.translate(
                 null,
                 TCGObjectIdentifier.tcgTrCatComponentManufacturer,
@@ -91,7 +91,7 @@ class PciFieldTranslatorTest {
 
     @Test
     void manufacturer_vendorName_translates() {
-        DERUTF8String input = new DERUTF8String("Intel Corporation");
+        DERUTF8String input = new DERUTF8String("Intel Corporation::");
         DERUTF8String result = (DERUTF8String) translator.translate(
                 null,
                 TCGObjectIdentifier.tcgTrCatComponentManufacturer,
@@ -138,8 +138,8 @@ class PciFieldTranslatorTest {
     }
 
     @Test
-    void manufacturer_onlyTwoParts_normalizesWithEmptyVpd() {
-        DERUTF8String input = new DERUTF8String("8086:10DE");
+    void manufacturer_emptyVpd_requiresTrailingDelimiter() {
+        DERUTF8String input = new DERUTF8String("8086:10DE:");
         DERUTF8String result = (DERUTF8String) translator.translate(
                 null,
                 TCGObjectIdentifier.tcgTrCatComponentManufacturer,
@@ -147,6 +147,17 @@ class PciFieldTranslatorTest {
                 input
         );
         Assertions.assertEquals("8086:10de:", result.getString());
+    }
+
+    @Test
+    void manufacturer_omittedVpd_isRejected() {
+        DERUTF8String input = new DERUTF8String("8086:10DE");
+        Assertions.assertThrows(IllegalArgumentException.class, () -> translator.translate(
+                null,
+                TCGObjectIdentifier.tcgTrCatComponentManufacturer,
+                PCIE_REGISTRY,
+                input
+        ));
     }
 
     @Test
@@ -163,7 +174,7 @@ class PciFieldTranslatorTest {
 
     @Test
     void manufacturer_unknownVendorName_preservedAsIs() {
-        DERUTF8String input = new DERUTF8String("Unknown Vendor Corp");
+        DERUTF8String input = new DERUTF8String("Unknown Vendor Corp::");
         DERUTF8String result = (DERUTF8String) translator.translate(
                 null,
                 TCGObjectIdentifier.tcgTrCatComponentManufacturer,
@@ -177,14 +188,14 @@ class PciFieldTranslatorTest {
 
     @Test
     void model_simpleDeviceId_normalizes() {
-        DERUTF8String input = new DERUTF8String("1234");
+        DERUTF8String input = new DERUTF8String("1234::");
         DERUTF8String result = (DERUTF8String) translator.translate(
                 null,
                 TCGObjectIdentifier.tcgTrCatComponentModel,
                 PCIE_REGISTRY,
                 input
         );
-        Assertions.assertEquals("1234::", result.getString());
+        Assertions.assertEquals("1234:0000:", result.getString());
     }
 
     @Test
@@ -228,7 +239,7 @@ class PciFieldTranslatorTest {
 
     @Test
     void serial_simpleSerialNumber_normalizes() {
-        DERUTF8String input = new DERUTF8String("1234567890ABCDEF");
+        DERUTF8String input = new DERUTF8String("1234567890ABCDEF:");
         DERUTF8String result = (DERUTF8String) translator.translate(
                 null,
                 TCGObjectIdentifier.tcgTrCatComponentSerial,
@@ -240,7 +251,7 @@ class PciFieldTranslatorTest {
 
     @Test
     void serial_shortSerial_zeroPadded() {
-        DERUTF8String input = new DERUTF8String("ABCD");
+        DERUTF8String input = new DERUTF8String("ABCD:");
         DERUTF8String result = (DERUTF8String) translator.translate(
                 null,
                 TCGObjectIdentifier.tcgTrCatComponentSerial,

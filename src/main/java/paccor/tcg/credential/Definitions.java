@@ -2,6 +2,7 @@ package paccor.tcg.credential;
 
 import java.util.function.Predicate;
 import lombok.NonNull;
+import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1String;
 
 /**
@@ -34,6 +35,12 @@ public class Definitions {
 	 * Size constraints already set Integer.MAX_VALUE as the upper bound unless specified.
 	 */
 	public static final int MAX = Integer.MAX_VALUE;
+	/**
+	 * MAX indicates that the upper bound is unspecified.
+	 * But reading unlimited elements can exhaust resources.
+	 * Setting a large limit.
+	 */
+	public static final int MAX_COLLECTION_ELEMENTS = 4096;
 
 	/**
 	 * Returns a predicate that checks if the given ASN1String meets URIMAX length limits.
@@ -76,6 +83,15 @@ public class Definitions {
 	}
 
 	/**
+	 * Returns a predicate that checks if the given ASN1Sequence meets the application
+	 * collection-size limit for a profile field bounded by MAX.
+	 * @return Predicate&lt;ASN1Sequence&gt;
+	 */
+	public static final Predicate<ASN1Sequence> checkMAX_COLLECTION_ELEMENTS() {
+		return seq -> seq != null && seq.size() <= MAX_COLLECTION_ELEMENTS;
+	}
+
+	/**
 	 * Validates whether the length of the provided {@code ASN1String} is greater than 1
 	 * and less than or equal to the specified maximum length.
 	 *
@@ -86,5 +102,12 @@ public class Definitions {
 	 */
 	public static final boolean testStringLength(@NonNull ASN1String str, int max) {
 		return (str.getString().length() > 1 && str.getString().length() <= max);
+	}
+
+	public static void checkCollectionSize(@NonNull ASN1Sequence seq) {
+		if (!Definitions.checkMAX_COLLECTION_ELEMENTS().test(seq)) {
+			throw new IllegalArgumentException("Too many collection elements: " + seq.size()
+					+ " (maximum " + MAX_COLLECTION_ELEMENTS + ")");
+		}
 	}
 }

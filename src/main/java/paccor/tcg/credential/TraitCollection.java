@@ -141,6 +141,7 @@ public final class TraitCollection extends ASN1Object implements Iterable<Trait<
 
     public static TraitCollection fromASN1Sequence(ASN1Sequence seq) {
         if (seq == null) return empty();
+        Definitions.checkCollectionSize(seq);
         List<Trait<?, ?>> list = new ArrayList<>();
         for (int i = 0; i < seq.size(); i++) {
             ASN1Sequence traitSeq = ASN1Utils.getSequence(seq.getObjectAt(i));

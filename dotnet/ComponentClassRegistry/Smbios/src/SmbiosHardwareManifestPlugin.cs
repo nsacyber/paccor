@@ -22,13 +22,13 @@ public sealed class SmbiosHardwareManifestPlugin : HardwareManifestPluginBase {
 
         Smbios smbios = Smbios.GetSmbios();
 
-        if (!smbios.Valid) {
+        if (smbios.Structures.Count == 0) {
             return result;
         }
 
         AddComponentsToManifestV2(smbios.Structures, ManifestV2);
 
-        result = smbios.Valid;
+        result = true;
 
         return result;
     }
@@ -38,6 +38,9 @@ public sealed class SmbiosHardwareManifestPlugin : HardwareManifestPluginBase {
 
         foreach (int type in structures.Keys) {
             foreach (SmbiosTable table in structures[type]) {
+                if (!table.Valid) {
+                    continue;
+                }
                 ComponentIdentifier component = new() { COMPONENTCLASS = new ComponentClass() };
                 bool addComponent = false;
 

@@ -13,6 +13,7 @@ import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import lombok.NonNull;
+import paccor.exception.MalformedCredentialException;
 import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1Boolean;
 import org.bouncycastle.asn1.ASN1EncodableVector;
@@ -105,6 +106,30 @@ public class ASN1Utils {
                 .forEach(list::add);
 
         return list;
+    }
+
+    /**
+     * List the untagged elements and require at least the requested number.
+     *
+     * @param seq ASN1Sequence to inspect
+     * @param required minimum number of untagged elements
+     * @return the untagged elements in sequence order
+     * @throws MalformedCredentialException if fewer than {@code required}
+     *         untagged elements are present
+     */
+    public static final List<ASN1Object> requireUntagged(ASN1Sequence seq, int required) {
+        if (required < 0) {
+            throw new IllegalArgumentException("Required element count cannot be negative: " + required);
+        }
+
+        List<ASN1Object> elements = listUntaggedElements(seq);
+        if (elements.size() < required) {
+            throw new MalformedCredentialException(
+                    "Not enough untagged elements: required " + required
+                            + ", found " + elements.size()
+                            + ", sequence size " + (seq == null ? 0 : seq.size()));
+        }
+        return elements;
     }
 
     /**

@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.security.spec.MGF1ParameterSpec;
@@ -33,8 +34,6 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x9.X9ObjectIdentifiers;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.Signer;
-import org.bouncycastle.crypto.digests.SHA256Digest;
-import org.bouncycastle.crypto.digests.SHA384Digest;
 import org.bouncycastle.crypto.engines.RSABlindedEngine;
 import org.bouncycastle.crypto.signers.DSADigestSigner;
 import org.bouncycastle.crypto.signers.ECDSASigner;
@@ -285,6 +284,31 @@ public class AlgorithmSupport {
     }
 
     /**
+     * Computes a digest using the JCA algorithm mapped from the given OID.
+     * @param bytes The bytes to hash
+     * @param oid The digest algorithm OID
+     * @return The digest
+     * @throws GeneralSecurityException If the algorithm is unsupported or unavailable
+     */
+    public static byte[] digest(byte[] bytes, ASN1ObjectIdentifier oid) throws GeneralSecurityException {
+        return MessageDigest.getInstance(jcaHashName(oid)).digest(bytes);
+    }
+
+    /**
+     * Runs digest privately using an algorithm is expected to be available.
+     * @param bytes The bytes to hash
+     * @param oid The digest algorithm OID
+     * @return The digest
+     */
+    private static byte[] digestRequired(byte[] bytes, ASN1ObjectIdentifier oid) {
+        try {
+            return digest(bytes, oid);
+        } catch (GeneralSecurityException exception) {
+            throw new IllegalStateException("Required digest algorithm is unavailable: " + oid.getId(), exception);
+        }
+    }
+
+    /**
      * Returns the MGF1ParameterSpec for the given hash name.
      * @param jcaHashName The JCA hash name
      * @return The MGF1ParameterSpec for the given hash name
@@ -312,11 +336,7 @@ public class AlgorithmSupport {
      * @return The SHA-256 hash of the byte array
      */
     public static final byte[] sha256(byte[] objectBytes) {
-        SHA256Digest digest = new SHA256Digest();
-        byte[] hash = new byte[digest.getDigestSize()];
-        digest.update(objectBytes, 0, objectBytes.length);
-        digest.doFinal(hash, 0);
-        return hash;
+        return digestRequired(objectBytes, NISTObjectIdentifiers.id_sha256);
     }
 
     /**
@@ -325,11 +345,7 @@ public class AlgorithmSupport {
      * @return The SHA-384 hash of the byte array
      */
     public static final byte[] sha384(byte[] objectBytes) {
-        SHA384Digest digest = new SHA384Digest();
-        byte[] hash = new byte[digest.getDigestSize()];
-        digest.update(objectBytes, 0, objectBytes.length);
-        digest.doFinal(hash, 0);
-        return hash;
+        return digestRequired(objectBytes, NISTObjectIdentifiers.id_sha384);
     }
 
     /**

@@ -126,5 +126,15 @@ namespace SmbiosTests {
                 Assert.That(jsonManifestV2, Contains.Substring(componentJson));
             }
         }
+
+        [Test]
+        public void TruncatedStringAreaIsInvalidAndDoesNotThrow() {
+            byte[] data = [0x01, 0x04, 0x00, 0x00, (byte)'a'];
+
+            Dictionary<int, IList<SmbiosTable>> structures = Smbios.Smbios.ParseSmbiosData(data);
+
+            Assert.That(structures[0x01], Has.Count.EqualTo(1));
+            Assert.That(structures[0x01][0].Valid, Is.False);
+        }
     }
 }

@@ -73,6 +73,10 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
         boolean specificationOk = validateSpecification(certificate);
         boolean componentsOk = ComponentValidationService.builder()
                 .previousPlatformCertificates(previousPlatformCertsList)
+                .issuerCertificate(signer.orElse(null))
+                .trustAnchors(trustAnchorList == null
+                        ? List.of()
+                        : CliHelper.loadCertificates(GlobFileResolver.resolve(trustAnchorList)))
                 .build()
                 .validate(certificate, componentsJson, componentMatcherName);
 

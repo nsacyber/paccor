@@ -39,6 +39,9 @@ public sealed class PcieHardwareManifestPlugin : HardwareManifestPluginBase {
 
         foreach (int type in devices.Keys) {
             foreach (PcieDevice device in devices[type]) {
+                if (!device.Valid) {
+                    continue;
+                }
                 ComponentIdentifier component = new() {
                     COMPONENTCLASS = new ComponentClass {
                         COMPONENTCLASSREGISTRY = pcieRegistryOid,

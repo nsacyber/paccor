@@ -190,6 +190,48 @@ public class PcieTests {
         });
     }
 
+    [Test]
+    public void TruncatedVpdLargeTagMarksDeviceInvalidAndDoesNotThrow() {
+        byte[] config = Convert.FromBase64String(RegistryA2Sample2ConfigBase64);
+
+        PcieDevice device = new(config, [0x80], true);
+
+        Assert.That(device.Valid, Is.False);
+    }
+
+    [Test]
+    public void SeekDsnStopsAtRepeatedCapability() {
+        byte[] config = new byte[13];
+        config[0] = 0x01;
+        config[2] = 0x00;
+        config[3] = 0x10; // Next capability offset 0x100, which maps to position 0.
+
+        Assert.That(PcieDevice.SeekDsn(config), Is.Empty);
+    }
+
+    [Test]
+    public void SeekDsnStopsAtCapabilityCycle() {
+        byte[] config = new byte[17];
+        config[0] = 0x01;
+        config[2] = 0x40;
+        config[3] = 0x10; // Next capability offset 0x104, which maps to position 4.
+        config[4] = 0x01;
+        config[6] = 0x00;
+        config[7] = 0x10; // Next capability offset 0x100, which maps back to position 0.
+
+        Assert.That(PcieDevice.SeekDsn(config), Is.Empty);
+    }
+
+    [Test]
+    public void SeekDsnStopsAtCapabilityBeforeExtendedConfigSpace() {
+        byte[] config = new byte[13];
+        config[0] = 0x01;
+        config[2] = 0xC0;
+        config[3] = 0x0F; // Next capability offset 0x0FC is before extended config space.
+
+        Assert.That(PcieDevice.SeekDsn(config), Is.Empty);
+    }
+
     // Test PcieHardwareManifestPlugin
     [Test]
     public void TestRegistryAComponentList() {
