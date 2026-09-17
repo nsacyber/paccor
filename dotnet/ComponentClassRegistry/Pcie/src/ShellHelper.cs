@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace Pcie;
 public static partial class ShellHelper {
-    [GeneratedRegex(@"^[a-zA-Z0-9_-]$")]
+    [GeneratedRegex(@"^[a-zA-Z0-9_-]{1,15}$")]
     private static partial Regex InterfaceNameRegex();
 
     public static Task<Tuple<int, string, string>> Ethtool(string interfaceName) {
@@ -14,7 +14,7 @@ public static partial class ShellHelper {
         }
 
         ProcessStartInfo info = new() {
-            FileName = "bash",
+            FileName = "ethtool",
             ArgumentList = { "-P", interfaceName },
             RedirectStandardOutput = true,
             RedirectStandardError = true,
