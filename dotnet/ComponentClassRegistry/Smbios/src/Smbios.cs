@@ -124,22 +124,28 @@ namespace Smbios {
                     pos++;
                 }
                 List<string> strings = new();
+                bool stringsTerminated = false;
                 while (pos < smbiosData.Length && smbiosData[pos] != 0) {
                     string newString = "";
 
-                    while (smbiosData[pos] != 0) {
+                    while (pos < smbiosData.Length && smbiosData[pos] != 0) {
                         newString += (char)smbiosData[pos++];
                     }
 
                     strings.Add(newString);
-                    pos++;
+                    if (pos < smbiosData.Length) {
+                        pos++;
+                    }
                 }
-                pos++;
+                if (pos < smbiosData.Length) {
+                    pos++;
+                    stringsTerminated = true;
+                }
 
                 // Save table to dictionary
                 byte[] tableData = smbiosData[structureStart..(structureEnd+1)]; // this range is open-ended
                 string[] tableStrings = [.. strings];
-                SmbiosTable table = new(tableData, tableStrings);
+                SmbiosTable table = new(tableData, tableStrings, stringsTerminated);
                 if (!structs.ContainsKey(table.Type)) {
                     structs.Add(table.Type, []);
                 }

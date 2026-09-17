@@ -191,6 +191,15 @@ public class PcieTests {
     }
 
     [Test]
+    public void TruncatedVpdLargeTagMarksDeviceInvalidAndDoesNotThrow() {
+        byte[] config = Convert.FromBase64String(RegistryA2Sample2ConfigBase64);
+
+        PcieDevice device = new(config, [0x80], true);
+
+        Assert.That(device.Valid, Is.False);
+    }
+
+    [Test]
     public void SeekDsnStopsAtRepeatedCapability() {
         byte[] config = new byte[13];
         config[0] = 0x01;

@@ -48,6 +48,11 @@ public class PcieDevice {
         private set;
     }
 
+    public bool Valid {
+        get;
+        private set;
+    } = true;
+
     public string VpdMn {
         get;
         private set;
@@ -88,7 +93,7 @@ public class PcieDevice {
         }
 
         Vpd = inVpd;
-        ParseVpd(Vpd, out string pn, out string mn, out string sn, littleEndian);
+        Valid = ParseVpd(Vpd, out string pn, out string mn, out string sn, littleEndian);
         VpdPn = pn;
         VpdMn = mn;
         VpdSn = sn;
@@ -126,7 +131,7 @@ public class PcieDevice {
         return dsn;
     }
 
-    public static void ParseVpd(byte[] inData, out string pn, out string mn, out string sn, bool littleEndian = true) {
+    public static bool ParseVpd(byte[] inData, out string pn, out string mn, out string sn, bool littleEndian = true) {
         pn = "";
         mn = "";
         sn = "";
@@ -140,12 +145,15 @@ public class PcieDevice {
             tagId = inData[pos];
 
             if (tagId == 0x0F) { // End Tag; Stop
-                return;
+                return true;
             }
 
             tagDataLength = 0;
             bool largeTag = (tagId & 0x80) == 0x80;
             if (largeTag) { // Large Tag
+                if (pos + 3 > inData.Length) {
+                    return false;
+                }
                 byte[] tagDataLengthBytes = inData[(pos+1)..(pos + 3)];
                 if (littleEndian) {
                     Array.Reverse(tagDataLengthBytes);
@@ -166,7 +174,7 @@ public class PcieDevice {
         }
 
         if (tagId != 0x90) { // Stop if VPD-R not found
-            return;
+            return true;
         }
 
         // At this point, pos should be pointing at the VPD-R tag id byte
@@ -174,16 +182,22 @@ public class PcieDevice {
         int tagIdPos = pos;
         pos += 3;
         int tagEnd = tagIdPos + 3 + tagDataLength;
+        if (tagEnd > inData.Length) {
+            return false;
+        }
 
         // Search for desired keywords
         while (pos < tagEnd) {
+            if (pos + 3 > inData.Length || pos + 3 > tagEnd) {
+                return false;
+            }
             string keyword = Encoding.ASCII.GetString(inData[pos..(pos + 2)]);
             int len = inData[pos+2];
             int start = pos+3;
             int end = start + len; // C# byte range end is not inclusive
             
             if (end > inData.Length) {
-                break;
+                return false;
             }
 
             byte[] keywordDataBytes = inData[start..end];
@@ -211,7 +225,9 @@ public class PcieDevice {
                 case "rv":
                 case "Rv":
                 case "rV":
-                    byte checksum = inData[pos+3];
+                    if (pos + 4 > inData.Length || pos + 4 > tagEnd) {
+                        return false;
+                    }
                     byte calc = 0;
                     for (int i = 0; i <= (pos + 3); i++) {
                         calc += inData[i];
@@ -227,5 +243,7 @@ public class PcieDevice {
 
             pos = end;
         }
+
+        return true;
     }
 }

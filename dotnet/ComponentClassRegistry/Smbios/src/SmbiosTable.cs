@@ -30,14 +30,17 @@
         /// </summary>
         /// <param name="inData">The structure data. Not including strings.</param>
         /// <param name="inStrings">The strings of the structure.</param>
-        public SmbiosTable(byte[] inData, string[] inStrings) {
-            Data = inData.Length > 0 ? inData : Array.Empty<byte>();
-            Strings = inStrings.Length > 0 ? inStrings : Array.Empty<string>();
+        public SmbiosTable(byte[] inData, string[] inStrings) : this(inData, inStrings, true) {
+        }
 
-            if (inData.Length > 3 && inData[1] == inData.Length) {
-                Valid = true;
+        public SmbiosTable(byte[] inData, string[] inStrings, bool stringsTerminated) {
+            Data = inData.Length > 0 ? inData : [];
+            Strings = inStrings.Length > 0 ? inStrings : [];
+
+            if (inData.Length > 3) {
                 Type = inData[0];
                 Handle = BitConverter.ToInt16(inData, 2);
+                Valid = stringsTerminated && inData[1] == inData.Length;
             }
         }
     }
