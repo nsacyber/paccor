@@ -168,26 +168,70 @@ public final class PreviousPlatformCertificateValidator {
 
     private List<ResolvedPrevious> loadPrevious(List<File> files) {
         return files.stream()
-                .filter(file -> file != null && file.exists())
-                .map(PlatformCertificate::loadSafe)
+                .filter(this::isReadablePreviousFile)
+                .map(this::loadPrevious)
                 .filter(Objects::nonNull)
-                .filter(this::isPreviousSignatureValid)
-                .map(certificate -> Optional.ofNullable(certificate.canonicalizedPlatformConfigurationV3())
-                        .map(cfg -> new ResolvedPrevious(certificate, cfg))
-                        .orElse(null))
+                .filter(previous -> isPreviousSignatureValid(previous.file(), previous.certificate()))
+                .map(this::resolvePrevious)
                 .filter(Objects::nonNull)
                 .toList();
     }
 
-    private boolean isPreviousSignatureValid(PlatformCertificate certificate) {
+    private boolean isReadablePreviousFile(File file) {
+        if (file == null || !file.exists()) {
+            LOGGER.warning("Rejected previous platform certificate file " + file + ": file does not exist.");
+            return false;
+        }
+        return true;
+    }
+
+    private LoadedPrevious loadPrevious(File file) {
+        PlatformCertificate certificate = PlatformCertificate.loadSafe(file);
+        if (certificate == null) {
+            LOGGER.warning("Rejected previous platform certificate file " + file + ": could not be parsed.");
+            return null;
+        }
+        return new LoadedPrevious(file, certificate);
+    }
+
+    private ResolvedPrevious resolvePrevious(LoadedPrevious previous) {
+        PlatformConfigurationV3 configuration = previous.certificate().canonicalizedPlatformConfigurationV3();
+        if (configuration == null) {
+            LOGGER.warning("Rejected previous platform certificate file " + previous.file()
+                    + ": no supported platform configuration was found.");
+            return null;
+        }
+        return new ResolvedPrevious(previous.certificate(), configuration);
+    }
+
+    private boolean isPreviousSignatureValid(File file, PlatformCertificate certificate) {
         IssuerCertificateChecker checker = new IssuerCertificateChecker();
-        return Optional.ofNullable(issuerCertificate)
-                .map(issuer -> checker.validateSignature(certificate, issuer))
-                .orElse(false)
-                || Optional.ofNullable(trustAnchors)
-                        .stream()
-                        .flatMap(List::stream)
-                        .anyMatch(anchor -> checker.validateSignature(certificate, anchor));
+        if (issuerCertificate != null && acceptsFromIssuer(certificate, issuerCertificate, checker)) {
+            return true;
+        }
+        if (trustAnchors != null && trustAnchors.stream()
+                .anyMatch(anchor -> acceptsFromIssuer(certificate, anchor, checker))) {
+            return true;
+        }
+
+        String reason = issuerCertificate == null && (trustAnchors == null || trustAnchors.isEmpty())
+                ? "no issuer certificate or trust anchors were configured"
+                : "the previous certificate signature did not verify with a configured issuer, "
+                + "or that issuer did not have a valid path to the configured trust anchors";
+        LOGGER.warning("Rejected previous platform certificate file " + file + ": " + reason + ".");
+        return false;
+    }
+
+    private boolean acceptsFromIssuer(
+            PlatformCertificate certificate,
+            X509CertificateHolder issuer,
+            IssuerCertificateChecker checker) {
+        if (!checker.validateSignature(certificate, issuer)) {
+            return false;
+        }
+        return trustAnchors == null
+                || trustAnchors.isEmpty()
+                || checker.validateTrustPath(issuer, trustAnchors);
     }
 
     private static boolean holderMatches(PlatformCertificate delta, PlatformCertificate target) {
@@ -251,6 +295,7 @@ public final class PreviousPlatformCertificateValidator {
         return Optional.ofNullable(certificate).map(PlatformCertificate::getCertType);
     }
 
+    private record LoadedPrevious(File file, PlatformCertificate certificate) {}
     private record ResolvedPrevious(PlatformCertificate certificate, PlatformConfigurationV3 configuration) {}
     private record ChainStart(int index) {}
     private record ChainProgress(PlatformConfigurationV3 configuration, PlatformCertificate anchor, boolean failed) {
