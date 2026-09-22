@@ -9,6 +9,7 @@ import java.util.logging.Logger;
 import lombok.Builder;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.AttributeCertificateHolder;
+import org.bouncycastle.cert.X509AttributeCertificateHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
 import paccor.cert.CertType;
 import paccor.cert.PlatformCertificate;
@@ -72,7 +73,7 @@ public final class PreviousPlatformCertificateValidator {
                 .filter(progress -> currentType(certificate)
                         .map(CertType.DELTA::equals)
                         .map(delta -> !delta || (progress.configuration() != null
-                                && holderMatches(certificate, progress.anchor())))
+                                && holderConsistentV2(certificate, progress.anchor())))
                         .orElse(true))
                 .map(ChainProgress::configuration)
                 .map(accumulated -> mergeCurrent(accumulated, current))
@@ -104,7 +105,7 @@ public final class PreviousPlatformCertificateValidator {
             return Optional.of(next)
                     .filter(PlatformConfigurationNormalizer::hasStatusTraits)
                     .filter(_ -> progress.anchor() != null
-                            && holderMatches(previous.certificate(), progress.anchor()))
+                            && holderConsistentV2(previous.certificate(), progress.anchor()))
                     .map(value -> ChainProgress.success(
                             Optional.ofNullable(progress.configuration())
                                     .map(configuration -> ComponentValidator.materializeComponents(
@@ -205,6 +206,41 @@ public final class PreviousPlatformCertificateValidator {
         } catch (Exception ignored) {
             return false;
         }
+    }
+
+    private static Optional<AttributeCertificateHolder> roTHolder(PlatformCertificate certificate) {
+        return Optional.ofNullable(certificate)
+                .filter(PlatformCertificate::isAttributeCertificate)
+                .map(PlatformCertificate::getAttributeCertificate)
+                .map(X509AttributeCertificateHolder::getHolder)
+                .filter(holder -> holder.getSerialNumber() != null
+                        && holder.getIssuer() != null);
+    }
+
+    private static boolean sameRoTHolder(PlatformCertificate a, PlatformCertificate b) {
+        return roTHolder(a)
+                .flatMap(left -> roTHolder(b)
+                        .map(right -> Objects.equals(
+                                left.getSerialNumber(),
+                                right.getSerialNumber())
+                                && Arrays.equals(
+                                left.getIssuer(),
+                                right.getIssuer())))
+                .orElse(false);
+    }
+
+    private static boolean holderConsistentV2(PlatformCertificate delta, PlatformCertificate anchor) {
+        if (delta == null || anchor == null) {
+            return false;
+        }
+        // PKC has no Holder
+        if (!delta.isAttributeCertificate() && !anchor.isAttributeCertificate()) {
+            return true;
+        }
+        if (delta.isAttributeCertificate() != anchor.isAttributeCertificate()) {
+            return false;
+        }
+        return sameRoTHolder(delta, anchor);
     }
 
     private static boolean targetIssuer(PlatformCertificate target, X500Name issuer) {
