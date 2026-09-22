@@ -253,6 +253,7 @@ public class TraitMap extends ASN1Object implements Map<Class<? extends Trait<?,
         }
 
         public final void traitsFromSequence(@NonNull ASN1Sequence seq) {
+            Definitions.checkCollectionSize(seq);
             Arrays.stream(seq.toArray())
                     .map(obj -> (ASN1Object)obj)
                     .forEach(

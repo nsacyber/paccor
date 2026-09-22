@@ -67,7 +67,7 @@ public class HashedSubjectInfoURI extends ASN1Object {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}
 
-        List<ASN1Object> untaggedElements = ASN1Utils.listUntaggedElements(seq);
+        List<ASN1Object> untaggedElements = ASN1Utils.requireUntagged(seq, MIN_SEQUENCE_SIZE);
 
 		HashedSubjectInfoURI.HashedSubjectInfoURIBuilder builder = HashedSubjectInfoURI.builder()
 				.documentURI(ASN1IA5String.getInstance(untaggedElements.getFirst()));

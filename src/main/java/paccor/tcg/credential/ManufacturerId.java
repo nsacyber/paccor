@@ -68,7 +68,7 @@ public class ManufacturerId extends ASN1Object {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}
 
-        List<ASN1Object> untaggedElements = ASN1Utils.listUntaggedElements(seq);
+        List<ASN1Object> untaggedElements = ASN1Utils.requireUntagged(seq, SEQUENCE_SIZE);
 
 		ManufacturerId.ManufacturerIdBuilder builder = ManufacturerId.builder()
 				.manufacturerIdentifier(ASN1Utils.getOID(untaggedElements.getFirst()));

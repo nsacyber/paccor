@@ -81,6 +81,7 @@ public class TCGRelevantCredentials extends ASN1Object {
 		 * @param seq ASN1Sequence
 		 */
 		public final void urlsFromSequence(@NonNull ASN1Sequence seq) {
+			Definitions.checkCollectionSize(seq);
 			Arrays.asList(seq.toArray()).forEach(
 					element ->
 							this.url(HashedSubjectInfoURI.getInstance(element)));

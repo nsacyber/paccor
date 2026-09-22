@@ -103,7 +103,7 @@ public class ComponentIdentifier extends ASN1Object {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}
 
-        List<ASN1Object> untaggedElements = ASN1Utils.listUntaggedElements(seq);
+        List<ASN1Object> untaggedElements = ASN1Utils.requireUntagged(seq, MIN_SEQUENCE_SIZE);
 
 		ComponentIdentifier.ComponentIdentifierBuilder builder = ComponentIdentifier.builder()
 				.componentManufacturer(ASN1UTF8String.getInstance(untaggedElements.get(0)))
@@ -157,6 +157,7 @@ public class ComponentIdentifier extends ASN1Object {
 		 * @param seq ASN1Sequence
 		 */
 		public final void componentAddressesFromSequence(@NonNull ASN1Sequence seq) {
+			Definitions.checkCollectionSize(seq);
 			Arrays.asList(seq.toArray()).forEach(
 					element ->
 							this.componentAddress(ComponentAddress.getInstance(element)));
