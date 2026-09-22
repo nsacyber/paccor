@@ -78,27 +78,27 @@ $JSON_COMPONENT_TEMPLATE="
         }}"
 $JSON_PROPERTY_TEMPLATE="
         {{
-            `"$JSON_NAME`": `"{0}`",
-            `"$JSON_VALUE`": `"{1}`"
+            `"$JSON_NAME`": {0},
+            `"$JSON_VALUE`": {1}
         }}
 "
 $JSON_PROPERTY_TEMPLATE_OPT="
         {{
-            `"$JSON_NAME`": `"{0}`",
-            `"$JSON_VALUE`": `"{1}`",
-            `"$JSON_PROP_STATUS`": `"{2}`"
+            `"$JSON_NAME`": {0},
+            `"$JSON_VALUE`": {1},
+            `"$JSON_PROP_STATUS`": {2}
         }}
 "
 $JSON_ADDRESSES_TEMPLATE=" `"$JSON_ADDRESSES`": [{0}]"
 $JSON_ETHERNETMAC_TEMPLATE=" {{
-                `"$JSON_ETHERNETMAC`": `"{0}`" }} "
+                `"$JSON_ETHERNETMAC`": {0} }} "
 $JSON_WLANMAC_TEMPLATE=" {{
-                `"$JSON_WLANMAC`": `"{0}`" }} "
+                `"$JSON_WLANMAC`": {0} }} "
 $JSON_BLUETOOTHMAC_TEMPLATE=" {{
-                `"$JSON_BLUETOOTHMAC`": `"{0}`" }} "
+                `"$JSON_BLUETOOTHMAC`": {0} }} "
 $JSON_COMPONENTCLASS_TEMPLATE=" `"$JSON_COMPONENTCLASS`": {{
-        `"$JSON_COMPONENTCLASSREGISTRY`": `"{0}`",
-        `"$JSON_COMPONENTCLASSVALUE`": `"{1}`"
+        `"$JSON_COMPONENTCLASSREGISTRY`": {0},
+        `"$JSON_COMPONENTCLASSVALUE`": {1}
     }}"
 $JSON_ATTRIBUTECERTIDENTIFIER_TEMPLATE=" `"$JSON_ATTRIBUTECERTIDENTIFIER`": {{
         `"$JSON_HASHALG`": `"{0}`",
@@ -121,6 +121,11 @@ $JSON_STATUS_TEMPLATE="
     }}"
 
 ### JSON Constructor Aides
+function jsonEscape ([AllowEmptyString()][string] $value) {
+    # Return a complete JSON string literal, including its surrounding quotes.
+    # This prevents hardware-derived values from changing the manifest structure.
+    ConvertTo-Json -InputObject $value -Compress
+}
 function HexToByteArray { # Powershell doesn't have a built in BinToHex function
     Param ([String] $str )
 
@@ -137,10 +142,10 @@ function HexToByteArray { # Powershell doesn't have a built in BinToHex function
     }
 }
 function jsonComponentClass () {
-    Write-Output ("$JSON_COMPONENTCLASS_TEMPLATE" -f "$($args[0])","$($args[1])")
+    Write-Output ("$JSON_COMPONENTCLASS_TEMPLATE" -f (jsonEscape "$($args[0])"),(jsonEscape "$($args[1])"))
 }
 function jsonManufacturer () {
-    $manufacturer=("`"$JSON_MANUFACTURER`": `"{0}`"" -f "$($args[0])")
+    $manufacturer=("`"$JSON_MANUFACTURER`": {0}" -f (jsonEscape "$($args[0])"))
     #$tmpManufacturerId=(queryForPen "$($args[0])")
     #if (($tmpManufacturerId) -and ("$tmpManufacturerId" -ne "$PEN_ROOT")) {
     #    $tmpManufacturerId=(jsonManufacturerId "$tmpManufacturerId")
@@ -149,34 +154,34 @@ function jsonManufacturer () {
     Write-Output "$manufacturer"
 }
 function jsonModel () {
-    Write-Output ("`"$JSON_MODEL`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_MODEL`": {0}" -f (jsonEscape "$($args[0])"))
 }
 function jsonSerial () {
-    Write-Output ("`"$JSON_SERIAL`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_SERIAL`": {0}" -f (jsonEscape "$($args[0])"))
 }
 function jsonRevision () {
-    Write-Output ("`"$JSON_REVISION`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_REVISION`": {0}" -f (jsonEscape "$($args[0])"))
 }
 function jsonManufacturerId () {
-    Write-Output ("`"$JSON_MANUFACTURERID`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_MANUFACTURERID`": {0}" -f (jsonEscape "$($args[0])"))
 }
 function jsonFieldReplaceable () {
-    Write-Output ("`"$JSON_FIELDREPLACEABLE`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_FIELDREPLACEABLE`": {0}" -f (jsonEscape "$($args[0])"))
 }
 function jsonEthernetMac () {
-    Write-Output ("$JSON_ETHERNETMAC_TEMPLATE" -f "$($args[0])")
+    Write-Output ("$JSON_ETHERNETMAC_TEMPLATE" -f (jsonEscape "$($args[0])"))
 }
 function jsonWlanMac () {
-    Write-Output ("$JSON_WLANMAC_TEMPLATE" -f "$($args[0])")
+    Write-Output ("$JSON_WLANMAC_TEMPLATE" -f (jsonEscape "$($args[0])"))
 }
 function jsonBluetoothMac () {
-    Write-Output ("$JSON_BLUETOOTHMAC_TEMPLATE" -f "$($args[0])")
+    Write-Output ("$JSON_BLUETOOTHMAC_TEMPLATE" -f (jsonEscape "$($args[0])"))
 }
 function jsonPlatformModel () {
-    Write-Output ("`"$JSON_PLATFORMMODEL`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_PLATFORMMODEL`": {0}" -f (jsonEscape "$($args[0])"))
 }
 function jsonPlatformManufacturerStr () {
-    $manufacturer=("`"$JSON_PLATFORMMANUFACTURERSTR`": `"{0}`"" -f "$($args[0])")
+    $manufacturer=("`"$JSON_PLATFORMMANUFACTURERSTR`": {0}" -f (jsonEscape "$($args[0])"))
     #$tmpManufacturerId=(queryForPen "$($args[0])")
     #if (($tmpManufacturerId) -and ("$tmpManufacturerId" -ne "$PEN_ROOT")) {
     #    $tmpManufacturerId=(jsonPlatformManufacturerId "$tmpManufacturerId")
@@ -185,13 +190,13 @@ function jsonPlatformManufacturerStr () {
     Write-Output "$manufacturer"
 }
 function jsonPlatformVersion () {
-    Write-Output ("`"$JSON_PLATFORMVERSION`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_PLATFORMVERSION`": {0}" -f (jsonEscape "$($args[0])"))
 }
 function jsonPlatformSerial () {
-    Write-Output ("`"$JSON_PLATFORMSERIAL`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_PLATFORMSERIAL`": {0}" -f (jsonEscape "$($args[0])"))
 }
 function jsonPlatformManufacturerId () {
-    Write-Output ("`"$JSON_PLATFORMMANUFACTURERID`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_PLATFORMMANUFACTURERID`": {0}" -f (jsonEscape "$($args[0])"))
 }
 function queryForPen () {
     Write-Progress -Id 3 -ParentId 2 -Activity "Searching for PEN..."
@@ -209,19 +214,19 @@ function queryForPen () {
 }
 function jsonProperty () {
     if ($args.Length -eq 2) {
-        Write-Output ("$JSON_PROPERTY_TEMPLATE" -f "$($args[0])","$($args[1])")
+        Write-Output ("$JSON_PROPERTY_TEMPLATE" -f (jsonEscape "$($args[0])"),(jsonEscape "$($args[1])"))
     } elseif ($args.Length -eq 3) {
-        Write-Output ("$JSON_PROPERTY_TEMPLATE_OPT" -f "$($args[0])","$($args[1])","$($args[2])")
+        Write-Output ("$JSON_PROPERTY_TEMPLATE_OPT" -f (jsonEscape "$($args[0])"),(jsonEscape "$($args[1])"),(jsonEscape "$($args[2])"))
     }
 }
 function jsonUri () {
-    Write-Output ("`"$JSON_URI`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_URI`": {0}" -f (jsonEscape "$($args[0])"))
 }
 function jsonHashAlg () {
-    Write-Output ("`"$JSON_HASHALG`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_HASHALG`": {0}" -f (jsonEscape "$($args[0])"))
 }
 function jsonHashValue () {
-    Write-Output ("`"$JSON_HASHVALUE`": `"{0}`"" -f "$($args[0])")
+    Write-Output ("`"$JSON_HASHVALUE`": {0}" -f (jsonEscape "$($args[0])"))
 }
 function toCSV () {
     Write-Output ((($args | Where-Object { $_ -and $_.Trim() -ne "" } | ForEach-Object { $_.ToString() }) -join ",") -replace "}\s*,", "},")
