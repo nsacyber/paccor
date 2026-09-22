@@ -49,20 +49,15 @@ public final class PreviousPlatformCertificateValidator {
     private PlatformConfigurationV3 materializeWithoutChain(PlatformCertificate certificate, List<ResolvedPrevious> resolved, PlatformConfigurationV3 current) {
         return resolved.stream()
                 .findFirst()
-                .filter(previous -> currentType(certificate)
-                        .map(CertType.DELTA::equals)
-                        .map(delta -> !delta || holderMatches(certificate, previous.certificate()))
-                        .orElse(true))
+                .filter(previous -> !certificate.requiresPreviousPlatformCertificates()
+                                || holderMatches(certificate, previous.certificate()))
                 .map(ResolvedPrevious::configuration)
                 .filter(PlatformConfigurationNormalizer::hasContent)
                 .map(base -> PlatformConfigurationNormalizer.hasStatusTraits(current)
                         ? ComponentValidator.materializeComponents(base, List.of(current))
                         : current)
                 .orElseGet(() -> Optional.ofNullable(current)
-                        .filter(_ -> currentType(certificate)
-                                .map(CertType.DELTA::equals)
-                                .map(delta -> !delta)
-                                .orElse(true))
+                        .filter(_ -> !certificate.requiresPreviousPlatformCertificates())
                         .orElse(null));
     }
 
@@ -71,10 +66,10 @@ public final class PreviousPlatformCertificateValidator {
                 .map(start -> applyResolvedChain(chain, resolved, start.index()))
                 .filter(progress -> !progress.failed())
                 .filter(progress -> currentType(certificate)
-                        .map(CertType.DELTA::equals)
-                        .map(delta -> !delta || (progress.configuration() != null
-                                && holderConsistentV2(certificate, progress.anchor())))
-                        .orElse(true))
+                        .map(_ -> !certificate.requiresPreviousPlatformCertificates()
+                                || (progress.configuration() != null
+                                    && holderConsistentV2(certificate, progress.anchor())))
+                        .orElse(false))
                 .map(ChainProgress::configuration)
                 .map(accumulated -> mergeCurrent(accumulated, current))
                 .orElse(null);
