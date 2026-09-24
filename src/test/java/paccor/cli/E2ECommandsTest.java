@@ -628,6 +628,18 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(), rcValidateOk2,
                 "delta component validation should require --prev-pcert");
 
+        int rcValidateUnmatchedGlob = RootCmd.commandLine().execute(
+                "validate",
+                "--x509v2AttrCert", cerDelta.toString(),
+                "--publicKeyCert", RES_MLDSA65_CA_CERT,
+                "--components-json", RES_TEST4_DELTA_COMP_1_JSON,
+                "--prev-pcert", tempDir.resolve("no-such-previous-*.cer").toString()
+        );
+        Assertions.assertEquals(
+                ClientExitCodes.VALIDATION_FAILED.code(),
+                rcValidateUnmatchedGlob,
+                "an unmatched --prev-pcert glob must not bypass previous-certificate validation");
+
         // Rebase
         int rc3 = RootCmd.commandLine().execute(
                 "certgen",

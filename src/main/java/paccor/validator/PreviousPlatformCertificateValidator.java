@@ -33,9 +33,10 @@ public final class PreviousPlatformCertificateValidator {
         if (current == null) {
             return null;
         }
+
         List<File> files = GlobFileResolver.resolve(previousPlatformCertificates);
         if (files.isEmpty()) {
-            return current;
+            return certificate.requiresPreviousPlatformCertificates() ? null : current;
         }
 
         List<ResolvedPrevious> resolved = loadPrevious(files);
