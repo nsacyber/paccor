@@ -252,7 +252,7 @@ public abstract class Trait<TraitValueType extends ASN1Object, TraitType extends
                 throw new IllegalArgumentException("Bad sequence size: " + seq.size());
             }
 
-            List<ASN1Object> untaggedElements = ASN1Utils.listUntaggedElements(seq);
+            List<ASN1Object> untaggedElements = ASN1Utils.requireUntagged(seq, MIN_SEQUENCE_SIZE);
 
             this.traitId = ASN1ObjectIdentifier.getInstance(untaggedElements.get(0));
             this.traitCategory = ASN1ObjectIdentifier.getInstance(untaggedElements.get(1));

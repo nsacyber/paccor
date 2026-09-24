@@ -34,9 +34,13 @@ import paccor.json.ObjectMapperFactory;
 import paccor.model.PlatformCertificateInformationModel;
 import paccor.model.HolderInfo;
 import paccor.model.CertificateReference;
+import paccor.model.SubjectInfo;
+import paccor.model.NameInfo;
 import org.bouncycastle.asn1.ASN1Primitive;
 import org.bouncycastle.asn1.DERNull;
+import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.util.encoders.Base64;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
@@ -80,6 +84,12 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
     @Option(names = { CliOptionNames.HOLDER_CERT_SHORT, CliOptionNames.HOLDER_CERT_LONG }, description = "Holder/Subject certificate file", converter = ReadableFileConverter.class)
     private File holderCert;
 
+    @Option(names = CliOptionNames.SUBJECT_KEY_LONG, description = "Subject public key file (DER or PEM SubjectPublicKeyInfo) for PKC output")
+    private File subjectKey;
+
+    @Option(names = CliOptionNames.SUBJECT_DN_LONG, description = "Subject distinguished name for PKC output (for example, CN=Platform,O=Example)")
+    private String subjectDn;
+
     // Platform Certificate options required prior to finalization
     @Option(names = { CliOptionNames.CERT_KIND_LONG_ALT, CliOptionNames.CERT_KIND_LONG }, description = "Certificate output kind (AC, PKC)", converter = {CertKindConverter.class})
     private CertKind certKind;
@@ -117,6 +127,10 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
     @Override
     public Integer call() throws Exception {
         if (!validateOutputPath()) {
+            return ClientExitCodes.USAGE_ERROR.code();
+        }
+        if ((subjectKey != null || subjectDn != null) && holderCert != null) {
+            common.printError("--subject-key/--subject-dn and --holder-cert are mutually exclusive; use --subject-key with --subject-dn or --in-platform-model.");
             return ClientExitCodes.USAGE_ERROR.code();
         }
         if (previousPlatformCerts != null && previousPlatformCerts.size() > 1) {
@@ -221,6 +235,14 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
             maybeAttachPreviousPlatformCertificates(pi, profile);
             applyHolderOrSubject(pi, profile);
         }
+        if (profile.outputType() == CertKind.PKC) {
+            if (subjectDn != null) {
+                applySubjectDn(pi);
+            }
+            if (subjectKey != null) {
+                applySubjectKey(pi);
+            }
+        }
         if (serial != null) {
             pi.setCertSerialNumber(serial);
         }
@@ -262,6 +284,43 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
             return;
         }
         pi.setSubject(CertificateResolver.resolveSubject(holderCert));
+    }
+
+    private void applySubjectKey(PlatformCertificateInformationModel pi) {
+        SubjectPublicKeyInfo spki = CertificateResolver.resolveSubjectPublicKeyInfo(subjectKey);
+        if (spki == null) {
+            throw new IllegalArgumentException("Could not read subject public key from " + subjectKey + ". Expected DER or PEM SubjectPublicKeyInfo.");
+        }
+
+        SubjectInfo current = pi.getSubject();
+        if (current == null || current.nameInfo() == null || current.resolvedSubjectName() == null) {
+            throw new IllegalArgumentException("A subject name is required when --subject-key is used; provide it in the platform model with --in-platform-model.");
+        }
+        try {
+            pi.setSubject(SubjectInfo.builder()
+                    .nameInfo(current.nameInfo())
+                    .subjectPublicKeyInfoDerB64(Base64.toBase64String(spki.getEncoded()))
+                    .build());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Could not encode subject public key from " + subjectKey + ".", e);
+        }
+    }
+
+    private void applySubjectDn(PlatformCertificateInformationModel pi) {
+        try {
+            X500Name name = new X500Name(subjectDn);
+            SubjectInfo current = pi.getSubject();
+            pi.setSubject(SubjectInfo.builder()
+                    .nameInfo(NameInfo.builder()
+                            // Keep the canonical DER form for JSON round-tripping.
+                            .name(null)
+                            .nameDerB64(Base64.toBase64String(name.getEncoded()))
+                            .build())
+                    .subjectPublicKeyInfoDerB64(current != null ? current.subjectPublicKeyInfoDerB64() : null)
+                    .build());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid subject distinguished name: " + subjectDn, e);
+        }
     }
 
     private void applyCredentialTypeDefaults(PlatformCertificateInformationModel pi, CertificateProfile profile) {

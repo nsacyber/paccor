@@ -69,7 +69,7 @@ public class PlatformProperties extends ASN1Object {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}
 
-        List<ASN1Object> untaggedElements = ASN1Utils.listUntaggedElements(seq);
+        List<ASN1Object> untaggedElements = ASN1Utils.requireUntagged(seq, SEQUENCE_SIZE);
 
 		PlatformProperties.PlatformPropertiesBuilder builder = PlatformProperties.builder()
 				.propertyName(ASN1UTF8String.getInstance(untaggedElements.get(0)))

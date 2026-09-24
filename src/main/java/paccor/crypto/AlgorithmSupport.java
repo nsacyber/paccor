@@ -233,9 +233,6 @@ public class AlgorithmSupport {
         String mapped = OID_TO_JCA_SIGNATURE.get(oid);
         if (mapped != null) return mapped;
 
-        if (isEcdsa(oid)) return "SHA384withECDSA";  // default for unknown ECDSA
-        if (isRsaPkcs1(oid)) return "SHA384withRSA";  // default for unknown RSA
-
         throw new UnsupportedAlgorithmException(oid);
     }
 

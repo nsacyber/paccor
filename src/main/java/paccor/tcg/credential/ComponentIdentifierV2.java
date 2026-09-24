@@ -189,6 +189,7 @@ public class ComponentIdentifierV2 extends ASN1Object {
          * @param seq ASN1Sequence
          */
         public final void componentAddressesFromSequence(@NonNull ASN1Sequence seq) {
+            Definitions.checkCollectionSize(seq);
             Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, ComponentAddress::getInstance))
                     .map(List::of)
                     .orElseGet(() -> Stream.of(seq.toArray()).map(ComponentAddress::getInstance).toList())

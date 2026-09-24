@@ -93,7 +93,7 @@ public final class PciFieldTranslator implements TraitValueTranslator {
      * VPD string (MN = Manufacturer Name) is preserved as-is.
      */
     private String normalizeManufacturerField(String input) {
-        String[] parts = input.split(":", -1);
+        String[] parts = input.split(":", 3);
         if (parts.length != 3) {
             throw new IllegalArgumentException("PCI manufacturer field must have three colon-delimited fields");
         }
@@ -118,7 +118,7 @@ public final class PciFieldTranslator implements TraitValueTranslator {
      * VPD string (PN = Part Number) is preserved as-is.
      */
     private String normalizeModelField(String input) {
-        String[] parts = input.split(":", -1);
+        String[] parts = input.split(":", 3);
         if (parts.length != 3) {
             throw new IllegalArgumentException("PCI model field must have three colon-delimited fields");
         }
@@ -143,7 +143,7 @@ public final class PciFieldTranslator implements TraitValueTranslator {
      * Serial number is hex, VPD string (SN = Serial Number) is preserved as-is.
      */
     private String normalizeSerialField(String input) {
-        String[] parts = input.split(":", -1);
+        String[] parts = input.split(":", 2);
         if (parts.length != 2) {
             throw new IllegalArgumentException("PCI serial field must have two colon-delimited fields");
         }

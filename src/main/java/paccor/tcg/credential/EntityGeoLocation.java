@@ -84,10 +84,10 @@ public class EntityGeoLocation extends ASN1Object {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
         }
 
-        List<ASN1Object> untaggedElements = ASN1Utils.listUntaggedElements(seq);
+        List<ASN1Object> untaggedElements = ASN1Utils.requireUntagged(seq, MIN_SEQUENCE_SIZE);
 
         EntityGeoLocation.EntityGeoLocationBuilder builder = EntityGeoLocation.builder()
-                .countryCode(ASN1PrintableString.getInstance(untaggedElements.get(0)));
+                .countryCode(ASN1PrintableString.getInstance(untaggedElements.getFirst()));
 
         ASN1Utils.parseTaggedElements(seq).forEach((key, value) -> {
             switch (key) {

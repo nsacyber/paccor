@@ -88,7 +88,7 @@ public class CommonCriteriaEvaluation extends ASN1Object {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
         }
 
-        List<ASN1Object> untaggedElements = ASN1Utils.listUntaggedElements(seq);
+        List<ASN1Object> untaggedElements = ASN1Utils.requireUntagged(seq, MIN_SEQUENCE_SIZE);
 
         CommonCriteriaEvaluation.CommonCriteriaEvaluationBuilder builder = CommonCriteriaEvaluation.builder()
                 .cCMeasures(CommonCriteriaMeasures.getInstance(untaggedElements.get(0)))

@@ -76,7 +76,7 @@ public class ComponentClass extends ASN1Object {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
         }
 
-        List<ASN1Object> untaggedElements = ASN1Utils.listUntaggedElements(seq);
+        List<ASN1Object> untaggedElements = ASN1Utils.requireUntagged(seq, SEQUENCE_SIZE);
 
         ComponentClass.ComponentClassBuilder builder = ComponentClass.builder()
                 .componentClassRegistry(ASN1Utils.getOID(untaggedElements.get(0)))

@@ -80,7 +80,7 @@ public class TCGPlatformSpecification extends ASN1Object {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}
 
-        List<ASN1Object> untaggedElements = ASN1Utils.listUntaggedElements(seq);
+        List<ASN1Object> untaggedElements = ASN1Utils.requireUntagged(seq, SEQUENCE_SIZE);
 
 		TCGPlatformSpecification.TCGPlatformSpecificationBuilder builder = TCGPlatformSpecification.builder()
 				.version(TCGSpecificationVersion.getInstance(untaggedElements.get(0)))

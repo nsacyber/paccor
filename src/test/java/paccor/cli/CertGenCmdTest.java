@@ -2,11 +2,15 @@ package paccor.cli;
 
 import paccor.cert.TbsEnvelope;
 import java.io.File;
+import java.nio.file.Files;
 import paccor.json.ObjectMapperFactory;
 import paccor.model.PlatformCertificateInformationModel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
+import org.bouncycastle.cert.X509CertificateHolder;
+import paccor.cli.CliHelper.x509type;
 
 public class CertGenCmdTest extends TestSupport {
 
@@ -32,6 +36,31 @@ public class CertGenCmdTest extends TestSupport {
         PlatformCertificateInformationModel pi = ObjectMapperFactory.get().readValue(env.getPlatformInfoJson(), PlatformCertificateInformationModel.class);
         Assertions.assertNotNull(pi.getIssuer());
         Assertions.assertNotNull(pi.getSubject());
+    }
+
+    @Test
+    public void testGeneratePkcEnvelope_withRawSubjectKey() throws Exception {
+        File out = tempFile("certgen-subject-key-", ".json");
+        File issuer = new File("src/test/resources/TestCA.cert.example.pem");
+        File subjectCert = new File("src/test/resources/TestCA.cert.example.pem");
+        File subjectKey = tempFile("subject-key-", ".der");
+        X509CertificateHolder certificate = CliHelper.loadCert(subjectCert.getPath(), x509type.CERTIFICATE);
+        Files.write(subjectKey.toPath(), certificate.getSubjectPublicKeyInfo().getEncoded());
+
+        int code = RootCmd.commandLine().execute(
+                "certgen",
+                "--out", out.getAbsolutePath(),
+                "--kind", "PKC",
+                "--issuer-cert", issuer.getAbsolutePath(),
+                "--subject-dn", "CN=Test Subject,O=Example",
+                "--subject-key", subjectKey.getAbsolutePath()
+        );
+        Assertions.assertEquals(0, code);
+        TbsEnvelope env = ObjectMapperFactory.get().readValue(out, TbsEnvelope.class);
+        PlatformCertificateInformationModel pi = ObjectMapperFactory.get().readValue(env.getPlatformInfoJson(), PlatformCertificateInformationModel.class);
+        Assertions.assertArrayEquals(
+                SubjectPublicKeyInfo.getInstance(certificate.getSubjectPublicKeyInfo()).getEncoded(),
+                SubjectPublicKeyInfo.getInstance(org.bouncycastle.util.encoders.Base64.decode(pi.getSubject().subjectPublicKeyInfoDerB64())).getEncoded());
     }
 
     @Test

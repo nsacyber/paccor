@@ -68,7 +68,7 @@ public class TCGCredentialType extends ASN1Object {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
         }
 
-        List<ASN1Object> untaggedElements = ASN1Utils.listUntaggedElements(seq);
+        List<ASN1Object> untaggedElements = ASN1Utils.requireUntagged(seq, SEQUENCE_SIZE);
 
         TCGCredentialType.TCGCredentialTypeBuilder builder = TCGCredentialType.builder()
                 .certificateType(ASN1ObjectIdentifier.getInstance(untaggedElements.getFirst()));

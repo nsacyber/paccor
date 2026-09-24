@@ -1,7 +1,13 @@
 package paccor.cert;
 
 import jakarta.validation.constraints.NotNull;
+import java.security.GeneralSecurityException;
+import java.security.MessageDigest;
+import java.util.Arrays;
+import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.GeneralName;
+import org.bouncycastle.asn1.x509.IssuerSerial;
 import paccor.cli.CliHelper;
 import java.io.File;
 import java.math.BigInteger;
@@ -13,6 +19,7 @@ import java.util.Vector;
 import java.util.function.Function;
 import lombok.Getter;
 import lombok.NonNull;
+import paccor.crypto.AlgorithmSupport;
 import paccor.model.CertificateReference;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -31,6 +38,7 @@ import paccor.normalization.PlatformConfigurationNormalizer;
 import paccor.tcg.credential.ASN1Utils;
 import paccor.tcg.credential.CertificateIdentifier;
 import paccor.tcg.credential.CertificateIdentifierTrait;
+import paccor.tcg.credential.HashedCertificateIdentifier;
 import paccor.tcg.credential.PlatformConfiguration;
 import paccor.tcg.credential.PlatformConfigurationV2;
 import paccor.tcg.credential.PlatformConfigurationV3;
@@ -329,6 +337,53 @@ public final class PlatformCertificate {
             return attributeCertificate.isSignatureValid(verifierProvider);
         }
         return false;
+    }
+
+    public byte[] signatureBytes() {
+        if (isAttributeCertificate()) {
+            return attributeCertificate.getSignature();
+        }
+        if (isPublicKeyCertificate()) {
+            return publicKeyCertificate.getSignature();
+        }
+        return null;
+    }
+
+    public boolean containsIssuer(GeneralNames issuer) {
+        List<X500Name> thisIssuerNames = isAttributeCertificate()
+                ? Arrays.asList(attributeCertificate.getIssuer().getNames())
+                : List.of(publicKeyCertificate.getIssuer());
+        return Arrays.stream(issuer.getNames())
+                .filter(generalName -> generalName.getTagNo() == GeneralName.directoryName)
+                .map(generalName -> X500Name.getInstance(generalName.getName()))
+                .anyMatch(thisIssuerNames::contains);
+    }
+
+    public boolean identifies(CertificateIdentifier trait) {
+        return Optional.ofNullable(trait)
+                .filter(identifier -> identifier.getHashedCertIdentifier() != null
+                        || identifier.getGenericCertIdentifier() != null)
+                .filter(identifier -> Optional.ofNullable(identifier.getHashedCertIdentifier())
+                        .map(this::matches)
+                        .orElse(true))
+                .filter(identifier -> Optional.ofNullable(identifier.getGenericCertIdentifier())
+                        .map(this::matches)
+                        .orElse(true))
+                .isPresent();
+    }
+
+    private boolean matches(HashedCertificateIdentifier identifier) {
+        try {
+            byte[] expected = identifier.getHashOverSignatureValue().getOctets();
+            byte[] actual = AlgorithmSupport.digest(signatureBytes(), identifier.getHashAlgorithm().getAlgorithm());
+            return MessageDigest.isEqual(expected, actual);
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+    }
+
+    private boolean matches(IssuerSerial identifier) {
+        return identifier.getSerial().hasValue(serialNumber()) && containsIssuer(identifier.getIssuer());
     }
 
     public PlatformConfiguration platformConfigurationV1() {

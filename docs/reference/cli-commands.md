@@ -55,6 +55,8 @@ paccor certgen \
   --out example-envelope.json
 ```
 
+For PKC generation, `--subject-key` can provide a DER or PEM `SubjectPublicKeyInfo` directly, with `--subject-dn` supplying its X.500 subject name. The DN may instead come from a platform model supplied with `--in-platform-model`. These options are mutually exclusive with `--holder-cert`.
+
 ## `paccor assemble`
 
 Consumes an envelope and produces the signed certificate. You must choose exactly one signing mode:

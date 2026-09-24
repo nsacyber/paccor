@@ -1,9 +1,9 @@
 package paccor.cli;
 
 import java.util.Arrays;
+import java.util.Objects;
 import org.bouncycastle.asn1.x509.CRLDistPoint;
 import org.bouncycastle.asn1.x509.DistributionPoint;
-import org.bouncycastle.asn1.x509.DistributionPointName;
 import org.bouncycastle.asn1.x509.ReasonFlags;
 import paccor.cert.CertSpecVersion;
 import paccor.cert.PlatformCertificate;
@@ -22,7 +22,6 @@ import org.bouncycastle.cert.X509AttributeCertificateHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import picocli.CommandLine;
 import paccor.tcg.credential.PlatformConfigurationV2;
 import paccor.tcg.credential.PlatformConfigurationV3;
 import paccor.tcg.credential.TCGObjectIdentifier;
@@ -151,7 +150,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(1, list.length, "AC should have one PlatformConfigurationV2 attribute");
         ASN1Encodable value = list[0].getAttrValues().getObjectAt(0);
         Assertions.assertInstanceOf(ASN1Sequence.class, value);
-        PlatformConfigurationV2 pcv2 = PlatformConfigurationV2.getInstance((ASN1Sequence) value);
+        PlatformConfigurationV2 pcv2 = PlatformConfigurationV2.getInstance(value);
         Assertions.assertNotNull(pcv2, "AC should carry PlatformConfigurationV2");
         Assertions.assertFalse(pcv2.getComponentIdentifiers().isEmpty(), "PlatformConfigurationV2 should contain components");
     }
@@ -197,7 +196,7 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(1, list.length, "AC should have one PlatformConfigurationV2 attribute");
         ASN1Encodable value = list[0].getAttrValues().getObjectAt(0);
         Assertions.assertInstanceOf(ASN1Sequence.class, value);
-        PlatformConfigurationV2 pcv2 = PlatformConfigurationV2.getInstance((ASN1Sequence)value);
+        PlatformConfigurationV2 pcv2 = PlatformConfigurationV2.getInstance(value);
         Assertions.assertNotNull(pcv2, "AC should downcast V3 input to PlatformConfigurationV2");
         Assertions.assertFalse(pcv2.getComponentIdentifiers().isEmpty());
     }
@@ -241,7 +240,7 @@ public class E2ECommandsTest extends TestSupport {
         List<Attribute> list = SubjectDirectoryAttributes.getInstance(cerHolder.getExtension(Extension.subjectDirectoryAttributes).getParsedValue()).getAttributes().stream().toList();
         ASN1Encodable value = list.stream().filter(obj -> obj.getAttrType().equals(TCGObjectIdentifier.tcgAtPlatformConfigurationV3)).findFirst().get().getAttrValues().getObjectAt(0);
         Assertions.assertInstanceOf(ASN1Sequence.class, value);
-        PlatformConfigurationV3 pcv3 = PlatformConfigurationV3.getInstance((ASN1Sequence)value);
+        PlatformConfigurationV3 pcv3 = PlatformConfigurationV3.getInstance(value);
         Assertions.assertNotNull(pcv3, "AC should have PlatformConfigurationV3 attribute");
         Assertions.assertEquals(4, pcv3.getPlatformComponents().size());
     }
@@ -628,6 +627,18 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(), rcValidateOk2,
                 "delta component validation should require --prev-pcert");
 
+        int rcValidateUnmatchedGlob = RootCmd.commandLine().execute(
+                "validate",
+                "--x509v2AttrCert", cerDelta.toString(),
+                "--publicKeyCert", RES_MLDSA65_CA_CERT,
+                "--components-json", RES_TEST4_DELTA_COMP_1_JSON,
+                "--prev-pcert", tempDir.resolve("no-such-previous-*.cer").toString()
+        );
+        Assertions.assertEquals(
+                ClientExitCodes.VALIDATION_FAILED.code(),
+                rcValidateUnmatchedGlob,
+                "an unmatched --prev-pcert glob must not bypass previous-certificate validation");
+
         // Rebase
         int rc3 = RootCmd.commandLine().execute(
                 "certgen",
@@ -676,8 +687,8 @@ public class E2ECommandsTest extends TestSupport {
         Assertions.assertEquals(0, rcValidateOk4, "validate should pass components check");
 
         // Verify delta holder points to base
-        X509AttributeCertificateHolder baseAc = PlatformCertificate.loadSafe(cerBase.toFile()).getAttributeCertificate();
-        X509AttributeCertificateHolder deltaAc = PlatformCertificate.loadSafe(cerDelta.toFile()).getAttributeCertificate();
+        X509AttributeCertificateHolder baseAc = Objects.requireNonNull(PlatformCertificate.loadSafe(cerBase.toFile())).getAttributeCertificate();
+        X509AttributeCertificateHolder deltaAc = Objects.requireNonNull(PlatformCertificate.loadSafe(cerDelta.toFile())).getAttributeCertificate();
         Assertions.assertEquals(baseAc.getIssuer().getNames()[0],
                 deltaAc.getHolder().getIssuer()[0],
                 "delta holder should identify the base platform certificate issuer");
@@ -730,7 +741,7 @@ public class E2ECommandsTest extends TestSupport {
         // Negative: tweak a copy of components JSON (change first VALUE string)
         Path badJson = tempDir.resolve("bad-v3.json");
         String orig = Files.readString(Path.of(RES_GEN1_COMP_JSON_V3), StandardCharsets.UTF_8);
-        String tweaked = orig.replaceFirst("\\\"traitValue\\\"\\s*:\\s*\\\"", "\"traitValue\": \"INVALID-");
+        String tweaked = orig.replaceFirst("\"traitValue\"\\s*:\\s*\"", "\"traitValue\": \"INVALID-");
         Files.writeString(badJson, tweaked, StandardCharsets.UTF_8);
         int rcValidateBad = RootCmd.commandLine().execute(
                 "validate",
@@ -803,7 +814,7 @@ public class E2ECommandsTest extends TestSupport {
         // Negative: tweak a copy of components JSON (change first VALUE string)
         Path badJson = tempDir.resolve("bad-v3.json");
         String orig = Files.readString(Path.of(RES_GEN1_COMP_JSON_V3), StandardCharsets.UTF_8);
-        String tweaked = orig.replaceFirst("\\\"traitValue\\\"\\s*:\\s*\\\"", "\"traitValue\": \"INVALID-");
+        String tweaked = orig.replaceFirst("\"traitValue\"\\s*:\\s*\"", "\"traitValue\": \"INVALID-");
         Files.writeString(badJson, tweaked, StandardCharsets.UTF_8);
         int rcValidateBad = RootCmd.commandLine().execute(
                 "validate",
