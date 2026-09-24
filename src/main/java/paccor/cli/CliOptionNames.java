@@ -18,6 +18,8 @@ public final class CliOptionNames {
     public static final String ISSUER_CERT_SHORT = "-P";
     public static final String HOLDER_CERT_LONG = "--holder-cert";
     public static final String HOLDER_CERT_SHORT = "-e";
+    public static final String SUBJECT_KEY_LONG = "--subject-key";
+    public static final String SUBJECT_DN_LONG = "--subject-dn";
     public static final String CERT_KIND_LONG = "--cert-kind";
     public static final String CERT_KIND_LONG_ALT = "--kind";
     public static final String CERT_TYPE_LONG = "--cert-type";

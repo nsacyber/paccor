@@ -1,9 +1,11 @@
 package paccor.cert;
 
+import org.bouncycastle.asn1.ASN1Primitive;
 import paccor.cli.CliHelper;
 import paccor.cli.CliHelper.x509type;
 import java.io.File;
 import java.math.BigInteger;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Optional;
 import paccor.model.HolderInfo;
@@ -16,6 +18,7 @@ import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
 import org.bouncycastle.asn1.x509.Holder;
 import org.bouncycastle.asn1.x509.IssuerSerial;
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.AttributeCertificateHolder;
 import org.bouncycastle.cert.X509AttributeCertificateHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -283,6 +286,21 @@ public class CertificateResolver {
     public static SubjectInfo resolveSubject(File subjectCertFile) {
         X509CertificateHolder cert = CliHelper.loadCertSafe(subjectCertFile, x509type.CERTIFICATE);
         return resolveSubject(cert);
+    }
+
+    /**
+     * Read a DER or PEM SubjectPublicKeyInfo without requiring an X.509 certificate.
+     */
+    public static SubjectPublicKeyInfo resolveSubjectPublicKeyInfo(File subjectKeyFile) {
+        if (subjectKeyFile == null) return null;
+        try {
+            byte[] bytes = Files.readAllBytes(subjectKeyFile.toPath());
+            Object pem = CliHelper.readPemObjectSafe(bytes);
+            if (pem instanceof SubjectPublicKeyInfo spki) return spki;
+            return SubjectPublicKeyInfo.getInstance(bytes);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     /**
