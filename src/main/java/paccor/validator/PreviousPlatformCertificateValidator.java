@@ -66,11 +66,9 @@ public final class PreviousPlatformCertificateValidator {
         return resolveChainStart(chain)
                 .map(start -> applyResolvedChain(chain, resolved, start.index()))
                 .filter(progress -> !progress.failed())
-                .filter(progress -> currentType(certificate)
-                        .map(_ -> !certificate.requiresPreviousPlatformCertificates()
-                                || (progress.configuration() != null
-                                    && holderConsistentV2(certificate, progress.anchor())))
-                        .orElse(false))
+                .filter(progress -> currentType(certificate).isPresent()
+                        && progress.configuration() != null
+                        && holderConsistentV2(certificate, progress.anchor()))
                 .map(ChainProgress::configuration)
                 .map(accumulated -> mergeCurrent(accumulated, current))
                 .orElse(null);
