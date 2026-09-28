@@ -380,6 +380,46 @@ public class E2ECommandsTest extends TestSupport {
     }
 
     @Test
+    void validate_without_components_json_succeeds() throws Exception {
+        Path tempDir = tempDir();
+        Path env = tempDir.resolve("env-no-components.json");
+        Path cer = tempDir.resolve("env-no-components.cer");
+
+        int rc = RootCmd.commandLine().execute(
+                "certgen",
+                "--serial", "1",
+                "--not-before", "20240101",
+                "--not-after", "20300101",
+                "--issuer-cert", RES_GEN1_CA_CERT,
+                "--holder-cert", RES_GEN1_HOLDER_CERT,
+                "--attributes-json", RES_GEN1_ATTR_JSON,
+                "--components-json", RES_GEN1_COMP_JSON_V2,
+                "--extensions-json", RES_GEN1_EXT_JSON,
+                "--sig-profile", RES_GEN1_SIG_PROFILE,
+                "--finalize",
+                "--out", env.toString()
+        );
+        Assertions.assertEquals(0, rc);
+
+        int rcAssemble = RootCmd.commandLine().execute(
+                "assemble",
+                "--in", env.toString(),
+                "--out", cer.toString(),
+                "--pem",
+                "--local-key", RES_GEN1_CA_KEY,
+                "--issuer-cert", RES_GEN1_CA_CERT
+        );
+        Assertions.assertEquals(0, rcAssemble);
+
+        int rcValidate = RootCmd.commandLine().execute(
+                "validate",
+                "--x509v2AttrCert", cer.toString(),
+                "--publicKeyCert", RES_GEN1_CA_CERT
+        );
+        Assertions.assertEquals(0, rcValidate, "validate should succeed when no components JSON is given");
+    }
+
+    @Test
     void validate_components_ac_v2_positive_and_negative() throws Exception {
         Path tempDir = tempDir();
         Path env = tempDir.resolve("env-ac1.json");

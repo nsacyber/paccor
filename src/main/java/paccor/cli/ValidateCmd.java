@@ -71,14 +71,16 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
                         .map(this::reportCrl)
                         .orElseGet(() -> reportCrl(false));
         boolean specificationOk = validateSpecification(certificate);
-        boolean componentsOk = ComponentValidationService.builder()
-                .previousPlatformCertificates(previousPlatformCertsList)
-                .issuerCertificate(signer.orElse(null))
-                .trustAnchors(trustAnchorList == null
-                        ? List.of()
-                        : CliHelper.loadCertificates(GlobFileResolver.resolve(trustAnchorList)))
-                .build()
-                .validate(certificate, componentsJson, componentMatcherName);
+        boolean componentsOk = componentsJson == null
+                ? reportComponentsSkipped()
+                : ComponentValidationService.builder()
+                        .previousPlatformCertificates(previousPlatformCertsList)
+                        .issuerCertificate(signer.orElse(null))
+                        .trustAnchors(trustAnchorList == null
+                                ? List.of()
+                                : CliHelper.loadCertificates(GlobFileResolver.resolve(trustAnchorList)))
+                        .build()
+                        .validate(certificate, componentsJson, componentMatcherName);
 
         ValidationReport report = ValidationReport.builder()
                 .signatureOk(signatureOk)
@@ -90,6 +92,10 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
         return reportOverall(report.ok()).code();
     }
 
+    private boolean reportComponentsSkipped() {
+        common.printInfo("Components validation: Skipped, no components JSON provided");
+        return true;
+    }
     private boolean reportSignature(boolean ok) {
         common.printInfo("Signature validation: " + (ok ? "OK" : "FAILED"));
         return ok;
