@@ -2,10 +2,13 @@ package paccor.cli;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
+import java.util.logging.Formatter;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -39,7 +42,7 @@ public final class LogBootstrap {
         Level level = parseLevel(levelString);
         root.setLevel(level);
         if (!quiet) {
-            SimpleFormatter formatter = new SimpleFormatter();
+            Formatter formatter = new ConsoleFormatter();
             StreamHandler stdout = new StreamHandler(System.out, formatter) {
                 @Override
                 public void publish(LogRecord record) {
@@ -82,5 +85,26 @@ public final class LogBootstrap {
                 .map(value -> value.toUpperCase(Locale.ROOT))
                 .map(Level::parse)
                 .orElse(Level.INFO);
+    }
+
+    /**
+     * Console formatter that prints only the message. Warnings and errors are prefixed with their level.
+     * Timestamps and source class details are left to the file log.
+     */
+    static final class ConsoleFormatter extends Formatter {
+        @Override
+        public String format(LogRecord record) {
+            StringBuilder sb = new StringBuilder();
+            if (record.getLevel().intValue() >= Level.WARNING.intValue()) {
+                sb.append(record.getLevel().getName()).append(": ");
+            }
+            sb.append(formatMessage(record)).append(System.lineSeparator());
+            Optional.ofNullable(record.getThrown()).ifPresent(t -> {
+                StringWriter sw = new StringWriter();
+                t.printStackTrace(new PrintWriter(sw));
+                sb.append(sw);
+            });
+            return sb.toString();
+        }
     }
 }
