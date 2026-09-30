@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -276,9 +277,7 @@ public class ASN1Utils {
      * @throws IllegalArgumentException if the object cannot be converted
      */
     public static ASN1Sequence getSequence(Object o) {
-        return (o instanceof ASN1TaggedObject t)
-                ? ASN1Sequence.getInstance(t, t.isExplicit())
-                : ASN1Sequence.getInstance(o);
+        return fromTaggedOrPlain(o, ASN1Sequence::getInstance, ASN1Sequence::getInstance);
     }
 
     /**
@@ -347,6 +346,31 @@ public class ASN1Utils {
     }
 
     /**
+     * Several BouncyCastle objects have getInstance(Object) and getInstance(ASN1TaggedObject, boolean).
+     * This method will reduce complexity to decode using either method.
+     * @param o Object to convert
+     * @param fromTagged getInstance(ASN1TaggedObject, boolean)
+     * @param fromObject getInstance(Object)
+     * @return instance
+     * @param <T> ASN.1 type
+     */
+    private static <T> T fromTaggedOrPlain(Object o, BiFunction<ASN1TaggedObject, Boolean, T> fromTagged, Function<Object, T> fromObject) {
+        return o instanceof ASN1TaggedObject t ? fromTagged.apply(t, t.isExplicit()) : fromObject.apply(o);
+    }
+
+    /**
+     * Tries to convert from String, then passes it off to fromTaggedOrPlain.
+     * @param o Object to convert
+     * @param fromTagged getInstance(ASN1TaggedObject, boolean)
+     * @param fromObject getInstance(Object)
+     * @return instance
+     * @param <T> ASN.1 type
+     */
+    private static <T> T fromStringOrTaggedOrPlain(Object o, BiFunction<ASN1TaggedObject, Boolean, T> fromTagged, Function<Object, T> fromObject, Function<String, T> fromString) {
+        return o instanceof String s ? fromString.apply(s) : fromTaggedOrPlain(o, fromTagged, fromObject);
+    }
+
+    /**
      * Get a string or default if null.
      * @param str ASN1String to check
      * @param def Default string
@@ -363,11 +387,7 @@ public class ASN1Utils {
      * @throws IllegalArgumentException if the object cannot be converted
      */
     public static ASN1UTF8String getUTF8String(Object o) {
-        return (o instanceof ASN1TaggedObject t)
-                ? ASN1UTF8String.getInstance(t, t.isExplicit())
-                : (o instanceof String s)
-                    ? new DERUTF8String(s)
-                    : ASN1UTF8String.getInstance(o);
+        return fromStringOrTaggedOrPlain(o, ASN1UTF8String::getInstance, ASN1UTF8String::getInstance, DERUTF8String::new);
     }
 
     /**
@@ -377,11 +397,7 @@ public class ASN1Utils {
      * @throws IllegalArgumentException if the object cannot be converted
      */
     public static ASN1IA5String getIA5String(Object o) {
-        return (o instanceof ASN1TaggedObject t)
-                ? ASN1IA5String.getInstance(t, t.isExplicit())
-                : (o instanceof String s)
-                    ? new DERIA5String(s)
-                    : ASN1IA5String.getInstance(o);
+        return fromStringOrTaggedOrPlain(o, ASN1IA5String::getInstance, ASN1IA5String::getInstance, DERIA5String::new);
     }
 
     /**
@@ -391,11 +407,7 @@ public class ASN1Utils {
      * @throws IllegalArgumentException if the object cannot be converted
      */
     public static ASN1PrintableString getPrintableString(Object o) {
-        return (o instanceof ASN1TaggedObject t)
-                ? ASN1PrintableString.getInstance(t, t.isExplicit())
-                : (o instanceof String s)
-                    ? new DERPrintableString(s)
-                    : ASN1PrintableString.getInstance(o);
+        return fromStringOrTaggedOrPlain(o, ASN1PrintableString::getInstance, ASN1PrintableString::getInstance, DERPrintableString::new);
     }
 
     /**
@@ -405,9 +417,7 @@ public class ASN1Utils {
      * @throws IllegalArgumentException if the object cannot be converted
      */
     public static ASN1GeneralizedTime getGeneralizedTime(Object o) {
-        return (o instanceof ASN1TaggedObject t)
-                ? ASN1GeneralizedTime.getInstance(t, t.isExplicit())
-                : ASN1GeneralizedTime.getInstance(o);
+        return fromTaggedOrPlain(o, ASN1GeneralizedTime::getInstance, ASN1GeneralizedTime::getInstance);
     }
 
     /**
@@ -417,11 +427,7 @@ public class ASN1Utils {
      * @throws IllegalArgumentException if the object cannot be converted
      */
     public static ASN1ObjectIdentifier getOID(Object o) {
-        return (o instanceof ASN1TaggedObject t)
-                ? ASN1ObjectIdentifier.getInstance(t, t.isExplicit())
-                : (o instanceof String s)
-                    ? new ASN1ObjectIdentifier(s)
-                    : ASN1ObjectIdentifier.getInstance(o);
+        return fromStringOrTaggedOrPlain(o, ASN1ObjectIdentifier::getInstance, ASN1ObjectIdentifier::getInstance, ASN1ObjectIdentifier::new);
     }
 
     /**
@@ -440,9 +446,7 @@ public class ASN1Utils {
      * @throws IllegalArgumentException if the object cannot be converted
      */
     public static ASN1Boolean getBoolean(Object o) {
-        return (o instanceof ASN1TaggedObject t)
-                ? ASN1Boolean.getInstance(t, t.isExplicit())
-                : ASN1Boolean.getInstance(o);
+        return fromTaggedOrPlain(o, ASN1Boolean::getInstance, ASN1Boolean::getInstance);
     }
 
     /**
@@ -452,9 +456,7 @@ public class ASN1Utils {
      * @throws IllegalArgumentException if the object cannot be converted
      */
     public static ASN1BitString getBitString(Object o) {
-        return (o instanceof ASN1TaggedObject t)
-                ? ASN1BitString.getInstance(t, t.isExplicit())
-                : ASN1BitString.getInstance(o);
+        return fromTaggedOrPlain(o, ASN1BitString::getInstance, ASN1BitString::getInstance);
     }
 
     /**
@@ -464,9 +466,7 @@ public class ASN1Utils {
      * @throws IllegalArgumentException if the object cannot be converted
      */
     public static ASN1Enumerated getEnumerated(Object o) {
-        return (o instanceof ASN1TaggedObject t)
-                ? ASN1Enumerated.getInstance(t, t.isExplicit())
-                : ASN1Enumerated.getInstance(o);
+        return fromTaggedOrPlain(o, ASN1Enumerated::getInstance, ASN1Enumerated::getInstance);
     }
 
     /**
@@ -476,11 +476,9 @@ public class ASN1Utils {
      * @throws IllegalArgumentException if the object cannot be converted
      */
     public static ASN1Integer getInteger(Object o) {
-        return (o instanceof ASN1TaggedObject t)
-                ? ASN1Integer.getInstance(t, t.isExplicit())
-                : (o instanceof Integer i)
-                  ? new ASN1Integer(i)
-                  : ASN1Integer.getInstance(o);
+        return o instanceof Integer i
+                ? new ASN1Integer(i)
+                : fromTaggedOrPlain(o, ASN1Integer::getInstance, ASN1Integer::getInstance);
     }
 
     /**
@@ -490,8 +488,6 @@ public class ASN1Utils {
      * @throws IllegalArgumentException if the object cannot be converted
      */
     public static ASN1OctetString getOctetString(Object o) {
-        return (o instanceof ASN1TaggedObject t)
-                ? ASN1OctetString.getInstance(t, t.isExplicit())
-                : ASN1OctetString.getInstance(o);
+        return fromTaggedOrPlain(o, ASN1OctetString::getInstance, ASN1OctetString::getInstance);
     }
 }

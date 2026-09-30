@@ -3,6 +3,7 @@ package paccor.crypto;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import lombok.experimental.UtilityClass;
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -44,6 +45,28 @@ public class SignatureProfiles {
         AlgorithmIdentifier alg = PROFILES.get(profile.toLowerCase());
         if (alg == null) throw new IllegalArgumentException("Unknown sig profile: " + profile);
         return alg;
+    }
+
+    /**
+     * Choose the signature algorithm for a new certificate:
+     *   First look up the named profile
+     *   Next, infer from the issuer
+     *   Lastly, check the algorithm already recorded.
+     * Parameters are set to NULL when absent.
+     * @param profile signature profile name, or null
+     * @param issuer issuer certificate, or null
+     * @param recorded algorithm from an existing envelope, or null
+     * @return the algorithm, or null if none is available
+     * @throws IllegalArgumentException if the profile name is unknown
+     */
+    public AlgorithmIdentifier resolve(String profile, X509CertificateHolder issuer, AlgorithmIdentifier recorded) {
+        return Optional.ofNullable(profile)
+                .filter(name -> !name.isBlank())
+                .map(SignatureProfiles::algIdFor)
+                .or(() -> Optional.ofNullable(issuer).map(SignatureProfiles::inferAlgIdFromIssuer))
+                .or(() -> Optional.ofNullable(recorded))
+                .map(algId -> algId.getParameters() == null ? new AlgorithmIdentifier(algId.getAlgorithm(), DERNull.INSTANCE) : algId)
+                .orElse(null);
     }
 
     private AlgorithmIdentifier rsaPss(ASN1ObjectIdentifier hashOid, int saltLen) { // package-private

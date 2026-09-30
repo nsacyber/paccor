@@ -69,7 +69,7 @@ public class RawComponentMatcherTest {
     }
 
     @Test
-    void v3_allowsActualSupersetOfExpectedTraits() {
+    void v3_rejectsActualWithExtraTraits() {
         TraitMap expected = TraitMap.builder()
                 .trait(UTF8StringTrait.builder()
                         .traitCategory(TCGObjectIdentifier.tcgTrCatComponentManufacturer)
@@ -90,7 +90,7 @@ public class RawComponentMatcherTest {
                         .build())
                 .build();
 
-        Assertions.assertTrue(matcher.matchV3(List.of(expected), List.of(actual)));
+        Assertions.assertFalse(matcher.matchV3(List.of(expected), List.of(actual)));
     }
 
     @Test

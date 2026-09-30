@@ -111,7 +111,7 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
         }
         return Optional.ofNullable(componentsJson)
                 .map(json -> ComponentValidationService.builder()
-                        .previousPlatformCertificates(previousPlatformCertsList)
+                        .previousPlatformCertificates(GlobFileResolver.resolve(previousPlatformCertsList))
                         .issuerCertificate(signer.orElse(null))
                         .trustAnchors(Optional.ofNullable(trustAnchorList)
                                 .map(GlobFileResolver::resolve)

@@ -102,7 +102,7 @@ public class ValidateCmdPolicyTest extends TestSupport {
         Path afterDelta2 = writeJson("after-delta2.json", manifest(
                 component(CLASS_BIOS, "American Megatrends International, LLC.", "UP6502ZA.305", null, null, "05NO"),
                 component(CLASS_BASEBOARD, "ASUSTeK COMPUTER INC.", "Zenbook UP6502ZA_Q529ZA", "A3A2PI88M1789543", null, "1.0       "),
-                component(CLASS_NIC, "8086:8086:", "51F0:0094:", null, null, "01")));
+                withWlanMac(component(CLASS_NIC, "8086:8086:", "51F0:0094:", null, null, "01"), "AAB1238907EE")));
         Assertions.assertEquals(0, validate(delta2, afterDelta2.toString(), base.toString(), delta1.toString()));
         // Leaving out delta1 breaks the chain.
         Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(),
@@ -210,6 +210,10 @@ public class ValidateCmdPolicyTest extends TestSupport {
             json.append(", \"STATUS\": \"").append(status).append('"');
         }
         return json.append('}').toString();
+    }
+
+    private static String withWlanMac(String componentJson, String mac) {
+        return componentJson.substring(0, componentJson.length() - 1) + ", \"ADDRESSES\": [{\"WLANMAC\": \"" + mac + "\"}]}";
     }
 
     private static String manifest(String... components) {

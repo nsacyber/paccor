@@ -344,6 +344,10 @@ public final class PlatformCertificate {
         return certType == CertType.DELTA || certType == CertType.REBASE;
     }
 
+    public boolean isDelta() {
+        return certType == CertType.DELTA;
+    }
+
     public boolean isSignatureValid(ContentVerifierProvider verifierProvider) throws CertException {
         if (publicKeyCertificate != null) {
             return publicKeyCertificate.isSignatureValid(verifierProvider);

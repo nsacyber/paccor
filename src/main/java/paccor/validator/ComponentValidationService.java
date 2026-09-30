@@ -22,7 +22,7 @@ import paccor.tcg.credential.TraitMap;
 public final class ComponentValidationService {
     private static final Logger LOGGER = Logger.getLogger(ComponentValidationService.class.getName());
 
-    private final List<String> previousPlatformCertificates;
+    private final List<File> previousPlatformCertificates;
     private final X509CertificateHolder issuerCertificate;
     private final List<X509CertificateHolder> trustAnchors;
 
@@ -66,7 +66,7 @@ public final class ComponentValidationService {
             return true;
         }
         boolean matches = actual != null && !actual.isEmpty()
-                && matcher.matchV3(List.of(expected), List.of(actual));
+                && matcher.covers(expected, actual);
         if (!matches) LOGGER.fine(() -> "Platform identifier validation failed; expected=" + expected
                 + ", actual=" + actual);
         return matches;

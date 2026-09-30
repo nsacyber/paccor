@@ -1,6 +1,7 @@
 package paccor.cert;
 
 import java.math.BigInteger;
+import java.util.Optional;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -80,6 +81,23 @@ public enum CertSpecVersion {
             return V2_0;
         }
         return null;
+    }
+
+    /**
+     * Choose the specification version for a new certificate: the declared version when present,
+     * otherwise the fallback, otherwise V2.0.
+     * @param declared TCG credential specification from the platform model, or null
+     * @param fallback version recorded in an existing envelope, or null
+     * @return the version to use
+     * @throws IllegalArgumentException if the declared version is not supported
+     */
+    public static CertSpecVersion resolve(TCGSpecificationVersion declared, CertSpecVersion fallback) {
+        if (declared == null) {
+            return Optional.ofNullable(fallback).orElse(V2_0);
+        }
+        return Optional.ofNullable(fromTcgSpecVersion(declared))
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Unsupported TCG credential specification " + declared.describe() + "."));
     }
 
     /**

@@ -1,13 +1,19 @@
 package paccor.validator;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERUTF8String;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.GeneralName;
+import org.bouncycastle.asn1.x509.GeneralNames;
+import org.bouncycastle.asn1.x509.IssuerSerial;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import paccor.cert.CertType;
+import paccor.normalization.ComponentCanonicalizer;
 import paccor.normalization.PlatformConfigurationNormalizer;
 import paccor.tcg.credential.AttributeStatus;
 import paccor.tcg.credential.CertificateIdentifier;
@@ -66,7 +72,7 @@ public class DeltaMaterializationTest {
     // ===== Delta application =====
 
     @Test
-    void added_identicalSerialLessComponent_isAppended() {
+    void addedIdenticalSerialLessComponentIsAppended() {
         Optional<List<TraitMap>> result = apply(
                 config(component("DIMM", null, null), component("DIMM", null, null)),
                 config(component("DIMM", null, ADDED)),
@@ -77,7 +83,7 @@ public class DeltaMaterializationTest {
     }
 
     @Test
-    void removed_matchingComponent_isRemoved() {
+    void removedMatchingComponentIsRemoved() {
         Optional<List<TraitMap>> result = apply(
                 config(component("DIMM", "A", null), component("DIMM", "B", null)),
                 config(component("DIMM", "A", REMOVED)),
@@ -88,7 +94,7 @@ public class DeltaMaterializationTest {
     }
 
     @Test
-    void modified_replacesMatchingComponent() {
+    void modifiedReplacesMatchingComponent() {
         Optional<List<TraitMap>> result = apply(
                 config(component("Acme", "BIOS", null, "1.0", null)),
                 config(component("Acme", "BIOS", null, "2.0", MODIFIED)),
@@ -99,7 +105,7 @@ public class DeltaMaterializationTest {
     }
 
     @Test
-    void removed_withNoMatch_fails() {
+    void removedWithNoMatch_fails() {
         Assertions.assertTrue(apply(
                 config(component("DIMM", "A", null)),
                 config(component("DIMM", "Z", REMOVED)),
@@ -107,7 +113,7 @@ public class DeltaMaterializationTest {
     }
 
     @Test
-    void modified_withNoMatch_fails() {
+    void modifiedWithNoMatch_fails() {
         Assertions.assertTrue(apply(
                 config(component("DIMM", "A", null)),
                 config(component("DIMM", "Z", MODIFIED)),
@@ -123,7 +129,7 @@ public class DeltaMaterializationTest {
     }
 
     @Test
-    void removed_withoutManufacturerOrModel_fails() {
+    void removedWithoutManufacturerOrModel_fails() {
         PlatformConfigurationV3 delta = PlatformConfigurationV3.builder()
                 .platformComponent(TraitMap.builder()
                         .trait(StatusTrait.builder()
@@ -138,7 +144,7 @@ public class DeltaMaterializationTest {
     }
 
     @Test
-    void removed_identityComparisonFollowsMatcherNormalization() {
+    void removedIdentityComparisonFollowsMatcherNormalization() {
         PlatformConfigurationV3 base = config(component("Acme Corp", "DIMM", "A", null, null));
         PlatformConfigurationV3 delta = config(component(" ACME  CORP ", "dimm", "A", null, REMOVED));
 
@@ -147,7 +153,7 @@ public class DeltaMaterializationTest {
     }
 
     @Test
-    void deltaWithoutComponents_keepsPreviousComponents() {
+    void deltaWithoutComponentsKeepsPreviousComponents() {
         PlatformConfigurationV3 base = config(component("DIMM", "A", null));
 
         Optional<List<TraitMap>> result = apply(base, PlatformConfigurationV3.builder().build(), ComponentMatcher.NORMALIZED);
@@ -159,7 +165,7 @@ public class DeltaMaterializationTest {
     // ===== Component comparison =====
 
     @Test
-    void compare_requiresEveryCertificateComponentOnPlatform() {
+    void compareRequiresEveryCertificateComponentOnPlatform() {
         ComponentValidationReport report = ComponentValidator.compareComponents(
                 traits(component("DIMM", "A", null)),
                 traits(component("DIMM", "A", null), component("NIC", "N", null)),
@@ -170,7 +176,7 @@ public class DeltaMaterializationTest {
     }
 
     @Test
-    void compare_duplicateManifestEntryCannotSatisfyTwoCertificateEntries() {
+    void compareDuplicateManifestEntryCannotSatisfyTwoCertificateEntries() {
         Assertions.assertFalse(ComponentValidator.compareComponents(
                 traits(component("DIMM", "A", null), component("DIMM", "A", null)),
                 traits(component("DIMM", "A", null), component("DIMM", "B", null)),
@@ -178,7 +184,7 @@ public class DeltaMaterializationTest {
     }
 
     @Test
-    void compare_serialLessDuplicatesMustMatchCount() {
+    void compareSerialLessDuplicatesMustMatchCount() {
         Assertions.assertFalse(ComponentValidator.compareComponents(
                 traits(component("DIMM", null, null), component("DIMM", null, null), component("DIMM", null, null)),
                 traits(component("DIMM", null, null), component("DIMM", null, null), component("NIC", "N", null)),
@@ -186,18 +192,65 @@ public class DeltaMaterializationTest {
     }
 
     @Test
-    void match_findsAssignmentThatGreedyFirstMatchWouldMiss() {
-        // The less specific expected entry must not take the only candidate for the more specific one.
-        List<TraitMap> expected = traits(component("Acme", "DIMM", null, null, null), component("DIMM", "2", null));
-        List<TraitMap> actual = traits(component("DIMM", "2", null), component("DIMM", "1", null));
+    void matchComponentReportingFewerTraitsThanCertifiedDoesNotPair() {
+        List<TraitMap> reported = traits(component("DIMM", null, null));
+        List<TraitMap> certified = traits(component("DIMM", "2", null));
 
-        ComponentMatcher.MatchResult result = ComponentMatcher.RAW.match(expected, actual);
+        Assertions.assertFalse(ComponentMatcher.RAW.match(reported, certified).complete());
+    }
 
-        Assertions.assertTrue(result.complete());
+    // ===== Certificate references =====
+
+    private static ComponentIdentifierV2 withPlatformCert(ComponentIdentifierV2 component, int serial) {
+        return component.toBuilder()
+                .componentPlatformCert(CertificateIdentifier.builder()
+                        .genericCertIdentifier(new IssuerSerial(new GeneralNames(new GeneralName(new X500Name("CN=OEM CA"))), BigInteger.valueOf(serial)))
+                        .build())
+                .build();
     }
 
     @Test
-    void match_reportsUnpairedComponentsOnBothSides() {
+    void matchCertificateReferenceNotReportedByPlatformIsAccepted() {
+        List<TraitMap> reported = traits(component("NIC", "N1", null));
+        List<TraitMap> certified = traits(withPlatformCert(component("NIC", "N1", null), 7));
+
+        Assertions.assertTrue(ComponentMatcher.NORMALIZED.match(reported, certified).complete());
+    }
+
+    @Test
+    void matchCertificateReferenceReportedByPlatformMustMatch() {
+        List<TraitMap> certified = traits(withPlatformCert(component("NIC", "N1", null), 7));
+
+        Assertions.assertTrue(ComponentMatcher.NORMALIZED.match(
+                traits(withPlatformCert(component("NIC", "N1", null), 7)), certified).complete());
+        Assertions.assertFalse(ComponentMatcher.NORMALIZED.match(
+                traits(withPlatformCert(component("NIC", "N1", null), 8)), certified).complete());
+    }
+
+    @Test
+    void matchPairsWithTheCandidateWhoseReferenceMatches() {
+        // Two certified components with the same hardware identity, told apart only by their reference.
+        List<TraitMap> certified = traits(
+                withPlatformCert(component("NIC", null, null), 7),
+                withPlatformCert(component("NIC", null, null), 8));
+        List<TraitMap> reported = traits(
+                withPlatformCert(component("NIC", null, null), 8),
+                component("NIC", null, null));
+
+        Assertions.assertTrue(ComponentMatcher.NORMALIZED.match(reported, certified).complete());
+    }
+
+    @Test
+    void matchReferenceCheckIsReplaceable() {
+        ComponentMatcher strict = new ComponentMatcher(ComponentCanonicalizer.NORMALIZED,
+                (reported, certified) -> reported.references().equals(certified.references()));
+        List<TraitMap> certified = traits(withPlatformCert(component("NIC", "N1", null), 7));
+
+        Assertions.assertFalse(strict.match(traits(component("NIC", "N1", null)), certified).complete());
+    }
+
+    @Test
+    void matchReportsUnpairedComponentsOnBothSides() {
         ComponentMatcher.MatchResult result = ComponentMatcher.RAW.match(
                 traits(component("DIMM", "A", null), component("GPU", "G", null)),
                 traits(component("DIMM", "A", null), component("NIC", "N", null)));
