@@ -46,6 +46,7 @@ import org.bouncycastle.operator.DigestAlgorithmIdentifierFinder;
 import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.bc.BcContentSignerBuilder;
 import org.bouncycastle.operator.bc.BcDigestProvider;
+import org.bouncycastle.crypto.signers.HashMLDSASigner;
 import org.bouncycastle.crypto.signers.MLDSASigner;
 
 /**
@@ -118,6 +119,17 @@ public class AlgorithmSupport {
     }
 
     /**
+     * Returns true if the given OID is a pre-hash (HashML-DSA) algorithm.
+     * @param oid The OID to check
+     * @return True if the OID is a HashML-DSA algorithm. Otherwise, false.
+     */
+    public static final boolean isHashMlDsa(ASN1ObjectIdentifier oid) {
+        return oid.equals(NISTObjectIdentifiers.id_hash_ml_dsa_44_with_sha512)
+                || oid.equals(NISTObjectIdentifiers.id_hash_ml_dsa_65_with_sha512)
+                || oid.equals(NISTObjectIdentifiers.id_hash_ml_dsa_87_with_sha512);
+    }
+
+    /**
      * Returns true if the given OID is an RSA PKCS#1 algorithm.
      * @param oid The OID to check
      * @return True if the OID is an RSA PKCS#1 algorithm. Otherwise, false.
@@ -162,19 +174,14 @@ public class AlgorithmSupport {
                               AlgorithmIdentifier digAlgOrNull,
                               DigestAlgorithmIdentifierFinder finderOrNull) throws OperatorCreationException {
         final ASN1ObjectIdentifier oid = sigAlgId.getAlgorithm();
-        final Digest dig = getDigestObject(sigAlgId, digestProvider, digAlgOrNull, finderOrNull);
 
-        // ECDSA
-        if (isEcdsa(oid)) {
-            return new DSADigestSigner(new ECDSASigner(), dig);
-        }
         // MLDSA
         if (isMlDsa(oid)) {
             return new MLDSASigner();
         }
-        // RSA PKCS#1 v1.5
-        if (isRsaPkcs1(oid)) {
-            return new RSADigestSigner(dig);
+        // HashML-DSA (SHA-512 pre-hash)
+        if (isHashMlDsa(oid)) {
+            return new HashMLDSASigner();
         }
         // RSASSA-PSS
         if (isRsaPss(oid)) {
@@ -183,6 +190,16 @@ public class AlgorithmSupport {
         // Ed25519
         if (isEd25519(oid)) {
             return new Ed25519Signer();
+        }
+
+        final Digest dig = getDigestObject(sigAlgId, digestProvider, digAlgOrNull, finderOrNull);
+        // ECDSA
+        if (isEcdsa(oid)) {
+            return new DSADigestSigner(new ECDSASigner(), dig);
+        }
+        // RSA PKCS#1 v1.5
+        if (isRsaPkcs1(oid)) {
+            return new RSADigestSigner(dig);
         }
         throw new OperatorCreationException("Could not build signer", new UnsupportedAlgorithmException(oid));
     }
@@ -215,11 +232,18 @@ public class AlgorithmSupport {
     public static final PSSSigner buildPssSigner(AlgorithmIdentifier sigAlgId,
                                                  BcDigestProvider digestProvider) throws OperatorCreationException {
         RSASSAPSSparams p = RSASSAPSSparams.getInstance(sigAlgId.getParameters());
+        if (!PKCSObjectIdentifiers.id_mgf1.equals(p.getMaskGenAlgorithm().getAlgorithm())) {
+            throw new OperatorCreationException("Unsupported RSASSA-PSS mask generation function: "
+                    + p.getMaskGenAlgorithm().getAlgorithm());
+        }
+        if (!BigInteger.ONE.equals(p.getTrailerField())) {
+            throw new OperatorCreationException("Unsupported RSASSA-PSS trailer field: " + p.getTrailerField());
+        }
         Digest hash = digestProvider.get(p.getHashAlgorithm());
         AlgorithmIdentifier mgf = AlgorithmIdentifier.getInstance(p.getMaskGenAlgorithm().getParameters());
         Digest mgfHash = digestProvider.get(mgf);
         int saltLen = p.getSaltLength().intValueExact();
-        return new PSSSigner(new RSABlindedEngine(), hash, mgfHash, saltLen, (byte)0xBC);
+        return new PSSSigner(new RSABlindedEngine(), hash, mgfHash, saltLen, PSSSigner.TRAILER_IMPLICIT);
     }
 
     /**
@@ -267,6 +291,15 @@ public class AlgorithmSupport {
         } catch (IllegalArgumentException e) {
             return false;
         }
+    }
+
+    /**
+     * Returns whether the digest algorithm is SHA-1.
+     * @param oid the digest algorithm OID
+     * @return true if the digest is SHA-1
+     */
+    public static boolean isSha1Digest(ASN1ObjectIdentifier oid) {
+        return OIWObjectIdentifiers.idSHA1.equals(oid);
     }
 
     /**

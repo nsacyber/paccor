@@ -71,6 +71,7 @@ public class OriginComposition extends ASN1Object {
      * @return OriginComposition
      */
     public static final OriginComposition fromASN1Sequence(@NonNull ASN1Sequence seq) {
+        Definitions.warnOnExtraElements(seq, OriginComposition.MAX_SEQUENCE_SIZE, OriginComposition.class);
         if (seq.size() < OriginComposition.MIN_SEQUENCE_SIZE) {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
         }

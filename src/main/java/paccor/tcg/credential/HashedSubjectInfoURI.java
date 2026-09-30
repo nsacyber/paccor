@@ -63,6 +63,7 @@ public class HashedSubjectInfoURI extends ASN1Object {
 	 * @return HashedSubjectInfoURI
 	 */
 	public static final HashedSubjectInfoURI fromASN1Sequence(@NonNull ASN1Sequence seq) {
+		Definitions.warnOnExtraElements(seq, HashedSubjectInfoURI.MAX_SEQUENCE_SIZE, HashedSubjectInfoURI.class);
 		if (seq.size() < HashedSubjectInfoURI.MIN_SEQUENCE_SIZE) {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}

@@ -13,6 +13,12 @@ import java.util.regex.Pattern;
 public final class HexNormalizer {
     private static final Pattern INT_PATTERN = Pattern.compile("^\\d+$");
 
+    /**
+     * Prefix marking input that {@link #normalize(String, int)} could not normalize.
+     * It is not a hex digit, so a marked value never equals a valid normalized value.
+     */
+    public static final String INVALID_PREFIX = "?";
+
     private HexNormalizer() {
         throw new UnsupportedOperationException("Utility class");
     }
@@ -34,6 +40,8 @@ public final class HexNormalizer {
     /**
      * Normalize a hexadecimal string to lowercase, zero-padded format.
      * Strips common prefixes (0x, 0X), suffixes (h), whitespace, colons, and hyphens.
+     * Input that is not hexadecimal, or that has significant digits beyond the expected length,
+     * is returned with an {@link #INVALID_PREFIX} so it can never equal a valid normalized value.
      *
      * @param hex The hex string to normalize (e.g., "0x8AB", "8AB")
      * @param expectedBytes Number of bytes the hex value should represent (determines padding)
@@ -44,25 +52,20 @@ public final class HexNormalizer {
             return "0".repeat(expectedBytes * 2);
         }
 
-        // normalize
         String cleaned = normalize(hex);
-
-        // Validate hex characters
         if (!cleaned.matches("[0-9a-f]*")) {
-            // Invalid hex, return zero-padded empty
-            return "0".repeat(expectedBytes * 2);
+            return INVALID_PREFIX + hex;
         }
 
-        // Zero-pad to expected length
         int expectedLength = expectedBytes * 2;
-        if (cleaned.length() < expectedLength) {
-            cleaned = "0".repeat(expectedLength - cleaned.length()) + cleaned;
-        } else if (cleaned.length() > expectedLength) {
-            // Truncate from left (keep rightmost digits)
+        if (cleaned.length() > expectedLength) {
+            String dropped = cleaned.substring(0, cleaned.length() - expectedLength);
+            if (!dropped.chars().allMatch(c -> c == '0')) {
+                return INVALID_PREFIX + hex;
+            }
             cleaned = cleaned.substring(cleaned.length() - expectedLength);
         }
-
-        return cleaned;
+        return "0".repeat(expectedLength - cleaned.length()) + cleaned;
     }
 
     private static String stripFixes(String hex) {

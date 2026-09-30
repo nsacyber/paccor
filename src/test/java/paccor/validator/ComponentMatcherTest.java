@@ -11,7 +11,6 @@ import paccor.tcg.credential.PlatformConfigurationV3;
 import paccor.tcg.credential.TCGObjectIdentifier;
 import paccor.tcg.credential.TraitMap;
 import paccor.tcg.credential.UTF8StringTrait;
-import paccor.validator.ComponentMatcher;
 
 /**
  * Unit tests for raw and normalized component matching.
@@ -28,7 +27,7 @@ public class ComponentMatcherTest {
     }
 
     @Test
-    void rawMatcher_v2_requires_exactMatchForExpectedComponents() {
+    void rawMatcher_v2_requiresExactMatchForExpectedComponents() {
         ComponentMatcher matcher = ComponentMatcher.RAW;
         ComponentIdentifierV2 e1 = mkV2("Acme", "ModelA");
         ComponentIdentifierV2 e2 = mkV2("Acme", "ModelB");
@@ -60,7 +59,7 @@ public class ComponentMatcherTest {
     }
 
     @Test
-    void rawMatcher_v3_usesExpectedSubsetContainment() {
+    void rawMatcher_v3_requiresEqualTraits() {
         UTF8StringTrait t1 = UTF8StringTrait.builder()
                 .traitCategory(TCGObjectIdentifier.tcgTrCatComponentModel)
                 .traitRegistry(TCGObjectIdentifier.tcgTrRegNone)
@@ -87,9 +86,7 @@ public class ComponentMatcherTest {
 
         Assertions.assertTrue(matcher.matchV3(pcExpected1.getPlatformComponents(), pcActual1.getPlatformComponents()));
         Assertions.assertFalse(matcher.matchV3(pcExpected1.getPlatformComponents(), pcActual2.getPlatformComponents()));
-        Assertions.assertTrue(matcher.matchV3(pcExpected2.getPlatformComponents(), pcActual1.getPlatformComponents()));
+        Assertions.assertFalse(matcher.matchV3(pcExpected2.getPlatformComponents(), pcActual1.getPlatformComponents()));
         Assertions.assertTrue(matcher.matchV3(pcExpected2.getPlatformComponents(), pcActual2.getPlatformComponents()));
     }
-
-    // normalizeTraitValue method removed - normalization now happens via translators during matching
 }

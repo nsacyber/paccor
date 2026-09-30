@@ -1,3 +1,5 @@
+import org.gradle.internal.os.OperatingSystem
+
 def dotnetUnavailableMessage = "The .NET SDK is required to build paccor distribution packages."
 def dotnetPublishFailedMessage = ".NET publish did not complete successfully."
 
@@ -10,10 +12,20 @@ def dotnetExecutable = {
         return dotnetExecutableValue
     }
 
+    // Check for dotnet and dotnet.exe!
+    def executableNames = OperatingSystem.current().isWindows()
+            ? ["dotnet.exe", "dotnet"]
+            : ["dotnet"]
     def pathCandidates = (System.getenv("PATH") ?: "")
             .split(File.pathSeparator)
-            .findAll { it != null && !it.isBlank() }
-            .collect { "${it}/dotnet".toString() }
+            .findAll {
+                    it != null
+                    && !it.isBlank()
+            }.collectMany {
+                    dir -> executableNames.collect {
+                        name -> "${dir}/${name}".toString()
+                    }
+            }
     def fallbackCandidates = ["/bin/dotnet", "/usr/bin/dotnet", "/usr/local/bin/dotnet"]
     dotnetExecutableValue = (pathCandidates + fallbackCandidates).find { candidate ->
         file(candidate).canExecute()

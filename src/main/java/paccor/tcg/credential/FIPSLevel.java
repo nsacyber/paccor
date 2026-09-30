@@ -74,6 +74,7 @@ public class FIPSLevel extends ASN1Object {
 	 * @return FIPSLevel
 	 */
 	public static final FIPSLevel fromASN1Sequence(@NonNull ASN1Sequence seq) {
+		Definitions.warnOnExtraElements(seq, FIPSLevel.MAX_SEQUENCE_SIZE, FIPSLevel.class);
 		if (seq.size() < FIPSLevel.MIN_SEQUENCE_SIZE) {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}

@@ -80,6 +80,7 @@ public class EntityGeoLocation extends ASN1Object {
      * @return EntityGeoLocation
      */
     public static final EntityGeoLocation fromASN1Sequence(@NonNull ASN1Sequence seq) {
+        Definitions.warnOnExtraElements(seq, EntityGeoLocation.MAX_SEQUENCE_SIZE, EntityGeoLocation.class);
         if (seq.size() < EntityGeoLocation.MIN_SEQUENCE_SIZE) {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
         }

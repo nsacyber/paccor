@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import paccor.normalization.HexNormalizer;
 
 /**
@@ -17,6 +18,8 @@ import paccor.normalization.HexNormalizer;
  * Parsing is intentionally lightweight and only builds maps needed for vendor/device/subsystem canonicalization.
  */
 public final class PciIdsRegistry {
+    private static final Pattern VENDOR_ID_PATTERN = Pattern.compile("^(0[xX])?[0-9A-Fa-f]{4}$");
+
     private static volatile PciIdsRegistry INSTANCE;
 
     private final Map<String,String> vendorIdByNameKey = new HashMap<>();
@@ -200,10 +203,11 @@ public final class PciIdsRegistry {
         if (token == null || token.isBlank()) {
             return Optional.empty();
         }
-        if (HexNormalizer.isHexString(token)) {
-            return Optional.of(HexNormalizer.normalize(token, 2));
+        String trimmed = token.trim();
+        if (VENDOR_ID_PATTERN.matcher(trimmed).matches()) {
+            return Optional.of(HexNormalizer.normalize(trimmed, 2));
         }
-        return vendorIdFromName(token).map(id -> HexNormalizer.normalize(id, 2));
+        return vendorIdFromName(trimmed).map(id -> HexNormalizer.normalize(id, 2));
     }
 
     public Optional<String> deviceIdFromVendorAndName(String vendorId, String name) {

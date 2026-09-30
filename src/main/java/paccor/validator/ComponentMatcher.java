@@ -2,153 +2,131 @@ package paccor.validator;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import paccor.normalization.ComponentIdentifierV2Converter;
-import paccor.normalization.PlatformConfigurationNormalizer;
-import paccor.normalization.StringSynonymTranslator;
-import paccor.normalization.TraitValueTranslator;
-import paccor.normalization.pci.PciFieldTranslator;
-import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import paccor.normalization.CanonicalComponent;
+import paccor.normalization.ComponentCanonicalizer;
+import paccor.normalization.PlatformConfigurationNormalizer;
+import paccor.normalization.TraitValueTranslator;
 import paccor.tcg.credential.ComponentIdentifierV2;
 import paccor.tcg.credential.PlatformConfigurationV2;
 import paccor.tcg.credential.TCGObjectIdentifier;
-import paccor.tcg.credential.Trait;
-import paccor.tcg.credential.TraitCollection;
 import paccor.tcg.credential.TraitMap;
 
 /**
- * Translator-driven component matcher for both V2 and V3 configurations.
- * Matching always uses the same subset contract: expected components and traits
- * must be present in actual data, while actual data may contain additional detail.
+ * Matches components. Two components pair when their hardware traits are equal after
+ * normalization and the {@link ComponentReferenceCheck} accepts their certificate references.
  */
 public final class ComponentMatcher {
     public static final ASN1ObjectIdentifier PCI_REGISTRY_OID = TCGObjectIdentifier.tcgRegistryComponentClassPcie.intern();
 
-    private static final Set<ASN1ObjectIdentifier> STRING_SYNONYM_CATEGORIES = Set.of(
-            TCGObjectIdentifier.tcgTrCatPlatformManufacturer,
-            TCGObjectIdentifier.tcgTrCatPlatformModel,
-            TCGObjectIdentifier.tcgTrCatPlatformSerial,
-            TCGObjectIdentifier.tcgTrCatComponentManufacturer,
-            TCGObjectIdentifier.tcgTrCatComponentModel,
-            TCGObjectIdentifier.tcgTrCatComponentSerial,
-            TCGObjectIdentifier.tcgTrCatComponentRevision
-    );
+    public static final ComponentMatcher RAW = new ComponentMatcher(ComponentCanonicalizer.RAW, ComponentReferenceCheck.REPORTED_MUST_MATCH);
+    public static final ComponentMatcher NORMALIZED = new ComponentMatcher(ComponentCanonicalizer.NORMALIZED, ComponentReferenceCheck.REPORTED_MUST_MATCH);
 
-    private static final List<TraitValueTranslator> STANDARD_TRANSLATORS = List.of(
-            new StringSynonymTranslator(STRING_SYNONYM_CATEGORIES),
-            new PciFieldTranslator()
-    );
-
-    public static final ComponentMatcher RAW = new ComponentMatcher(List.of());
-    public static final ComponentMatcher NORMALIZED = new ComponentMatcher(STANDARD_TRANSLATORS);
-
-    private final List<TraitValueTranslator> translators;
+    private final ComponentCanonicalizer canonicalizer;
+    private final ComponentReferenceCheck referenceCheck;
 
     public ComponentMatcher(List<TraitValueTranslator> translators) {
-        this.translators = List.copyOf(Optional.ofNullable(translators).orElse(List.of()));
+        this(new ComponentCanonicalizer(translators), ComponentReferenceCheck.REPORTED_MUST_MATCH);
+    }
+
+    public ComponentMatcher(ComponentCanonicalizer canonicalizer, ComponentReferenceCheck referenceCheck) {
+        this.canonicalizer = canonicalizer;
+        this.referenceCheck = referenceCheck;
     }
 
     public boolean matchV2(List<ComponentIdentifierV2> expected, List<ComponentIdentifierV2> actual) {
-        List<TraitMap> expectedTraits = PlatformConfigurationNormalizer.componentsForValidation(
-                PlatformConfigurationV2.builder().componentIdentifiers(expected).build());
-        List<TraitMap> actualTraits = PlatformConfigurationNormalizer.componentsForValidation(
-                PlatformConfigurationV2.builder().componentIdentifiers(actual).build());
-        return matchV3(expectedTraits, actualTraits);
+        return matchV3(componentsOf(expected), componentsOf(actual));
     }
 
+    /**
+     * Check that every expected component pairs with an actual component. Actual may contain additional components.
+     * @param expected Expected components.
+     * @param actual Actual components.
+     * @return true if every expected component is matched.
+     */
     public boolean matchV3(List<TraitMap> expected, List<TraitMap> actual) {
-        List<TraitMap> exp = Optional.ofNullable(expected).orElse(List.of());
-        List<TraitMap> act = Optional.ofNullable(actual).orElse(List.of());
-        if (exp.size() > act.size()) {
-            return false;
+        return match(expected, actual).unmatchedExpected().isEmpty();
+    }
+
+    /**
+     * Pair expected components with actual components one-to-one.
+     * @param expected Expected components (as the platform reports them).
+     * @param actual Actual components (as the certificate records them).
+     * @return The components left unpaired on either side.
+     */
+    public MatchResult match(List<TraitMap> expected, List<TraitMap> actual) {
+        List<CanonicalComponent> remaining = new ArrayList<>(canonicalize(actual));
+        List<TraitMap> unmatchedExpected = canonicalize(expected).stream()
+                .filter(component -> !claim(component, remaining))
+                .map(CanonicalComponent::source)
+                .toList();
+        return new MatchResult(unmatchedExpected, remaining.stream().map(CanonicalComponent::source).toList());
+    }
+
+    /**
+     * Check that every trait the reported identifiers carry is present in the certified identifiers.
+     * Used for platform identifiers, where the certificate may record more than the platform reports.
+     * @param reported identifiers as the platform reports them
+     * @param certified identifiers as the certificate records them
+     * @return true if the certified identifiers include all reported ones
+     */
+    public boolean covers(TraitMap reported, TraitMap certified) {
+        return CanonicalComponent.includes(
+                CanonicalComponent.count(canonicalizer.canonicalTraits(certified)),
+                CanonicalComponent.count(canonicalizer.canonicalTraits(reported)));
+    }
+
+    /**
+     * @param component Component traits.
+     * @return true if the component has the class, manufacturer, and model needed to identify it.
+     */
+    public boolean hasIdentity(TraitMap component) {
+        return canonicalizer.canonicalize(component).hasIdentity();
+    }
+
+    /**
+     * @param left Component traits.
+     * @param right Component traits.
+     * @return true if both components can be identified and their class, manufacturer, model, and
+     *         serial are equal after this matcher's normalization.
+     */
+    public boolean sameIdentity(TraitMap left, TraitMap right) {
+        return canonicalizer.canonicalize(left).sameIdentity(canonicalizer.canonicalize(right));
+    }
+
+    private boolean claim(CanonicalComponent expected, List<CanonicalComponent> remaining) {
+        return remaining.stream()
+                .filter(candidate -> candidate.sameHardware(expected) && referenceCheck.accepts(expected, candidate))
+                .findFirst()
+                .map(remaining::remove)
+                .orElse(false);
+    }
+
+    private List<CanonicalComponent> canonicalize(List<TraitMap> components) {
+        return Optional.ofNullable(components).orElse(List.of()).stream()
+                .map(canonicalizer::canonicalize)
+                .toList();
+    }
+
+    private static List<TraitMap> componentsOf(List<ComponentIdentifierV2> components) {
+        return PlatformConfigurationNormalizer.componentsForValidation(
+                PlatformConfigurationV2.builder().componentIdentifiers(components).build());
+    }
+
+    /**
+     * Components left unpaired by {@link #match(List, List)}.
+     * @param unmatchedExpected Expected components with no distinct matching actual component.
+     * @param unmatchedActual Actual components not paired with any expected component.
+     */
+    public record MatchResult(List<TraitMap> unmatchedExpected, List<TraitMap> unmatchedActual) {
+        public MatchResult {
+            unmatchedExpected = List.copyOf(unmatchedExpected);
+            unmatchedActual = List.copyOf(unmatchedActual);
         }
-        for (TraitMap component : exp) {
-            if (!containsMatchingTraitMap(act, component)) {
-                return false;
-            }
+
+        public boolean complete() {
+            return unmatchedExpected.isEmpty() && unmatchedActual.isEmpty();
         }
-        return true;
     }
-
-    private boolean containsMatchingTraitMap(List<TraitMap> haystack, TraitMap needle) {
-        TraitCollection expected = TraitCollection.from(normalizeTraitMap(needle));
-        for (TraitMap actual : haystack) {
-            TraitCollection actualTraits = TraitCollection.from(normalizeTraitMap(actual));
-            if (traitCollectionsMatch(actualTraits, expected)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private TraitMap normalizeTraitMap(TraitMap traits) {
-        return ComponentIdentifierV2Converter.normalizeTraitMap(traits);
-    }
-
-    private boolean traitCollectionsMatch(TraitCollection actual, TraitCollection expected) {
-        return multisetContains(canonicalTraits(actual), canonicalTraits(expected));
-    }
-
-    private List<CanonicalTrait> canonicalTraits(TraitCollection traits) {
-        List<CanonicalTrait> out = new ArrayList<>();
-        for (Trait<?, ?> trait : traits) {
-            if (trait == null) {
-                continue;
-            }
-            ASN1ObjectIdentifier traitId = trait.getTraitId();
-            ASN1ObjectIdentifier category = trait.getTraitCategory();
-            ASN1ObjectIdentifier registry = trait.getTraitRegistry();
-            ASN1Object value = applyTranslators(traitId, category, registry, trait.getTraitValue());
-            out.add(new CanonicalTrait(traitId, category, registry, value));
-        }
-        return out;
-    }
-
-    private ASN1Object applyTranslators(
-            ASN1ObjectIdentifier traitId,
-            ASN1ObjectIdentifier traitCategory,
-            ASN1ObjectIdentifier traitRegistry,
-            ASN1Object rawValue) {
-        ASN1Object current = rawValue;
-        for (TraitValueTranslator translator : translators) {
-            try {
-                if (translator.supports(traitId, traitCategory, traitRegistry)) {
-                    ASN1Object next = translator.translate(traitId, traitCategory, traitRegistry, current);
-                    if (next != null) {
-                        current = next;
-                    }
-                }
-            } catch (Throwable ignored) {
-                // Translators are best-effort normalization only.
-            }
-        }
-        return current;
-    }
-
-    private boolean multisetContains(List<CanonicalTrait> actual, List<CanonicalTrait> expected) {
-        List<CanonicalTrait> copy = new ArrayList<>(actual);
-        for (CanonicalTrait required : expected) {
-            boolean matched = false;
-            for (int i = 0; i < copy.size(); i++) {
-                if (Objects.equals(required, copy.get(i))) {
-                    copy.remove(i);
-                    matched = true;
-                    break;
-                }
-            }
-            if (!matched) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private record CanonicalTrait(
-            ASN1ObjectIdentifier traitId,
-            ASN1ObjectIdentifier traitCategory,
-            ASN1ObjectIdentifier traitRegistry,
-            ASN1Object traitValue) {}
 }

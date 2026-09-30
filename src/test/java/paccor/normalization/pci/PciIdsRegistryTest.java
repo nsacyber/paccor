@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import paccor.normalization.pci.PciIdsRegistry;
 
 /**
  * Tests for PciIdsRegistry.
@@ -86,6 +85,14 @@ class PciIdsRegistryTest {
         Assertions.assertEquals(Optional.of("8086"), registry.canonicalVendorId("8086"));
         Assertions.assertEquals(Optional.of("8086"), registry.canonicalVendorId("Intel Corporation"));
         Assertions.assertEquals(Optional.of("8086"), registry.canonicalVendorId("intel corporation"));
+        Assertions.assertEquals(Optional.of("8086"), registry.canonicalVendorId("0x8086"));
+    }
+
+    @Test
+    void canonicalVendorId_hexLookingName_isNotTreatedAsId() {
+        Assertions.assertEquals(Optional.empty(), registry.canonicalVendorId("Dec"));
+        Assertions.assertEquals(Optional.empty(), registry.canonicalVendorId("18086"));
+        Assertions.assertEquals(Optional.empty(), registry.canonicalVendorId("86"));
     }
 
     @Test

@@ -632,7 +632,7 @@ public class E2ECommandsTest extends TestSupport {
                 "--x509v2AttrCert", cerDelta.toString(),
                 "--publicKeyCert", RES_MLDSA65_CA_CERT,
                 "--components-json", RES_TEST4_DELTA_COMP_1_JSON,
-                "--prev-pcert", tempDir.resolve("no-such-previous-*.cer").toString()
+                "--prev-pcert", tempDir + File.separator + "no-such-previous-*.cer"
         );
         Assertions.assertEquals(
                 ClientExitCodes.VALIDATION_FAILED.code(),

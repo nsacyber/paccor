@@ -81,6 +81,7 @@ public class CertificateIdentifier extends ASN1Object {
      * @return CertificateIdentifier
      */
     public static CertificateIdentifier fromASN1Sequence(@NonNull ASN1Sequence seq) {
+        Definitions.warnOnExtraElements(seq, CertificateIdentifier.MAX_SEQUENCE_SIZE, CertificateIdentifier.class);
         if (seq.size() < CertificateIdentifier.MIN_SEQUENCE_SIZE) {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
         }

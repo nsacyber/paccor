@@ -7,8 +7,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import jakarta.validation.constraints.Size;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
 import paccor.json.schema.HardwareManifestSchema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -95,6 +93,7 @@ public class PlatformConfigurationV2 extends ASN1Object {
 	 * @return PlatformConfigurationV2
 	 */
 	public static final PlatformConfigurationV2 fromASN1Sequence(@NonNull ASN1Sequence seq) {
+		Definitions.warnOnExtraElements(seq, PlatformConfigurationV2.MAX_SEQUENCE_SIZE, PlatformConfigurationV2.class);
 		if (seq.size() < PlatformConfigurationV2.MIN_SEQUENCE_SIZE) {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}
@@ -103,9 +102,9 @@ public class PlatformConfigurationV2 extends ASN1Object {
 
 		ASN1Utils.parseTaggedElements(seq).forEach((key, value) -> {
 			switch (key) {
-				case 0 -> builder.componentIdentifiersFromSequence(ASN1Utils.getSequence(value));
+				case 0 -> builder.componentIdentifiersFromTaggedSequence(value);
 				case 1 -> builder.componentIdentifiersUri(URIReference.getInstance(value));
-				case 2 -> builder.platformPropertiesFromSequence(ASN1Utils.getSequence(value));
+				case 2 -> builder.platformPropertiesFromTaggedSequence(value);
 				case 3 -> builder.platformPropertiesUri(URIReference.getInstance(value));
 				default -> {}
 			}
@@ -119,13 +118,13 @@ public class PlatformConfigurationV2 extends ASN1Object {
 	 */
 	public ASN1Primitive toASN1Primitive() {
 		ASN1EncodableVector vec = new ASN1EncodableVector();
-		if (componentIdentifiers != null) {
+		if (componentIdentifiers != null && !componentIdentifiers.isEmpty()) {
 			vec.add(new DERTaggedObject(false, 0, new DERSequence(ASN1Utils.toASN1EncodableVector(componentIdentifiers))));
 		}
 		if (componentIdentifiersUri != null) {
 			vec.add(new DERTaggedObject(false, 1, componentIdentifiersUri));
 		}
-		if (platformProperties != null) {
+		if (platformProperties != null && !platformProperties.isEmpty()) {
 			vec.add(new DERTaggedObject(false, 2, new DERSequence(ASN1Utils.toASN1EncodableVector(platformProperties))));
 		}
 		if (platformPropertiesUri != null) {
@@ -139,26 +138,20 @@ public class PlatformConfigurationV2 extends ASN1Object {
 	 */
 	public static class PlatformConfigurationV2Builder {
 		/**
-		 * Reads elements of the given sequence as ComponentIdentifierV2 and adds them to the builder.
-		 * @param seq ASN1Sequence
+		 * Reads the tagged componentIdentifiers field and adds each ComponentIdentifierV2 to the builder.
+		 * @param tagged ASN1TaggedObject
 		 */
-		public final void componentIdentifiersFromSequence(@NonNull ASN1Sequence seq) {
-			Definitions.checkCollectionSize(seq);
-			Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, ComponentIdentifierV2::getInstance))
-					.map(List::of)
-					.orElseGet(() -> Stream.of(seq.toArray()).map(ComponentIdentifierV2::getInstance).toList())
+		public final void componentIdentifiersFromTaggedSequence(@NonNull ASN1TaggedObject tagged) {
+			ASN1Utils.decodeSequenceOf(tagged, ComponentIdentifierV2::getInstance, "PlatformConfigurationV2 componentIdentifiers")
 					.forEach(this::componentIdentifier);
 		}
 
 		/**
-		 * Reads elements of the given sequence as PlatformPropertiesV2 and adds them to the builder.
-		 * @param seq ASN1Sequence
+		 * Reads the tagged platformProperties field and adds each PlatformPropertiesV2 to the builder.
+		 * @param tagged ASN1TaggedObject
 		 */
-		public final void platformPropertiesFromSequence(@NonNull ASN1Sequence seq) {
-			Definitions.checkCollectionSize(seq);
-			Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, PlatformPropertiesV2::getInstance))
-					.map(List::of)
-					.orElseGet(() -> Stream.of(seq.toArray()).map(PlatformPropertiesV2::getInstance).toList())
+		public final void platformPropertiesFromTaggedSequence(@NonNull ASN1TaggedObject tagged) {
+			ASN1Utils.decodeSequenceOf(tagged, PlatformPropertiesV2::getInstance, "PlatformConfigurationV2 platformProperties")
 					.forEach(this::platformProperty);
 		}
 	}

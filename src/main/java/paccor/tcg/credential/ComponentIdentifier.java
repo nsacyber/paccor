@@ -6,7 +6,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.util.Arrays;
 import java.util.List;
 import paccor.json.schema.ComponentSchema;
 import lombok.AllArgsConstructor;
@@ -99,6 +98,7 @@ public class ComponentIdentifier extends ASN1Object {
 	 * @return ComponentIdentifier
 	 */
 	public static ComponentIdentifier fromASN1Sequence(@NonNull ASN1Sequence seq) {
+		Definitions.warnOnExtraElements(seq, ComponentIdentifier.MAX_SEQUENCE_SIZE, ComponentIdentifier.class);
 		if (seq.size() < ComponentIdentifier.MIN_SEQUENCE_SIZE) {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}
@@ -115,7 +115,7 @@ public class ComponentIdentifier extends ASN1Object {
 				case 1 -> builder.componentRevision(ASN1Utils.getUTF8String(value));
 				case 2 -> builder.componentManufacturerId(ASN1Utils.getOID(value));
 				case 3 -> builder.fieldReplaceable(ASN1Utils.getBoolean(value));
-				case 4 -> builder.componentAddressesFromSequence(ASN1Utils.getSequence(value));
+				case 4 -> builder.componentAddressesFromTaggedSequence(value);
 				default -> {}
 			}
 		});
@@ -142,7 +142,7 @@ public class ComponentIdentifier extends ASN1Object {
 		if (this.fieldReplaceable != null) {
 			vec.add(new DERTaggedObject(false, 3, this.fieldReplaceable));
 		}
-		if (this.componentAddresses != null) {
+		if (this.componentAddresses != null && !this.componentAddresses.isEmpty()) {
 			vec.add(new DERTaggedObject(false, 4, new DERSequence(ASN1Utils.toASN1EncodableVector(this.componentAddresses))));
 		}
 		return new DERSequence(vec);
@@ -153,14 +153,12 @@ public class ComponentIdentifier extends ASN1Object {
 	 */
 	public static class ComponentIdentifierBuilder {
 		/**
-		 * Reads elements of the given sequence as ComponentAddresses and adds them to the builder.
-		 * @param seq ASN1Sequence
+		 * Reads the tagged componentAddress field and adds each ComponentAddress to the builder.
+		 * @param tagged ASN1TaggedObject
 		 */
-		public final void componentAddressesFromSequence(@NonNull ASN1Sequence seq) {
-			Definitions.checkCollectionSize(seq);
-			Arrays.asList(seq.toArray()).forEach(
-					element ->
-							this.componentAddress(ComponentAddress.getInstance(element)));
+		public final void componentAddressesFromTaggedSequence(@NonNull ASN1TaggedObject tagged) {
+			ASN1Utils.decodeSequenceOf(tagged, ComponentAddress::getInstance, "ComponentIdentifier componentAddress")
+					.forEach(this::componentAddress);
 		}
 	}
 }

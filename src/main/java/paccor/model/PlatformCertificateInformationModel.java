@@ -8,14 +8,19 @@ import paccor.cert.SubjectAlternativeNameHelper;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import java.io.File;
 import java.math.BigInteger;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.logging.Logger;
 import paccor.json.AttributesJsonHelper;
 import paccor.json.HardwareManifestJsonHelper;
+import paccor.json.ObjectMapperFactory;
 import paccor.json.ResolvedCertificateReferenceMap;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -48,6 +53,8 @@ import paccor.tcg.credential.TraitMap;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PlatformCertificateInformationModel {
+    private static final Logger LOGGER = Logger.getLogger(PlatformCertificateInformationModel.class.getName());
+
     private BigInteger certSerialNumber;
     private Date notBefore;
     private Date notAfter;
@@ -286,6 +293,44 @@ public class PlatformCertificateInformationModel {
             case ExtensionContext.subjectKeyIdentifier -> subjectKeyIdentifier = extension;
             case ExtensionContext.targetInformation -> targetingInformation = extension;
             default -> ensureExtraExtensions().put(extension.oid(), extension);
+        }
+    }
+
+    /**
+     * Load the model from JSON, from tbs.json, or create an empty model.
+     * @param modelJson platform model JSON file, or null
+     * @param envelopeModelJson platform model JSON recorded in an existing envelope, or null
+     * @return the model
+     */
+    public static PlatformCertificateInformationModel loadOrCreate(File modelJson, String envelopeModelJson) {
+        return Optional.ofNullable(modelJson)
+                .filter(File::exists)
+                .flatMap(file -> readModel(() -> ObjectMapperFactory.get().readValue(file, PlatformCertificateInformationModel.class),
+                        "Could not load the platform model from " + file))
+                .or(() -> Optional.ofNullable(envelopeModelJson)
+                        .flatMap(json -> readModel(() -> ObjectMapperFactory.get().readValue(json, PlatformCertificateInformationModel.class), null)))
+                .orElseGet(PlatformCertificateInformationModel::new);
+    }
+
+    /**
+     * Convert the model into JSON.
+     * @return this model as JSON, or null if it cannot be serialized
+     */
+    public String serializeOrNull() {
+        try {
+            return ObjectMapperFactory.get().writeValueAsString(this);
+        } catch (Exception e) {
+            LOGGER.warning("Could not serialize the platform model: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private static Optional<PlatformCertificateInformationModel> readModel(Callable<PlatformCertificateInformationModel> reader, String failureMessage) {
+        try {
+            return Optional.ofNullable(reader.call());
+        } catch (Exception e) {
+            Optional.ofNullable(failureMessage).ifPresent(message -> LOGGER.warning(message + ": " + e.getMessage()));
+            return Optional.empty();
         }
     }
 

@@ -147,4 +147,21 @@ class StringSynonymTranslatorTest {
         // Verify translator works
         Assertions.assertTrue(t.supports(null, CATEGORY_MANUFACTURER, null));
     }
+    @Test
+    void translate_trimsAndCollapsesWhitespace_preservingCase() {
+        DERUTF8String result = (DERUTF8String) translator.translate(
+                null, CATEGORY_MANUFACTURER, null, new DERUTF8String("  Intel   Corporation "));
+        Assertions.assertEquals("Intel Corporation", result.getString());
+    }
+
+    @Test
+    void translate_caseInsensitiveCategory_isLowerCased() {
+        StringSynonymTranslator folding = new StringSynonymTranslator(
+                Set.of(CATEGORY_MANUFACTURER, CATEGORY_MODEL), Set.of(CATEGORY_MANUFACTURER));
+
+        Assertions.assertEquals("intel corporation", ((DERUTF8String) folding.translate(
+                null, CATEGORY_MANUFACTURER, null, new DERUTF8String("INTEL Corporation"))).getString());
+        Assertions.assertEquals("Model T", ((DERUTF8String) folding.translate(
+                null, CATEGORY_MODEL, null, new DERUTF8String("Model T"))).getString());
+    }
 }

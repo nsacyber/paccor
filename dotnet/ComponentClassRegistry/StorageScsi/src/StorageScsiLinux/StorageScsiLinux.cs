@@ -122,11 +122,16 @@ public class StorageScsiLinux : IStorageScsi {
             Marshal.FreeHGlobal(sgIoHdrPtr);
         }
 
-        uint newDataLength = (uint)(vpd ? (BinaryPrimitives.ReadInt16BigEndian(data.AsSpan()[2..4]) + 4) : (data[4] + 5));
-        if (endResult && data.Length > 4 && newDataLength > dataLength) {
+        int headerLength = vpd ? 4 : 5;
+        if (endResult && data.Length >= headerLength) {
             // In VPD, Page length is 2 bytes and PAGE LENGTH = (n-3), where n is 0 based
             // In Inquiry data, using data[4]+5 because ADDITIONAL LENGTH = (n-4), where n is 0 based
-            endResult = Inquiry(out data, handle, vpd, vpdPage, newDataLength);
+            uint reportedLength = vpd ? (uint)BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan()[2..4]) + 4 : (uint)data[4] + 5;
+            // The CDB allocation length is 16 bits
+            uint newDataLength = Math.Min(reportedLength, ushort.MaxValue);
+            if (newDataLength > dataLength) {
+                endResult = Inquiry(out data, handle, vpd, vpdPage, newDataLength);
+            }
         }
 
         return endResult;

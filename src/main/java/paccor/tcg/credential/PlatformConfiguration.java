@@ -3,8 +3,6 @@ package paccor.tcg.credential;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Size;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -75,6 +73,7 @@ public class PlatformConfiguration extends ASN1Object {
 	 * @return PlatformConfiguration
 	 */
 	public static PlatformConfiguration fromASN1Sequence(@NonNull ASN1Sequence seq) {
+		Definitions.warnOnExtraElements(seq, PlatformConfiguration.MAX_SEQUENCE_SIZE, PlatformConfiguration.class);
 		if (seq.size() < PlatformConfiguration.MIN_SEQUENCE_SIZE) {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}
@@ -83,8 +82,8 @@ public class PlatformConfiguration extends ASN1Object {
 
 		ASN1Utils.parseTaggedElements(seq).forEach((key, value) -> {
 			switch (key) {
-				case 0 -> builder.componentIdentifiersFromSequence(ASN1Utils.getSequence(value));
-				case 1 -> builder.platformPropertiesFromSequence(ASN1Utils.getSequence(value));
+				case 0 -> builder.componentIdentifiersFromTaggedSequence(value);
+				case 1 -> builder.platformPropertiesFromTaggedSequence(value);
 				case 2 -> builder.platformPropertiesUri(URIReference.getInstance(value));
 				default -> {}
 			}
@@ -98,10 +97,10 @@ public class PlatformConfiguration extends ASN1Object {
 	 */
 	public ASN1Primitive toASN1Primitive() {
 		ASN1EncodableVector vec = new ASN1EncodableVector();
-		if (componentIdentifiers != null) {
+		if (componentIdentifiers != null && !componentIdentifiers.isEmpty()) {
 			vec.add(new DERTaggedObject(false, 0, new DERSequence(ASN1Utils.toASN1EncodableVector(componentIdentifiers))));
 		}
-		if (platformProperties != null) {
+		if (platformProperties != null && !platformProperties.isEmpty()) {
 			vec.add(new DERTaggedObject(false, 1, new DERSequence(ASN1Utils.toASN1EncodableVector(platformProperties))));
 		}
 		if (platformPropertiesUri != null) {
@@ -115,26 +114,20 @@ public class PlatformConfiguration extends ASN1Object {
 	 */
 	public static class PlatformConfigurationBuilder {
 		/**
-		 * Reads elements of the given sequence as ComponentIdentifiers and adds them to the builder.
-		 * @param seq ASN1Sequence
+		 * Reads the tagged componentIdentifier field and adds each ComponentIdentifier to the builder.
+		 * @param tagged ASN1TaggedObject
 		 */
-		public final void componentIdentifiersFromSequence(@NonNull ASN1Sequence seq) {
-			Definitions.checkCollectionSize(seq);
-			Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, ComponentIdentifier::getInstance))
-					.map(List::of)
-					.orElseGet(() -> Stream.of(seq.toArray()).map(ComponentIdentifier::getInstance).toList())
+		public final void componentIdentifiersFromTaggedSequence(@NonNull ASN1TaggedObject tagged) {
+			ASN1Utils.decodeSequenceOf(tagged, ComponentIdentifier::getInstance, "PlatformConfiguration componentIdentifier")
 					.forEach(this::componentIdentifier);
 		}
 
 		/**
-		 * Reads elements of the given sequence as PlatformProperties and adds them to the builder.
-		 * @param seq ASN1Sequence
+		 * Reads the tagged platformProperties field and adds each PlatformProperties to the builder.
+		 * @param tagged ASN1TaggedObject
 		 */
-		public final void platformPropertiesFromSequence(@NonNull ASN1Sequence seq) {
-			Definitions.checkCollectionSize(seq);
-			Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, PlatformProperties::getInstance))
-					.map(List::of)
-					.orElseGet(() -> Stream.of(seq.toArray()).map(PlatformProperties::getInstance).toList())
+		public final void platformPropertiesFromTaggedSequence(@NonNull ASN1TaggedObject tagged) {
+			ASN1Utils.decodeSequenceOf(tagged, PlatformProperties::getInstance, "PlatformConfiguration platformProperties")
 					.forEach(this::platformProperty);
 		}
 	}

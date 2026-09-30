@@ -7,8 +7,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import jakarta.validation.constraints.Size;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
 import paccor.json.schema.HardwareManifestSchema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -99,6 +97,7 @@ public class PlatformConfigurationV3 extends ASN1Object {
      * @return PlatformConfigurationV3
      */
     public static final PlatformConfigurationV3 fromASN1Sequence(@NonNull ASN1Sequence seq) {
+        Definitions.warnOnExtraElements(seq, PlatformConfigurationV3.MAX_SEQUENCE_SIZE, PlatformConfigurationV3.class);
         if (seq.size() < PlatformConfigurationV3.MIN_SEQUENCE_SIZE) {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
         }
@@ -107,8 +106,8 @@ public class PlatformConfigurationV3 extends ASN1Object {
 
         ASN1Utils.parseTaggedElements(seq).forEach((key, value) -> {
             switch (key) {
-                case 0 -> builder.platformComponentsFromSequence(ASN1Utils.getSequence(value));
-                case 1 -> builder.platformPropertiesFromSequence(ASN1Utils.getSequence(value));
+                case 0 -> builder.platformComponentsFromTaggedSequence(value);
+                case 1 -> builder.platformPropertiesFromTaggedSequence(value);
                 default -> {}
             }
         });
@@ -121,10 +120,10 @@ public class PlatformConfigurationV3 extends ASN1Object {
      */
     public ASN1Primitive toASN1Primitive() {
         ASN1EncodableVector vec = new ASN1EncodableVector();
-        if (this.platformComponents != null) {
+        if (this.platformComponents != null && !this.platformComponents.isEmpty()) {
             vec.add(new DERTaggedObject(false, 0, new DERSequence(ASN1Utils.toASN1EncodableVector(platformComponents))));
         }
-        if (this.platformProperties != null) {
+        if (this.platformProperties != null && !this.platformProperties.isEmpty()) {
             vec.add(new DERTaggedObject(false, 1, new DERSequence(ASN1Utils.toASN1EncodableVector(platformProperties))));
         }
         return new DERSequence(vec);
@@ -135,25 +134,19 @@ public class PlatformConfigurationV3 extends ASN1Object {
      */
     public static class PlatformConfigurationV3Builder {
         /**
-         * Reads elements of the given sequence as ComponentIdentifier Trait Sequence and adds them to the builder.
-         * @param seq ASN1Sequence
+         * Reads the tagged platformComponents field and adds each ComponentIdentifier Trait Sequence to the builder.
+         * @param tagged ASN1TaggedObject
          */
-        public final void platformComponentsFromSequence(@NonNull ASN1Sequence seq) {
-            Definitions.checkCollectionSize(seq);
-            Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, TraitMap::getInstance))
-                    .map(List::of)
-                    .orElseGet(() -> Stream.of(seq.toArray()).map(TraitMap::getInstance).toList())
+        public final void platformComponentsFromTaggedSequence(@NonNull ASN1TaggedObject tagged) {
+            ASN1Utils.decodeSequenceOf(tagged, TraitMap::getInstance, "PlatformConfigurationV3 platformComponents")
                     .forEach(this::platformComponent);
         }
         /**
-         * Reads elements of the given sequence as PlatformPropertiesV2 and adds them to the builder.
-         * @param seq ASN1Sequence
+         * Reads the tagged platformProperties field and adds each PlatformPropertiesV2 to the builder.
+         * @param tagged ASN1TaggedObject
          */
-        public final void platformPropertiesFromSequence(@NonNull ASN1Sequence seq) {
-            Definitions.checkCollectionSize(seq);
-            Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, PlatformPropertiesV2::getInstance))
-                    .map(List::of)
-                    .orElseGet(() -> Stream.of(seq.toArray()).map(PlatformPropertiesV2::getInstance).toList())
+        public final void platformPropertiesFromTaggedSequence(@NonNull ASN1TaggedObject tagged) {
+            ASN1Utils.decodeSequenceOf(tagged, PlatformPropertiesV2::getInstance, "PlatformConfigurationV3 platformProperties")
                     .forEach(this::platformProperty);
         }
 

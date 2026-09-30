@@ -63,6 +63,7 @@ public class VirtualPlatformBackupServiceURI extends ASN1Object {
 	 * @return VirtualPlatformBackupServiceURI
 	 */
 	public static final VirtualPlatformBackupServiceURI fromASN1Sequence(@NonNull ASN1Sequence seq) {
+		Definitions.warnOnExtraElements(seq, VirtualPlatformBackupServiceURI.MAX_SEQUENCE_SIZE, VirtualPlatformBackupServiceURI.class);
 		if (seq.size() < VirtualPlatformBackupServiceURI.MIN_SEQUENCE_SIZE) {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}

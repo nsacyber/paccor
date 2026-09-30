@@ -204,7 +204,7 @@ jsonPlatformManufacturerId () {
     printf '\"'"$JSON_PLATFORMMANUFACTURERID"'\": %s' "$(jsonEscape "${1-}")"
 }
 queryForPen () {
-    pen=$(grep -B 1 "^[ \t]*""${1}""$" "$ENTERPRISE_NUMBERS_FILE" | sed -n '1p' | tr -d '[:space:]')
+    pen=$(NAME="${1}" awk '{ line = $0; sub(/^[ \t]+/, "", line) } line == ENVIRON["NAME"] { print prev; exit } { prev = $0 }' "$ENTERPRISE_NUMBERS_FILE" | tr -d '[:space:]')
     printf "%s%s" "$PEN_ROOT" "$pen"
 }
 jsonProperty () {
@@ -231,10 +231,14 @@ jsonHashValue () {
 }
 toCSV () {
     local value=""
-    local IFS=','
-    value="$*"
-    # trim leading and trailing commas
-    value=$(printf "%s" "$value" | tr -s , | sed -e '1s/^[,]*//' | sed -e '$s/[,]*$//')
+    local item
+    for item in "$@"; do
+        item="${item#"${item%%[!,]*}"}"
+        item="${item%"${item##*[!,]}"}"
+        if [ -n "$item" ]; then
+            value="${value:+$value,}$item"
+        fi
+    done
     printf "%s" "$value"
 }
 jsonAddress () {

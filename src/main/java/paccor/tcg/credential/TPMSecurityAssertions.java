@@ -106,7 +106,7 @@ public class TPMSecurityAssertions extends ASN1Object {
 		ASN1Sequence untaggedSequence = new DERSequence(ASN1Utils.toASN1EncodableVector(untaggedElements));
 
 		// version can only be in the first position
-		builder.version(ASN1Utils.safeGetDefaultElementFromSequence(untaggedSequence, 0, new ASN1Integer(1), ASN1Utils::getInteger));
+		builder.version(ASN1Utils.safeGetDefaultElementFromSequence(untaggedSequence, 0, new ASN1Integer(0), ASN1Utils::getInteger));
 		// fieldUpgradable could be in any position 0 through 1
 		builder.fieldUpgradable(ASN1Utils.safeGetFirstInstanceFromSequenceGivenRange(untaggedSequence, 0, 1, ASN1Boolean.FALSE, ASN1Utils::getBoolean));
 		// iso9000Uri could be in any position 0 through 5, 0 to 2 in the untaggedSequence. If not present, don't give anything to the builder

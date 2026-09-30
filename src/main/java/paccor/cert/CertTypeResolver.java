@@ -1,5 +1,6 @@
 package paccor.cert;
 
+import java.util.Optional;
 import paccor.model.CertificateReference;
 import paccor.model.PlatformCertificateInformationModel;
 import paccor.normalization.PlatformConfigurationNormalizer;
@@ -87,6 +88,37 @@ public final class CertTypeResolver {
         CertType type = (override != null) ? override : inferCertType(pi);
         ASN1ObjectIdentifier oid = toOid(outputType, type);
         return oid != null ? new TCGCredentialType(oid) : null;
+    }
+
+    /**
+     * Set the TCG credential type and delta flag on the model for the certificate being generated.
+     * @param pi platform model
+     * @param profile specification version and output kind
+     * @param override certificate type requested on the command line, or null to infer it
+     * @throws IllegalArgumentException if the specification version does not support the certificate type
+     */
+    public static void applyDefaults(PlatformCertificateInformationModel pi, CertificateProfile profile, CertType override) {
+        CertType effectiveType = Optional.ofNullable(override).orElseGet(() -> inferCertType(pi));
+        boolean supports = supportsCertType(profile.specVersion(), effectiveType);
+        if (!supports) {
+            throw new IllegalArgumentException(profile.specVersion() + " does not support " + effectiveType + " certificates.");
+        }
+        TCGCredentialType resolved = resolveTcgCredentialType(pi, profile.outputType(), override, profile.specVersion());
+
+        if (resolved != null || profile.specVersion() == CertSpecVersion.V1_0) {
+            pi.setTcgCredentialType(resolved);
+        }
+        pi.setIsDelta(deltaFlag(pi, profile, override));
+    }
+
+    private static Boolean deltaFlag(PlatformCertificateInformationModel pi, CertificateProfile profile, CertType override) {
+        if (profile.specVersion() == CertSpecVersion.V1_0) {
+            return Boolean.FALSE;
+        }
+        return Optional.ofNullable(pi.getTcgCredentialType())
+                .map(type -> isDeltaOid(type.getCertificateType()))
+                .or(() -> Optional.ofNullable(pi.getIsDelta()))
+                .orElseGet(() -> isDeltaCredential(pi, profile.outputType(), override));
     }
 
     public static boolean supportsCertType(CertSpecVersion specVersion, CertType certType) {

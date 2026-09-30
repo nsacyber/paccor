@@ -1,53 +1,31 @@
 package paccor.cli;
 
+import java.io.File;
+import java.math.BigInteger;
+import java.nio.file.Files;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+import org.bouncycastle.cert.X509CertificateHolder;
+import paccor.cert.CertGenRequest;
+import paccor.cert.CertGenService;
 import paccor.cert.CertKind;
-import paccor.cert.CertSpecVersion;
 import paccor.cert.CertType;
-import paccor.cert.CertificateProfile;
-import paccor.cert.CertificateResolver;
-import paccor.cert.CertificateIdentifierChain;
-import paccor.cert.CertTypeResolver;
-import paccor.cert.ExtensionAssembler;
 import paccor.cert.PlatformCertificate;
-import paccor.cert.TbsFinalizer;
 import paccor.cert.TbsEnvelope;
 import paccor.cli.pv.BigIntegerConverter;
 import paccor.cli.pv.CertKindConverter;
 import paccor.cli.pv.CertTypeConverter;
 import paccor.cli.pv.DateConverter;
 import paccor.cli.pv.OutFileConverter;
-import java.io.File;
-import java.math.BigInteger;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
-import java.util.concurrent.Callable;
 import paccor.cli.pv.ReadableFileConverter;
-import paccor.json.AttributesJsonHelper;
-import paccor.json.ExtensionsJsonHelper;
-import paccor.json.HardwareManifestJsonHelper;
 import paccor.json.ObjectMapperFactory;
-import paccor.model.PlatformCertificateInformationModel;
-import paccor.model.HolderInfo;
-import paccor.model.CertificateReference;
-import paccor.model.SubjectInfo;
-import paccor.model.NameInfo;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.DERNull;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.util.encoders.Base64;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
-import paccor.crypto.SignatureProfiles;
-import paccor.tcg.credential.TCGCredentialType;
-import paccor.tcg.credential.TCGSpecificationVersion;
 
 /**
  * Generate the PlatformCertificateInformationModel using direct import or JSON data files.
@@ -74,8 +52,8 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
     @Option(names = CliOptionNames.IN_LONG, description = "Existing to-be-signed data to merge from JSON", converter = ReadableFileConverter.class)
     private File inJson;
 
-    @Option(names = CliOptionNames.PREV_PCERT_LONG, description = "Single previous platform certificate used as the V2.0 chain seed. Use previousPlatformCertificates JSON for additional entries.", split = ",")
-    private List<String> previousPlatformCerts;
+    @Option(names = CliOptionNames.PREV_PCERT_LONG, description = "Single previous platform certificate used as the V2.0 chain seed. Use previousPlatformCertificates JSON for additional entries.")
+    private String previousPlatformCert;
 
     // Most relevant certificates. Other certificates may be specified in the JSON.
     @Option(names = { CliOptionNames.ISSUER_CERT_SHORT, CliOptionNames.ISSUER_CERT_LONG }, description = "Issuer certificate file", converter = ReadableFileConverter.class)
@@ -126,360 +104,107 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
 
     @Override
     public Integer call() throws Exception {
-        if (!validateOutputPath()) {
+        X509CertificateHolder issuer = issuerCert == null ? null : CliHelper.loadCertSafe(issuerCert, CliHelper.x509type.CERTIFICATE);
+        Optional<String> problem = usageProblem(issuer);
+        if (problem.isPresent()) {
+            common.printError(problem.get());
             return ClientExitCodes.USAGE_ERROR.code();
         }
-        if ((subjectKey != null || subjectDn != null) && holderCert != null) {
-            common.printError("--subject-key/--subject-dn and --holder-cert are mutually exclusive; use --subject-key with --subject-dn or --in-platform-model.");
-            return ClientExitCodes.USAGE_ERROR.code();
-        }
-        if (previousPlatformCerts != null && previousPlatformCerts.size() > 1) {
-            common.printError("--prev-pcert accepts one chain seed; use previousPlatformCertificates JSON for additional history.");
-            return ClientExitCodes.USAGE_ERROR.code();
-        }
-
-        final TbsEnvelope existingEnv = (inJson != null && inJson.exists()) ? TbsEnvelope.read(inJson) : null;
-        CertKind resolvedType = CertificateResolver.resolveKind(certKind, holderCert, existingEnv);
-        PlatformCertificateInformationModel pi = buildPlatformInfo(existingEnv);
-
-        CertificateProfile profile;
         try {
-            profile = resolveProfile(pi, existingEnv, resolvedType);
+            TbsEnvelope envelope = CertGenService.generate(request(issuer));
+            ObjectMapperFactory.write(outJson, envelope);
+            common.printInfo("Wrote TBS envelope to " + outJson.getAbsolutePath());
+            return ClientExitCodes.SUCCESS.code();
         } catch (IllegalArgumentException e) {
             common.printError(e.getMessage());
             return ClientExitCodes.USAGE_ERROR.code();
         }
+    }
 
-        applyConvenienceOverrides(pi, profile);
-        try {
-            applyCredentialTypeDefaults(pi, profile);
-        } catch (IllegalArgumentException e) {
-            common.printError(e.getMessage());
-            return ClientExitCodes.USAGE_ERROR.code();
-        }
-        AlgorithmIdentifier algId = normalizeAlgorithmIdentifier(resolveAlg(existingEnv));
-
-        TbsFinalizer rebuild = TbsFinalizer.rebuildTbsIfPossible(
-                profile,
-                pi,
-                algId
-        );
-
-        TbsFinalizer.maybeFinalize(finalizeFlag, profile, pi, rebuild);
-
-        TbsEnvelope env = TbsEnvelope.builder()
-                .type(profile.outputType())
-                .certSpecVersion(profile.specVersion())
-                .tbsDerB64(rebuild.tbsB64())
-                .sha256OfTbs(rebuild.shaHex())
-                .sigAlgDerB64(algId != null ? Base64.toBase64String(algId.getEncoded()) : null)
-                .platformInfoJson(serializePlatformInfo(pi))
+    private CertGenRequest request(X509CertificateHolder issuer) {
+        return CertGenRequest.builder()
+                .attributesJson(attrsJson)
+                .componentsJson(componentsJson)
+                .extensionsJson(extJson)
+                .platformModelJson(platformInfoJson)
+                .inEnvelope(inJson)
+                .previousPlatformCert(previousPlatformCertFile().orElse(null))
+                .issuerCertificate(issuer)
+                .holderCert(holderCert)
+                .subjectKey(subjectKey)
+                .subjectDn(subjectDn)
+                .certKind(certKind)
+                .certType(certType)
+                .serial(serial)
+                .notBefore(notBefore)
+                .notAfter(notAfter)
+                .sigProfile(sigProfile)
+                .finalizeTbs(finalizeFlag)
                 .build();
-
-        ObjectMapperFactory.write(outJson, env);
-        common.printInfo("Wrote TBS envelope to " + outJson.getAbsolutePath());
-        return ClientExitCodes.SUCCESS.code();
     }
 
-    private boolean validateOutputPath() {
-        if (inJson == null || outJson == null || overwriteInPlace) {
-            return true;
-        }
+    private Optional<String> usageProblem(X509CertificateHolder issuer) {
+        return Stream.<Supplier<Optional<String>>>of(
+                        this::outputPathProblem,
+                        this::holderAndSubjectProblem,
+                        this::previousPlatformCertProblem,
+                        () -> issuerProblem(issuer))
+                .map(Supplier::get)
+                .flatMap(Optional::stream)
+                .findFirst();
+    }
+
+    private Optional<String> outputPathProblem() {
+        boolean overwritesInput = inJson != null && outJson != null && !overwriteInPlace && sameFile(inJson, outJson);
+        return overwritesInput
+                ? Optional.of("Refusing to overwrite input file. Use " + CliOptionNames.OVERWRITE_IN_PLACE_LONG + " for in-place update.")
+                : Optional.empty();
+    }
+
+    private static boolean sameFile(File first, File second) {
         try {
-            if (Files.isSameFile(inJson.toPath(), outJson.toPath())) {
-                return rejectInPlaceOverwrite();
-            }
-        } catch (Exception ignored) {
-            if (inJson.getAbsolutePath().equals(outJson.getAbsolutePath())) {
-                return rejectInPlaceOverwrite();
-            }
-        }
-        return true;
-    }
-
-    private boolean rejectInPlaceOverwrite() {
-        common.printError("Refusing to overwrite input file. Use --overwrite-in-place for in-place update.");
-        return false;
-    }
-
-    private PlatformCertificateInformationModel buildPlatformInfo(TbsEnvelope existingEnv) throws Exception {
-        PlatformCertificateInformationModel pi = loadOrCreatePi(existingEnv);
-        applyAttributes(pi);
-        if (componentsJson != null) {
-            pi.applyHardwareManifest(HardwareManifestJsonHelper.readComponents(componentsJson));
-        }
-        return pi;
-    }
-
-    private void applyAttributes(PlatformCertificateInformationModel pi) throws Exception {
-        AttributesJsonHelper attributes = (attrsJson != null && attrsJson.exists()) ? AttributesJsonHelper.read(attrsJson) : null;
-        if (attributes != null) {
-            pi.applyAttributes(attributes);
-        }
-        appendExplicitPreviousPlatformCertificates(pi);
-    }
-
-    private CertificateProfile resolveProfile(
-            PlatformCertificateInformationModel pi,
-            TbsEnvelope existingEnv,
-            CertKind resolvedType) {
-        CertSpecVersion resolvedSpec = resolveSpecVersion(pi.getTcgCredentialSpecification(), existingEnv);
-        return CertificateProfile.ofWithDefaults(resolvedSpec, resolvedType);
-    }
-
-    private void applyConvenienceOverrides(PlatformCertificateInformationModel pi, CertificateProfile profile) throws Exception {
-        if (issuerCert != null) {
-            pi.setIssuer(CertificateResolver.resolveIssuer(issuerCert));
-        }
-        if (holderCert != null) {
-            maybeAttachPreviousPlatformCertificates(pi, profile);
-            applyHolderOrSubject(pi, profile);
-        }
-        if (profile.outputType() == CertKind.PKC) {
-            if (subjectDn != null) {
-                applySubjectDn(pi);
-            }
-            if (subjectKey != null) {
-                applySubjectKey(pi);
-            }
-        }
-        if (serial != null) {
-            pi.setCertSerialNumber(serial);
-        }
-        if (notBefore != null) {
-            pi.setNotBefore(notBefore);
-        }
-        if (notAfter != null) {
-            pi.setNotAfter(notAfter);
-        }
-        if (extJson != null) {
-            ExtensionAssembler.applyToPlatformInfo(pi, ExtensionsJsonHelper.read(extJson), CliHelper.loadCertSafe(issuerCert, CliHelper.x509type.CERTIFICATE));
-        }
-    }
-
-    private void applyHolderOrSubject(PlatformCertificateInformationModel pi, CertificateProfile profile) {
-        if (profile.outputType() == CertKind.AC) {
-            CertType requestedType = certType != null ? certType : CertTypeResolver.inferCertType(pi);
-            PlatformCertificate previous = PlatformCertificate.loadSafe(holderCert);
-            if (profile.specVersion() == CertSpecVersion.V2_0
-                    && requestedType == CertType.DELTA
-                    && previous != null) {
-                HolderInfo baseHolder = resolveLatestBaseOrRebaseHolder(pi, previous);
-                if (baseHolder != null) {
-                    pi.setHolder(baseHolder);
-                    return;
-                }
-            }
-            if (profile.specVersion() != CertSpecVersion.V2_0
-                    && requestedType != CertType.BASE
-                    && previous != null
-                    && previous.isAttributeCertificate()) {
-                HolderInfo previousHolder = CertificateResolver.resolvePlatformCertificateHolder(holderCert);
-                if (previousHolder != null) {
-                    pi.setHolder(previousHolder);
-                    return;
-                }
-            }
-            pi.setHolder(CertificateResolver.resolveHolder(holderCert, holderCert));
-            return;
-        }
-        pi.setSubject(CertificateResolver.resolveSubject(holderCert));
-    }
-
-    private void applySubjectKey(PlatformCertificateInformationModel pi) {
-        SubjectPublicKeyInfo spki = CertificateResolver.resolveSubjectPublicKeyInfo(subjectKey);
-        if (spki == null) {
-            throw new IllegalArgumentException("Could not read subject public key from " + subjectKey + ". Expected DER or PEM SubjectPublicKeyInfo.");
-        }
-
-        SubjectInfo current = pi.getSubject();
-        if (current == null || current.nameInfo() == null || current.resolvedSubjectName() == null) {
-            throw new IllegalArgumentException("A subject name is required when --subject-key is used; provide it in the platform model with --in-platform-model.");
-        }
-        try {
-            pi.setSubject(SubjectInfo.builder()
-                    .nameInfo(current.nameInfo())
-                    .subjectPublicKeyInfoDerB64(Base64.toBase64String(spki.getEncoded()))
-                    .build());
+            return Files.isSameFile(first.toPath(), second.toPath());
         } catch (Exception e) {
-            throw new IllegalArgumentException("Could not encode subject public key from " + subjectKey + ".", e);
+            return first.getAbsolutePath().equals(second.getAbsolutePath());
         }
     }
 
-    private void applySubjectDn(PlatformCertificateInformationModel pi) {
-        try {
-            X500Name name = new X500Name(subjectDn);
-            SubjectInfo current = pi.getSubject();
-            pi.setSubject(SubjectInfo.builder()
-                    .nameInfo(NameInfo.builder()
-                            // Keep the canonical DER form for JSON round-tripping.
-                            .name(null)
-                            .nameDerB64(Base64.toBase64String(name.getEncoded()))
-                            .build())
-                    .subjectPublicKeyInfoDerB64(current != null ? current.subjectPublicKeyInfoDerB64() : null)
-                    .build());
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid subject distinguished name: " + subjectDn, e);
-        }
-    }
-
-    private void applyCredentialTypeDefaults(PlatformCertificateInformationModel pi, CertificateProfile profile) {
-        CertType effectiveType = certType != null ? certType : CertTypeResolver.inferCertType(pi);
-        if (!CertTypeResolver.supportsCertType(profile.specVersion(), effectiveType)) {
-            throw new IllegalArgumentException(profile.specVersion() + " does not support " + effectiveType + " certificates.");
-        }
-
-        TCGCredentialType resolved = CertTypeResolver.resolveTcgCredentialType(pi, profile.outputType(), certType, profile.specVersion());
-        if (resolved != null) {
-            pi.setTcgCredentialType(resolved);
-        } else if (profile.specVersion() == CertSpecVersion.V1_0) {
-            pi.setTcgCredentialType(null);
-        }
-
-        if (profile.specVersion() == CertSpecVersion.V1_0) {
-            pi.setIsDelta(Boolean.FALSE);
-        } else if (pi.getTcgCredentialType() != null) {
-            pi.setIsDelta(CertTypeResolver.isDeltaOid(pi.getTcgCredentialType().getCertificateType()));
-        } else if (pi.getIsDelta() == null) {
-            pi.setIsDelta(CertTypeResolver.isDeltaCredential(pi, profile.outputType(), certType));
-        }
-    }
-
-    private AlgorithmIdentifier normalizeAlgorithmIdentifier(AlgorithmIdentifier algId) {
-        if (algId != null && algId.getParameters() == null) {
-            return new AlgorithmIdentifier(algId.getAlgorithm(), DERNull.INSTANCE);
-        }
-        return algId;
-    }
-
-    private String serializePlatformInfo(PlatformCertificateInformationModel pi) {
-        try {
-            return ObjectMapperFactory.get().writeValueAsString(pi);
-        } catch (Exception e) {
-            common.printError("Warning: failed to serialize PlatformCertificateInformationModel: " + e.getMessage());
-            return null;
-        }
-    }
-
-    private CertSpecVersion resolveSpecVersion(TCGSpecificationVersion declaredSpec, TbsEnvelope existingEnv) {
-        if (declaredSpec != null) {
-            CertSpecVersion inferred = CertSpecVersion.fromTcgSpecVersion(declaredSpec);
-            if (inferred == null) {
-                throw new IllegalArgumentException(
-                        "Unsupported TCG credential specification " + declaredSpec.describe() + ".");
-            }
-            return inferred;
-        }
-        if (existingEnv != null && existingEnv.getCertSpecVersion() != null) {
-            return existingEnv.getCertSpecVersion();
-        }
-        return CertSpecVersion.V2_0;
-    }
-
-    private PlatformCertificateInformationModel loadOrCreatePi(TbsEnvelope existingEnv) {
-        if (platformInfoJson != null && platformInfoJson.exists()) {
-            try {
-                return ObjectMapperFactory.get().readValue(platformInfoJson, PlatformCertificateInformationModel.class);
-            } catch (Exception e) {
-                common.printError("Warning: failed to load PlatformCertificateInformationModel from " + platformInfoJson + ": " + e.getMessage());
-            }
-        }
-        if (existingEnv != null && existingEnv.getPlatformInfoJson() != null) {
-            try {
-                return ObjectMapperFactory.get().readValue(existingEnv.getPlatformInfoJson(), PlatformCertificateInformationModel.class);
-            } catch (Exception ignored) { }
-        }
-        return new PlatformCertificateInformationModel();
-    }
-
-    private AlgorithmIdentifier resolveAlg(TbsEnvelope env) throws Exception {
-        if (sigProfile != null && !sigProfile.isBlank()) {
-            return SignatureProfiles.algIdFor(sigProfile);
-        }
-        if (issuerCert != null) {
-            return SignatureProfiles.inferAlgIdFromIssuer(CliHelper.loadPKC(issuerCert.getPath()));
-        }
-        if (env != null && env.getSigAlgDerB64() != null) {
-            try {
-                return AlgorithmIdentifier.getInstance(ASN1Primitive.fromByteArray(Base64.decode(env.getSigAlgDerB64())));
-            } catch (Exception ignored) {}
-        }
-        return null;
-    }
-
-    private void maybeAttachPreviousPlatformCertificates(PlatformCertificateInformationModel pi, CertificateProfile profile) {
-        if (pi == null || holderCert == null || profile == null) return;
-        if (profile.outputType() != CertKind.AC) return;
-
-        PlatformCertificate pc = PlatformCertificate.loadSafe(holderCert);
-        if (pc == null || pc.certKind() != CertKind.AC) return;
-        CertType requestedType = certType != null ? certType : CertTypeResolver.inferCertType(pi);
-
-        if (profile.specVersion() != CertSpecVersion.V2_0
-                || requestedType == CertType.BASE) {
-            if (pi.getPreviousPlatformCertificates() != null) return;
-        }
-
-        CertificateIdentifierChain.append(
-                pi,
-                pc,
-                profile.specVersion() == CertSpecVersion.V2_0 && requestedType != CertType.BASE);
-    }
-
-    private void appendExplicitPreviousPlatformCertificates(PlatformCertificateInformationModel pi) {
-        if (previousPlatformCerts == null || previousPlatformCerts.isEmpty()) return;
-        for (File file : GlobFileResolver.resolve(previousPlatformCerts)) {
-            PlatformCertificate certificate = PlatformCertificate.loadSafe(file);
-            if (certificate == null || certificate.getCertificateIdentifier() == null) continue;
-            CertificateIdentifierChain.append(pi, certificate, true);
-        }
+    private Optional<String> holderAndSubjectProblem() {
+        boolean conflict = (subjectKey != null || subjectDn != null) && holderCert != null;
+        return conflict
+                ? Optional.of(CliOptionNames.SUBJECT_KEY_LONG + "/" + CliOptionNames.SUBJECT_DN_LONG + " and " + CliOptionNames.HOLDER_CERT_LONG
+                        + " are mutually exclusive; use " + CliOptionNames.SUBJECT_KEY_LONG + " with " + CliOptionNames.SUBJECT_DN_LONG
+                        + " or " + CliOptionNames.IN_PLATFORM_MODEL_LONG + ".")
+                : Optional.empty();
     }
 
     /**
-     * V2.0 delta holder is the holder of the referenced Base/Rebase
-     * certificate, not a newly constructed reference to the -e certificate.
+     * --prev-pcert must name exactly one readable platform certificate. Its signature is not checked here;
+     * run validate on it first when that matters.
      */
-    private HolderInfo resolveLatestBaseOrRebaseHolder(
-            PlatformCertificateInformationModel pi,
-            PlatformCertificate supplied) {
-        return reversedReferences(pi)
-                .flatMap(List::stream)
-                .filter(this::isBaseOrRebase)
-                .map(this::holderFromReference)
-                .flatMap(Optional::stream)
-                .findFirst()
-                .or(() -> holderFromBaseOrRebase(supplied))
-                .orElse(null);
-    }
-
-    private Stream<List<CertificateReference>> reversedReferences(PlatformCertificateInformationModel pi) {
-        return Optional.ofNullable(pi.getPreviousPlatformCertificateObjects())
-                .map(ArrayList::new)
-                .map(this::reverse)
-                .stream();
-    }
-
-    private List<CertificateReference> reverse(List<CertificateReference> references) {
-        Collections.reverse(references);
-        return references;
-    }
-
-    private boolean isBaseOrRebase(CertificateReference reference) {
-        return reference != null
-                && (reference.certType() == CertType.BASE || reference.certType() == CertType.REBASE);
-    }
-
-    private Optional<HolderInfo> holderFromReference(CertificateReference reference) {
-        return Optional.ofNullable(reference.file())
-                .map(File::new)
+    private Optional<String> previousPlatformCertProblem() {
+        boolean requested = previousPlatformCert != null && !previousPlatformCert.isBlank();
+        boolean readable = previousPlatformCertFile()
                 .map(PlatformCertificate::loadSafe)
-                .map(CertificateResolver::resolveHolder);
+                .map(PlatformCertificate::getCertificateIdentifier)
+                .isPresent();
+        return requested && !readable
+                ? Optional.of("certgen ... " + CliOptionNames.PREV_PCERT_LONG + " must name exactly one readable platform certificate: " + previousPlatformCert
+                        + ". Use previousPlatformCertificates JSON for additional history.")
+                : Optional.empty();
     }
 
-    private Optional<HolderInfo> holderFromBaseOrRebase(PlatformCertificate certificate) {
-        return Optional.ofNullable(certificate)
-                .filter(candidate -> candidate.getCertType() == CertType.BASE
-                        || candidate.getCertType() == CertType.REBASE)
-                .map(CertificateResolver::resolveHolder);
+    private Optional<String> issuerProblem(X509CertificateHolder issuer) {
+        return issuerCert != null && issuer == null
+                ? Optional.of("Could not read the issuer certificate: " + issuerCert)
+                : Optional.empty();
+    }
+
+    private Optional<File> previousPlatformCertFile() {
+        return Optional.ofNullable(previousPlatformCert)
+                .filter(value -> !value.isBlank())
+                .map(value -> GlobFileResolver.resolve(List.of(value)))
+                .filter(files -> files.size() == 1)
+                .map(List::getFirst);
     }
 }

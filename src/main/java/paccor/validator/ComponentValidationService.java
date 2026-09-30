@@ -2,6 +2,7 @@ package paccor.validator;
 
 import java.io.File;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.logging.Logger;
 import lombok.Builder;
@@ -21,13 +22,13 @@ import paccor.tcg.credential.TraitMap;
 public final class ComponentValidationService {
     private static final Logger LOGGER = Logger.getLogger(ComponentValidationService.class.getName());
 
-    private final List<String> previousPlatformCertificates;
+    private final List<File> previousPlatformCertificates;
     private final X509CertificateHolder issuerCertificate;
     private final List<X509CertificateHolder> trustAnchors;
 
     public boolean validate(PlatformCertificate certificate, File jsonFile, String matcherName) {
         if (jsonFile == null || !jsonFile.exists()) {
-            LOGGER.info("Component validation: Skipped. No components JSON provided.");
+            LOGGER.warning("Components JSON file was not found: " + jsonFile);
             return false;
         }
         boolean previousCertificatesProvided = hasPreviousCertificates();
@@ -49,14 +50,12 @@ public final class ComponentValidationService {
                 certificate.hasAttribute(TCGObjectIdentifier.tcgAtPlatformConfigurationV1),
                 certificate.hasAttribute(TCGObjectIdentifier.tcgAtPlatformConfigurationV2));
         PlatformConfigurationV3 actual = certificate.canonicalizedPlatformConfigurationV3();
-        PlatformConfigurationV3 materialized = materializeWithPrevious(certificate, actual);
+        PlatformConfigurationV3 materialized = materializeWithPrevious(certificate, actual, matcher);
         boolean valid = !previousCertificatesProvided || materialized != null;
-        boolean result = platformIdentifiersOk && valid && Optional.ofNullable(materialized)
+        return platformIdentifiersOk && valid && Optional.ofNullable(materialized)
                 .map(configuration -> compare(expected,
                         PlatformConfigurationNormalizer.componentsForValidation(configuration), matcher))
                 .orElse(false);
-        LOGGER.info("Components validation: " + (result ? "OK" : "FAILED"));
-        return result;
     }
 
     private boolean comparePlatformIdentifiers(
@@ -67,7 +66,7 @@ public final class ComponentValidationService {
             return true;
         }
         boolean matches = actual != null && !actual.isEmpty()
-                && matcher.matchV3(List.of(expected), List.of(actual));
+                && matcher.covers(expected, actual);
         if (!matches) LOGGER.fine(() -> "Platform identifier validation failed; expected=" + expected
                 + ", actual=" + actual);
         return matches;
@@ -75,7 +74,7 @@ public final class ComponentValidationService {
 
     private boolean compare(List<TraitMap> expected, List<TraitMap> actual, ComponentMatcher matcher) {
         ComponentValidationReport report = ComponentValidator.compareComponents(expected, actual, matcher);
-        if (!report.ok()) LOGGER.fine(report.detail());
+        if (!report.ok()) LOGGER.warning("Component validation issues:" + System.lineSeparator() + report.detail());
         return report.ok();
     }
 
@@ -128,11 +127,15 @@ public final class ComponentValidationService {
                         .map(PlatformConfigurationNormalizer::componentsForValidation));
     }
 
-    private PlatformConfigurationV3 materializeWithPrevious(PlatformCertificate certificate, PlatformConfigurationV3 current) {
+    private PlatformConfigurationV3 materializeWithPrevious(
+            PlatformCertificate certificate,
+            PlatformConfigurationV3 current,
+            ComponentMatcher matcher) {
         return PreviousPlatformCertificateValidator.builder()
                 .previousPlatformCertificates(previousPlatformCertificates)
                 .issuerCertificate(issuerCertificate)
                 .trustAnchors(trustAnchors)
+                .matcher(matcher)
                 .build()
                 .materialize(certificate, current);
     }
@@ -146,7 +149,7 @@ public final class ComponentValidationService {
     private static final class ValidateMatcher {
         private static ComponentMatcher resolve(String name) {
             return Optional.ofNullable(name)
-                    .map(value -> value.toUpperCase(java.util.Locale.ROOT))
+                    .map(value -> value.toUpperCase(Locale.ROOT))
                     .filter(value -> value.equals("RAW") || value.equals("STRICT"))
                     .map(_ -> ComponentMatcher.RAW)
                     .orElse(ComponentMatcher.NORMALIZED);

@@ -8,6 +8,7 @@ buildscript {
     }
 }
 
+import java.nio.channels.Channels
 import org.apache.commons.compress.archivers.ar.ArArchiveInputStream
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.apache.commons.compress.archivers.zip.ZipFile
@@ -16,8 +17,6 @@ import org.redline_rpm.ReadableChannelWrapper
 import org.redline_rpm.Scanner
 import org.redline_rpm.Util
 import org.redline_rpm.payload.CpioHeader
-
-import java.nio.channels.Channels
 
 def joinPackagePath = { String prefix, String path ->
     [prefix, path]
@@ -35,7 +34,9 @@ def addDirectoryTree = { Map expected, File sourceRoot, String into, Closure<Boo
         return
     }
 
-    fileTree(sourceRoot).files.sort { a, b -> a.path <=> b.path }.each { file ->
+    fileTree(sourceRoot) {
+        exclude packageSourceExcludes
+    }.files.sort { a, b -> a.path <=> b.path }.each { file ->
         def relativePath = sourceRoot.toPath()
                 .relativize(file.toPath())
                 .toString()

@@ -5,13 +5,23 @@ using System.Runtime.InteropServices;
 namespace StorageCli;
 public class StorageCli {
     public static int Main(string[] args) {
+        try {
+            return Run(args);
+        } catch (Exception e) {
+            // Missing sysfs/firmware paths and device I/O errors
+            Console.Error.WriteLine("Storage hardware information could not be gathered: " + e.Message);
+            return (int)ClientExitCodes.GATHER_HW_MANIFEST_FAIL;
+        }
+    }
+
+    private static int Run(string[] args) {
         int returnCode = (int)ClientExitCodes.SUCCESS;
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
             // Both Linux and Windows require sudo
             int result = CliOptions.IsUserPrivileged();
             if (result != (int)ClientExitCodes.SUCCESS) {
-                Console.WriteLine("Storage data retrieval requires admin privileges. Please run as root.");
+                Console.Error.WriteLine("Storage data retrieval requires admin privileges. Please run as root.");
                 return result;
             }
         }
@@ -24,7 +34,7 @@ public class StorageCli {
 
         StorageHardwareManifestPlugin plugin = new();
         if (!plugin.GatherHardwareIdentifiers()) {
-            Console.WriteLine("Storage hardware information gathered was not valid.");
+            Console.Error.WriteLine("Storage hardware information gathered was not valid.");
             return (int)ClientExitCodes.GATHER_HW_MANIFEST_FAIL;
         }
 

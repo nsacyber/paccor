@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import paccor.tcg.credential.TCGObjectIdentifier;
 import paccor.tcg.credential.TraitMap;
 import paccor.tcg.credential.UTF8StringTrait;
-import paccor.validator.ComponentMatcher;
 
 public class ComponentMatcherNormalizationTest {
 
@@ -27,7 +26,7 @@ public class ComponentMatcherNormalizationTest {
     }
 
     @Test
-    public void manufacturerSynonyms_areEqualAfterNormalization() {
+    public void manufacturerSynonymsAreEqualAfterNormalization() {
         ComponentMatcher matcher = ComponentMatcher.NORMALIZED;
 
         // expected vendor uses "Unknown"; actual uses "n/A" with spaces and sample_testgen1 case
@@ -50,7 +49,7 @@ public class ComponentMatcherNormalizationTest {
     }
 
     @Test
-    public void pciVendor_nameAndId_matchUsingPciIds() {
+    public void pciVendorMatchUsingPciIds() {
         ComponentMatcher matcher = ComponentMatcher.NORMALIZED;
 
         // expected has vendor name (from pci.ids) with PCI registry OID; actual has hex id
@@ -76,7 +75,7 @@ public class ComponentMatcherNormalizationTest {
     }
 
     @Test
-    public void actualMayContainExtraTraits() {
+    public void actualWithExtraHardwareTraitDoesNotMatch() {
         ComponentMatcher matcher = new ComponentMatcher(List.of());
 
         TraitMap expected = TraitMap.builder()
@@ -99,6 +98,6 @@ public class ComponentMatcherNormalizationTest {
                         .build())
                 .build();
 
-        Assertions.assertTrue(matcher.matchV3(List.of(expected), List.of(actual)));
+        Assertions.assertFalse(matcher.matchV3(List.of(expected), List.of(actual)));
     }
 }

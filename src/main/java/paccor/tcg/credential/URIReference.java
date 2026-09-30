@@ -98,6 +98,7 @@ public class URIReference extends ASN1Object {
 	 * @return URIReference
 	 */
 	public static final URIReference fromASN1Sequence(@NonNull ASN1Sequence seq) {
+		Definitions.warnOnExtraElements(seq, URIReference.MAX_SEQUENCE_SIZE, URIReference.class);
 		if (seq.size() < URIReference.MIN_SEQUENCE_SIZE) {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}

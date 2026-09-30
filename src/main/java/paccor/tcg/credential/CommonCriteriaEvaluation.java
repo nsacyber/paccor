@@ -84,6 +84,7 @@ public class CommonCriteriaEvaluation extends ASN1Object {
      * @return CommonCriteriaEvaluation
      */
     public static final CommonCriteriaEvaluation fromASN1Sequence(@NonNull ASN1Sequence seq) {
+        Definitions.warnOnExtraElements(seq, CommonCriteriaEvaluation.MAX_SEQUENCE_SIZE, CommonCriteriaEvaluation.class);
         if (seq.size() < CommonCriteriaEvaluation.MIN_SEQUENCE_SIZE) {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
         }
