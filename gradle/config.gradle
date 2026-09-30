@@ -2,6 +2,8 @@
  * Project variables and functions. Only edit these if you know what you're doing.
  */
 
+import groovy.xml.XmlSlurper;
+
 ext {
     dotnetConfig = "Release"
     dotnetFramework = "net10.0"
@@ -31,6 +33,7 @@ ext {
     buildScriptsDir = layout.buildDirectory.dir("scripts")
     docsAssetsDir = file("docs/_assets")
     sourceScriptsDir = file("scripts")
+    packageSourceExcludes = ["**/.vs/**", "**/.vscode/**", "**/.idea/**"]
     dotnetSourceDir = file("dotnet/ComponentClassRegistry")
     stagedDotnetRootDir = layout.buildDirectory.dir("staged/dotnet")
     ccrCliDistributionsDir = layout.buildDirectory.dir("distributions/ccr")
@@ -73,7 +76,7 @@ ext {
         if (!propsFile.exists()) {
             throw new GradleException("Missing CCR CLI version props for ${tool}: ${propsFile}")
         }
-        def props = new groovy.xml.XmlSlurper().parse(propsFile)
+        def props = new XmlSlurper().parse(propsFile)
         def versionNode = props.PropertyGroup.Version.find { it.text()?.trim() }
         def versionText = versionNode?.text()?.trim()
         if (!versionText) {

@@ -8,6 +8,7 @@ import org.bouncycastle.asn1.DERUTF8String;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import paccor.tcg.credential.ComponentClassTraitTest;
 import paccor.tcg.credential.ComponentIdentifierV2;
 import paccor.tcg.credential.TCGObjectIdentifier;
 import paccor.tcg.credential.TraitMap;
@@ -66,13 +67,32 @@ public class NormalizedComponentMatcherTest {
     }
 
     @Test
-    void preservesCaseForNonSynonyms() {
-        // Non-synonym values should preserve case and NOT match if case differs
-        ComponentIdentifierV2 comp1 = RawComponentMatcherTest.createTestComponentV2("Intel", "model1");
-        ComponentIdentifierV2 comp2 = RawComponentMatcherTest.createTestComponentV2("intel", "model1");
+    void manufacturerAndModelIgnoreCaseAndSpacing() {
+        ComponentIdentifierV2 cert = RawComponentMatcherTest.createTestComponentV2("Intel Corporation", "Model One");
+        ComponentIdentifierV2 smbios = RawComponentMatcherTest.createTestComponentV2(" INTEL  CORPORATION ", "model one");
 
-        boolean result = matcher.matchV2(List.of(comp1), List.of(comp2));
-        Assertions.assertFalse(result, "Non-synonyms should preserve case sensitivity");
+        Assertions.assertTrue(matcher.matchV2(List.of(smbios), List.of(cert)),
+                "Manufacturer and model should compare case- and whitespace-insensitively");
+        Assertions.assertFalse(ComponentMatcher.RAW.matchV2(List.of(smbios), List.of(cert)),
+                "The RAW matcher stays exact");
+    }
+
+    @Test
+    void serialStaysCaseSensitive() {
+        ComponentIdentifierV2 cert = ComponentIdentifierV2.builder()
+                .componentClass(ComponentClassTraitTest.COMPONENT_CLASS_2)
+                .componentManufacturer(new DERUTF8String("vendor"))
+                .componentModel(new DERUTF8String("model"))
+                .componentSerial(new DERUTF8String("abc123"))
+                .build();
+        ComponentIdentifierV2 manifest = ComponentIdentifierV2.builder()
+                .componentClass(ComponentClassTraitTest.COMPONENT_CLASS_2)
+                .componentManufacturer(new DERUTF8String("vendor"))
+                .componentModel(new DERUTF8String("model"))
+                .componentSerial(new DERUTF8String(" ABC123 "))
+                .build();
+
+        Assertions.assertFalse(matcher.matchV2(List.of(manifest), List.of(cert)));
     }
 
     @Test

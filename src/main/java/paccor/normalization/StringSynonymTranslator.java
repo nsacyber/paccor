@@ -14,13 +14,15 @@ import org.bouncycastle.asn1.DERUTF8String;
  * Synonyms: "unknown", "n/a", "" (empty), whitespace-only strings
  * These all normalize to "" for comparison purposes.
  *
- * Non-synonym values preserve their original case - NO lowercasing applied.
+ * Non-synonym values are trimmed and runs of whitespace are collapsed to a single space.
+ * Case is preserved unless the category was configured as case-insensitive.
  */
 public final class StringSynonymTranslator implements TraitValueTranslator {
 
     private static final Set<String> SYNONYMS = Set.of("unknown", "n/a", "");
 
     private final Set<ASN1ObjectIdentifier> targetCategories;
+    private final Set<ASN1ObjectIdentifier> caseInsensitiveCategories;
 
     /**
      * Create a translator that applies to specific trait categories.
@@ -28,7 +30,19 @@ public final class StringSynonymTranslator implements TraitValueTranslator {
      * @param targetCategories Set of trait category OIDs to apply synonym normalization to
      */
     public StringSynonymTranslator(Set<ASN1ObjectIdentifier> targetCategories) {
+        this(targetCategories, Set.of());
+    }
+
+    /**
+     * Create a translator that applies to specific trait categories.
+     *
+     * @param targetCategories Set of trait category OIDs to apply synonym normalization to
+     * @param caseInsensitiveCategories Subset of categories whose values are also lower-cased
+     */
+    public StringSynonymTranslator(Set<ASN1ObjectIdentifier> targetCategories,
+                                   Set<ASN1ObjectIdentifier> caseInsensitiveCategories) {
         this.targetCategories = Set.copyOf(targetCategories);
+        this.caseInsensitiveCategories = Set.copyOf(caseInsensitiveCategories);
     }
 
     @Override
@@ -61,7 +75,10 @@ public final class StringSynonymTranslator implements TraitValueTranslator {
             return new DERUTF8String("");
         }
 
-        // Not a synonym - return original value with case preserved
-        return rawValue;
+        String canonical = trimmed.replaceAll("\\s+", " ");
+        if (caseInsensitiveCategories.contains(traitCategory)) {
+            canonical = canonical.toLowerCase(Locale.ROOT);
+        }
+        return canonical.equals(value) ? rawValue : new DERUTF8String(canonical);
     }
 }

@@ -74,8 +74,8 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
     @Option(names = CliOptionNames.IN_LONG, description = "Existing to-be-signed data to merge from JSON", converter = ReadableFileConverter.class)
     private File inJson;
 
-    @Option(names = CliOptionNames.PREV_PCERT_LONG, description = "Single previous platform certificate used as the V2.0 chain seed. Use previousPlatformCertificates JSON for additional entries.", split = ",")
-    private List<String> previousPlatformCerts;
+    @Option(names = CliOptionNames.PREV_PCERT_LONG, description = "Single previous platform certificate used as the V2.0 chain seed. Use previousPlatformCertificates JSON for additional entries.")
+    private String previousPlatformCert;
 
     // Most relevant certificates. Other certificates may be specified in the JSON.
     @Option(names = { CliOptionNames.ISSUER_CERT_SHORT, CliOptionNames.ISSUER_CERT_LONG }, description = "Issuer certificate file", converter = ReadableFileConverter.class)
@@ -133,8 +133,9 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
             common.printError("--subject-key/--subject-dn and --holder-cert are mutually exclusive; use --subject-key with --subject-dn or --in-platform-model.");
             return ClientExitCodes.USAGE_ERROR.code();
         }
-        if (previousPlatformCerts != null && previousPlatformCerts.size() > 1) {
-            common.printError("--prev-pcert accepts one chain seed; use previousPlatformCertificates JSON for additional history.");
+        Optional<String> previousProblem = previousPlatformCertProblem();
+        if (previousProblem.isPresent()) {
+            common.printError(previousProblem.get());
             return ClientExitCodes.USAGE_ERROR.code();
         }
 
@@ -294,7 +295,7 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
 
         SubjectInfo current = pi.getSubject();
         if (current == null || current.nameInfo() == null || current.resolvedSubjectName() == null) {
-            throw new IllegalArgumentException("A subject name is required when --subject-key is used; provide it in the platform model with --in-platform-model.");
+            throw new IllegalArgumentException("A subject name is required when " + CliOptionNames.SUBJECT_KEY_LONG + " is used; provide it with " + CliOptionNames.SUBJECT_DN_LONG + " or in the platform model with " + CliOptionNames.IN_PLATFORM_MODEL_LONG + ".");
         }
         try {
             pi.setSubject(SubjectInfo.builder()
@@ -426,13 +427,34 @@ public class CertGenCmd implements Callable<Integer>, HasCommonOptions {
                 profile.specVersion() == CertSpecVersion.V2_0 && requestedType != CertType.BASE);
     }
 
+    private Optional<File> previousPlatformCertFile() {
+        return Optional.ofNullable(previousPlatformCert)
+                .filter(value -> !value.isBlank())
+                .map(value -> GlobFileResolver.resolve(List.of(value)))
+                .filter(files -> files.size() == 1)
+                .map(List::getFirst);
+    }
+
+    /**
+     * --prev-pcert must name exactly one readable platform certificate. Its signature is not checked here;
+     * run validate on it first when that matters.
+     */
+    private Optional<String> previousPlatformCertProblem() {
+        boolean requested = previousPlatformCert != null && !previousPlatformCert.isBlank();
+        boolean readable = previousPlatformCertFile()
+                .map(PlatformCertificate::loadSafe)
+                .map(PlatformCertificate::getCertificateIdentifier)
+                .isPresent();
+        return requested && !readable
+                ? Optional.of("certgen ... " + CliOptionNames.PREV_PCERT_LONG +" must name exactly one readable platform certificate: " + previousPlatformCert
+                        + ". Use previousPlatformCertificates JSON for additional history.")
+                : Optional.empty();
+    }
+
     private void appendExplicitPreviousPlatformCertificates(PlatformCertificateInformationModel pi) {
-        if (previousPlatformCerts == null || previousPlatformCerts.isEmpty()) return;
-        for (File file : GlobFileResolver.resolve(previousPlatformCerts)) {
-            PlatformCertificate certificate = PlatformCertificate.loadSafe(file);
-            if (certificate == null || certificate.getCertificateIdentifier() == null) continue;
-            CertificateIdentifierChain.append(pi, certificate, true);
-        }
+        previousPlatformCertFile()
+                .map(PlatformCertificate::loadSafe)
+                .ifPresent(certificate -> CertificateIdentifierChain.append(pi, certificate, true));
     }
 
     /**

@@ -3,6 +3,7 @@ package paccor.cli;
 import paccor.cert.TbsEnvelope;
 import java.io.File;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import paccor.json.ObjectMapperFactory;
 import paccor.model.PlatformCertificateInformationModel;
 import org.junit.jupiter.api.Assertions;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.util.encoders.Base64;
 import paccor.cli.CliHelper.x509type;
 
 public class CertGenCmdTest extends TestSupport {
@@ -60,7 +62,7 @@ public class CertGenCmdTest extends TestSupport {
         PlatformCertificateInformationModel pi = ObjectMapperFactory.get().readValue(env.getPlatformInfoJson(), PlatformCertificateInformationModel.class);
         Assertions.assertArrayEquals(
                 SubjectPublicKeyInfo.getInstance(certificate.getSubjectPublicKeyInfo()).getEncoded(),
-                SubjectPublicKeyInfo.getInstance(org.bouncycastle.util.encoders.Base64.decode(pi.getSubject().subjectPublicKeyInfoDerB64())).getEncoded());
+                SubjectPublicKeyInfo.getInstance(Base64.decode(pi.getSubject().subjectPublicKeyInfoDerB64())).getEncoded());
     }
 
     @Test
@@ -77,6 +79,41 @@ public class CertGenCmdTest extends TestSupport {
         // TbsBuilder.maybeFinalize throws IllegalStateException if rr.tbsB64() is null and finalize is true
         // Default picocli handler prints stack trace and returns 1
         Assertions.assertNotEquals(0, code);
+    }
+
+    @Test
+    public void testPrevPcert_missingFile_isUsageError() throws Exception {
+        Assertions.assertEquals(ClientExitCodes.USAGE_ERROR.code(),
+                certGenWithPrevious(tempDir().resolve("no-such-base.pem").toString()));
+    }
+
+    @Test
+    public void testPrevPcert_notAPlatformCertificate_isUsageError() throws Exception {
+        Path notACertificate = tempPath("not-a-cert.pem");
+        Files.writeString(notACertificate, "not a certificate");
+
+        Assertions.assertEquals(ClientExitCodes.USAGE_ERROR.code(), certGenWithPrevious(notACertificate.toString()));
+    }
+
+    @Test
+    public void testPrevPcert_globMatchingSeveralFiles_isUsageError() throws Exception {
+        Path platformCert = Path.of("src/test/resources/sample_testgen1/platform_cert.20250909102720.crt");
+        Files.copy(platformCert, tempPath("base-a.crt"));
+        Files.copy(platformCert, tempPath("base-b.crt"));
+
+        Assertions.assertEquals(ClientExitCodes.USAGE_ERROR.code(),
+                certGenWithPrevious(tempDir() + File.separator + "base-*.crt"));
+    }
+
+    private int certGenWithPrevious(String previous) throws Exception {
+        return RootCmd.commandLine().execute(
+                "certgen",
+                "--out", tempFile("certgen-prev-", ".json").getAbsolutePath(),
+                "--kind", "AC",
+                "--type", "delta",
+                "--issuer-cert", "src/test/resources/sample_testgen1/PCTestCA.example.com.pem",
+                "--holder-cert", "src/test/resources/sample_testgen1/ek.crt",
+                "--prev-pcert", previous);
     }
 
     @Test

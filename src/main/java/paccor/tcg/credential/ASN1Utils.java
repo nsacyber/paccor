@@ -4,14 +4,15 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 import lombok.NonNull;
 import paccor.exception.MalformedCredentialException;
 import org.bouncycastle.asn1.ASN1BitString;
@@ -32,6 +33,7 @@ import org.bouncycastle.asn1.ASN1UTF8String;
 import org.bouncycastle.asn1.DERIA5String;
 import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.DERPrintableString;
+import org.bouncycastle.asn1.DERSequence;
 import org.bouncycastle.asn1.DERUTF8String;
 
 /**
@@ -78,8 +80,11 @@ public class ASN1Utils {
                 .map(obj -> (ASN1Object)obj)
                 .map(opt -> safeGetDefaultElement(opt, null, ASN1TaggedObject::getInstance))
                 .filter(Objects::nonNull)
-                .sorted(Comparator.comparingInt(ASN1TaggedObject::getTagNo))
-                .forEach(taggedElement -> map.put(taggedElement.getTagNo(), taggedElement));
+                .forEach(taggedElement -> {
+                    if (map.putIfAbsent(taggedElement.getTagNo(), taggedElement) != null) {
+                        throw new IllegalArgumentException("Duplicate tagged element [" + taggedElement.getTagNo() + "] in sequence");
+                    }
+                });
 
         map.entrySet().removeIf(entry -> Objects.isNull(entry.getValue()));
 
@@ -274,6 +279,57 @@ public class ASN1Utils {
         return (o instanceof ASN1TaggedObject t)
                 ? ASN1Sequence.getInstance(t, t.isExplicit())
                 : ASN1Sequence.getInstance(o);
+    }
+
+    /**
+     * Decode a tagged SEQUENCE OF field.
+     * Supports IMPLICIT, a one-item IMPLICIT list, and any EXPLICIT list.
+     * @param tagged the tagged field
+     * @param decoder decodes one item
+     * @param field name of the field, used in log messages
+     * @return the decoded items
+     * @param <T> item type
+     */
+    public static <T> List<T> decodeSequenceOf(@NonNull ASN1TaggedObject tagged, @NonNull Function<Object, T> decoder, String field) {
+        ASN1Sequence content = implicitContent(tagged);
+        return decodeExplicitlyWrapped(content, decoder)
+                .map(items -> {
+                    LOGGER.warning(field + " uses EXPLICIT tagging. The specification requires IMPLICIT.");
+                    return items;
+                })
+                .orElseGet(() -> decodeEach(content, decoder));
+    }
+
+    private static ASN1Sequence implicitContent(ASN1TaggedObject tagged) {
+        try {
+            return ASN1Sequence.getInstance(tagged, false);
+        } catch (IllegalStateException declaredExplicit) {
+            // Built in memory as EXPLICIT; present it the way a parsed EXPLICIT encoding reads.
+            return new DERSequence(tagged.getExplicitBaseObject());
+        }
+    }
+
+    private static <T> Optional<List<T>> decodeExplicitlyWrapped(ASN1Sequence content, Function<Object, T> decoder) {
+        return Optional.of(content)
+                .filter(sequence -> sequence.size() == 1)
+                .map(sequence -> sequence.getObjectAt(0))
+                .filter(ASN1Sequence.class::isInstance)
+                .map(ASN1Sequence.class::cast)
+                .flatMap(inner -> tryDecodeEach(inner, decoder));
+    }
+
+    private static <T> Optional<List<T>> tryDecodeEach(ASN1Sequence sequence, Function<Object, T> decoder) {
+        Definitions.checkCollectionSize(sequence);
+        try {
+            return Optional.of(decodeEach(sequence, decoder));
+        } catch (RuntimeException notAList) {
+            return Optional.empty();
+        }
+    }
+
+    private static <T> List<T> decodeEach(ASN1Sequence sequence, Function<Object, T> decoder) {
+        Definitions.checkCollectionSize(sequence);
+        return Stream.of(sequence.toArray()).map(decoder).toList();
     }
 
     /**

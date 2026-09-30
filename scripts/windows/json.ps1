@@ -202,7 +202,7 @@ function queryForPen () {
     Write-Progress -Id 3 -ParentId 2 -Activity "Searching for PEN..."
     $result=$PEN_ROOT
     if($args[0]) {
-        $penObject=(Get-Content "$ENTERPRISE_NUMBERS_FILE" | Select-String -Pattern "^[ \t]*$($args[0])`$" -Context 1)
+        $penObject=(Get-Content "$ENTERPRISE_NUMBERS_FILE" | Select-String -Pattern "^[ \t]*$([regex]::Escape($args[0]))`$" -Context 1)
         if ($penObject) {
             Write-Progress -Id 3 -ParentId 2 -Activity "Searching for PEN..." -CurrentOperation "Found"
             $pen=$penObject.Context.PreContext[0]
@@ -229,7 +229,7 @@ function jsonHashValue () {
     Write-Output ("`"$JSON_HASHVALUE`": {0}" -f (jsonEscape "$($args[0])"))
 }
 function toCSV () {
-    Write-Output ((($args | Where-Object { $_ -and $_.Trim() -ne "" } | ForEach-Object { $_.ToString() }) -join ",") -replace "}\s*,", "},")
+    Write-Output (($args | Where-Object { $_ -and $_.Trim() -ne "" } | ForEach-Object { $_.ToString() }) -join ",")
 }
 function jsonAddress () {
     Write-Output ("$JSON_ADDRESSES_TEMPLATE" -f "$(toCSV @args)")

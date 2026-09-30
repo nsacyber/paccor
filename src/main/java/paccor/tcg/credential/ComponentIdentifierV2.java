@@ -6,10 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
 import paccor.json.schema.ComponentSchema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -117,6 +114,7 @@ public class ComponentIdentifierV2 extends ASN1Object {
      * @return ComponentIdentifierV2
      */
     public static ComponentIdentifierV2 fromASN1Sequence(@NonNull ASN1Sequence seq) {
+        Definitions.warnOnExtraElements(seq, ComponentIdentifierV2.MAX_SEQUENCE_SIZE, ComponentIdentifierV2.class);
         if (seq.size() < ComponentIdentifierV2.MIN_SEQUENCE_SIZE) {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
         }
@@ -134,7 +132,7 @@ public class ComponentIdentifierV2 extends ASN1Object {
                 case 1 -> builder.componentRevision(ASN1Utils.getUTF8String(value));
                 case 2 -> builder.componentManufacturerId(ASN1Utils.getOID(value));
                 case 3 -> builder.fieldReplaceable(ASN1Utils.getBoolean(value));
-                case 4 -> builder.componentAddressesFromSequence(ASN1Utils.getSequence(value));
+                case 4 -> builder.componentAddressesFromTaggedSequence(value);
                 case 5 -> builder.componentPlatformCert(CertificateIdentifier.getInstance(value));
                 case 6 -> builder.componentPlatformCertUri(URIReference.getInstance(value));
                 case 7 -> builder.status(AttributeStatus.getInstance(value));
@@ -185,14 +183,11 @@ public class ComponentIdentifierV2 extends ASN1Object {
      */
     public static class ComponentIdentifierV2Builder {
         /**
-         * Reads elements of the given sequence as ComponentAddresses and adds them to the builder.
-         * @param seq ASN1Sequence
+         * Reads the tagged componentAddresses field and adds each ComponentAddress to the builder.
+         * @param tagged ASN1TaggedObject
          */
-        public final void componentAddressesFromSequence(@NonNull ASN1Sequence seq) {
-            Definitions.checkCollectionSize(seq);
-            Optional.ofNullable(ASN1Utils.safeGetDefaultElement(seq, null, ComponentAddress::getInstance))
-                    .map(List::of)
-                    .orElseGet(() -> Stream.of(seq.toArray()).map(ComponentAddress::getInstance).toList())
+        public final void componentAddressesFromTaggedSequence(@NonNull ASN1TaggedObject tagged) {
+            ASN1Utils.decodeSequenceOf(tagged, ComponentAddress::getInstance, "ComponentIdentifierV2 componentAddresses")
                     .forEach(this::componentAddress);
         }
     }

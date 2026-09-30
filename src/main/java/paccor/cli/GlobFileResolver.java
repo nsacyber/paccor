@@ -31,13 +31,13 @@ public final class GlobFileResolver {
     }
 
     private static List<File> expandGlob(String pattern) {
-        Path full = Paths.get(pattern);
-        Path base = findGlobRoot(full);
-        PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + pattern.replace("\\", "/"));
+        String normalized = pattern.replace("\\", "/"); // Support Windows
+        Path base = globRoot(normalized);
+        boolean relativeToWorkingDirectory = base.equals(Paths.get("."));
+        PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + normalized);
         List<File> matches = new ArrayList<>();
         try (Stream<Path> paths = Files.walk(base)) {
-            boolean absolute = full.isAbsolute();
-            paths.filter(path -> matcher.matches(absolute ? path : base.relativize(path)))
+            paths.filter(path -> matcher.matches(relativeToWorkingDirectory ? base.relativize(path) : path))
                     .map(Path::toFile)
                     .forEach(matches::add);
         } catch (Exception ignored) {
@@ -46,13 +46,26 @@ public final class GlobFileResolver {
         return matches;
     }
 
-    private static Path findGlobRoot(Path path) {
-        Path root = path.getRoot();
-        Path accumulator = root;
-        for (Path part : path) {
-            if (hasGlob(part.toString())) break;
-            accumulator = accumulator == null ? part : accumulator.resolve(part);
+    private static Path globRoot(String normalizedPattern) {
+        int firstGlob = firstGlobIndex(normalizedPattern);
+        int separator = normalizedPattern.lastIndexOf('/', firstGlob);
+        if (separator < 0) {
+            return Paths.get(".");
         }
-        return accumulator == null ? Paths.get(".") : accumulator;
+        String root = separator == 0 ? "/" : normalizedPattern.substring(0, separator);
+        // A bare drive such as "C:" means the current directory on that drive
+        // the pattern means its root.
+        return Paths.get(root.endsWith(":") ? root + "/" : root);
+    }
+
+    private static int firstGlobIndex(String specification) {
+        int index = specification.length();
+        for (char glob : new char[] {'*', '?', '['}) {
+            int found = specification.indexOf(glob);
+            if (found >= 0) {
+                index = Math.min(index, found);
+            }
+        }
+        return index;
     }
 }

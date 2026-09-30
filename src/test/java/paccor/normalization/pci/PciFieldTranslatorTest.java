@@ -8,8 +8,6 @@ import org.bouncycastle.asn1.DERUTF8String;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import paccor.normalization.pci.PciFieldTranslator;
-import paccor.normalization.pci.PciIdsRegistry;
 import paccor.tcg.credential.TCGObjectIdentifier;
 
 /**
@@ -231,8 +229,8 @@ class PciFieldTranslatorTest {
                 PCIE_REGISTRY,
                 input
         );
-        // Non-hex value becomes 0000
-        Assertions.assertEquals("abcd:0000:VPD", result.getString());
+        // Non-hex value is marked invalid
+        Assertions.assertEquals("abcd:?EFGH:VPD", result.getString());
     }
 
     // ===== Serial Field Tests =====

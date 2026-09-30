@@ -90,6 +90,7 @@ public class PlatformPropertiesV2 extends ASN1Object {
 	 * @return PlatformPropertiesV2
 	 */
 	public static final PlatformPropertiesV2 fromASN1Sequence(@NonNull ASN1Sequence seq) {
+		Definitions.warnOnExtraElements(seq, PlatformPropertiesV2.MAX_SEQUENCE_SIZE, PlatformPropertiesV2.class);
 		if (seq.size() < PlatformPropertiesV2.MIN_SEQUENCE_SIZE) {
 			throw new IllegalArgumentException("Bad sequence size: " + seq.size());
 		}

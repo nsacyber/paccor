@@ -85,7 +85,7 @@ lshwGetVersionFromBusItem () {
 lshwGetSerialFromBusItem () {
     itemNumber="${1}"
     result=""
-    str=$(echo "${busitems[$itemNumber]}" | grep -e "^serial:.*$" | sed 's/^serial: \([^\\\"\x00-\x1F\[]\+\)$/\1/')
+    str=$(echo "${busitems[$itemNumber]}" | grep -e "^serial:.*$" | sed -n 's/^serial: \(.*\)$/\1/p')
     if [ -n "$str" ]; then
         result=$str
     fi
@@ -103,7 +103,7 @@ lshwGetLogicalNameFromBusItem () {
 lshwGetVendorNameFromBusItem () {
     itemNumber="${1}"
     result=""
-    str=$(echo "${busitems[$itemNumber]}" | grep -e "^vendor:.*$" | sed 's/^vendor: \([^\\\"\x00-\x1F\[]\+\).*$/\1/')
+    str=$(echo "${busitems[$itemNumber]}" | sed -n 's/^vendor: \(.*\)$/\1/p' | sed 's/\[[0-9A-Fa-f:]*\]$//')
     if [ -n "$str" ]; then
         result=$str
     fi
@@ -112,7 +112,7 @@ lshwGetVendorNameFromBusItem () {
 lshwGetProductNameFromBusItem () {
     itemNumber="${1}"
     result=""
-    str=$(echo "${busitems[$itemNumber]}" | grep -e "^product:.*$" | sed 's/^product: \([^\\\"\x00-\x1F\[]\+\).*$/\1/')
+    str=$(echo "${busitems[$itemNumber]}" | sed -n 's/^product: \(.*\)$/\1/p' | sed 's/\[[0-9A-Fa-f:]*\]$//')
     if [ -n "$str" ]; then
         result=$str
     fi

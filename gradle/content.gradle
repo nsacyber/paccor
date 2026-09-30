@@ -15,7 +15,8 @@ ext.packageContent = { os = "linux" ->
                     from: [
                             jar.outputs.files,
                             configurations.runtimeClasspath
-                    ]
+                    ],
+                    mode: linuxPackage ? 0644 : null
             ],
 
             scripts_sh: [
@@ -34,7 +35,8 @@ ext.packageContent = { os = "linux" ->
                     exclude: { details ->
                         def generated = generatedToolNames().contains(details.file.name)
                         linuxPackage ? generated || details.file.name.endsWith(".exe") : generated
-                    }
+                    },
+                    mode: linuxPackage ? 0644 : null
             ],
 
             dotnet: [
@@ -45,14 +47,16 @@ ext.packageContent = { os = "linux" ->
 
             docs: [
                     into: "docs",
-                    from: fileTree(docsAssetsDir)
+                    from: fileTree(docsAssetsDir),
+                    mode: linuxPackage ? 0644 : null
             ],
 
             root_md: [
                     into: ".",
                     from: fileTree(rootDir) {
                         include "*.md"
-                    }
+                    },
+                    mode: linuxPackage ? 0644 : null
             ]
     ]
 }
@@ -67,6 +71,8 @@ ext.applyPackageLayout = { target, layoutMap, os ->
             target.from(src) {
 
                 into spec.into
+
+                exclude packageSourceExcludes
 
                 if (spec.exclude != null) {
                     exclude spec.exclude
@@ -89,7 +95,7 @@ ext.ccrCliPackageContent = { String tool, String os ->
     return [
             cli: [
                     from: dotnetOutput(tool, runtime),
-                    into: linuxPackage ? "." : ".",
+                    into: ".",
                     exclude: null,
                     mode: linuxPackage ? 0755 : null
             ]

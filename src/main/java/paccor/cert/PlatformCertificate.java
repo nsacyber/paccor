@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Vector;
 import java.util.function.Function;
+import java.util.logging.Logger;
 import lombok.Getter;
 import lombok.NonNull;
 import paccor.crypto.AlgorithmSupport;
@@ -55,6 +56,8 @@ import paccor.tcg.credential.URIReference;
  */
 @Getter
 public final class PlatformCertificate {
+    private static final Logger LOGGER = Logger.getLogger(PlatformCertificate.class.getName());
+
     private final File file;
     private final CertKind certKind;
     private final CertSpecVersion certSpecVersion;
@@ -290,17 +293,29 @@ public final class PlatformCertificate {
         return attributeValue(oid, TraitMap::getInstance);
     }
 
+    /**
+     * Canonicalize whichever platform configuration attribute this certificate carries.
+     * A present attribute with no components or properties yields an empty configuration.
+     * @return PlatformConfigurationV3, or null if no platform configuration attribute is present or it could not be decoded.
+     */
     public PlatformConfigurationV3 canonicalizedPlatformConfigurationV3() {
         if (hasPcv1()) {
-            return PlatformConfigurationNormalizer.canonicalize(platformConfigurationV1());
+            PlatformConfiguration decoded = platformConfigurationV1();
+            return decoded == null ? null : emptyIfNull(PlatformConfigurationNormalizer.canonicalize(decoded));
         }
         if (hasPcv2()) {
-            return PlatformConfigurationNormalizer.canonicalize(platformConfigurationV2());
+            PlatformConfigurationV2 decoded = platformConfigurationV2();
+            return decoded == null ? null : emptyIfNull(PlatformConfigurationNormalizer.canonicalize(decoded));
         }
         if (hasPcv3()) {
-            return PlatformConfigurationNormalizer.canonicalize(platformConfigurationV3());
+            PlatformConfigurationV3 decoded = platformConfigurationV3();
+            return decoded == null ? null : emptyIfNull(PlatformConfigurationNormalizer.canonicalize(decoded));
         }
         return null;
+    }
+
+    private static PlatformConfigurationV3 emptyIfNull(PlatformConfigurationV3 configuration) {
+        return Optional.ofNullable(configuration).orElseGet(() -> PlatformConfigurationV3.builder().build());
     }
 
     public List<CertificateIdentifierTrait> previousPlatformCertificateTraits() {
@@ -374,8 +389,12 @@ public final class PlatformCertificate {
 
     private boolean matches(HashedCertificateIdentifier identifier) {
         try {
+            ASN1ObjectIdentifier hashAlgorithm = identifier.getHashAlgorithm().getAlgorithm();
+            if (AlgorithmSupport.isSha1Digest(hashAlgorithm)) {
+                LOGGER.warning("WARNING: A certificate identifier uses SHA-1; SHA-1 is deprecated and should only be used for legacy compatibility.");
+            }
             byte[] expected = identifier.getHashOverSignatureValue().getOctets();
-            byte[] actual = AlgorithmSupport.digest(signatureBytes(), identifier.getHashAlgorithm().getAlgorithm());
+            byte[] actual = AlgorithmSupport.digest(signatureBytes(), hashAlgorithm);
             return MessageDigest.isEqual(expected, actual);
         } catch (GeneralSecurityException e) {
             return false;

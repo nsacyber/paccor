@@ -15,7 +15,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.ASN1IA5String;
@@ -248,6 +247,7 @@ public abstract class Trait<TraitValueType extends ASN1Object, TraitType extends
          * @return TraitBuilder
          */
         public final B fromASN1Sequence(@NonNull final ASN1Sequence seq, @NonNull final Function<Object, TraitValueType> conversionMethod) {
+            Definitions.warnOnExtraElements(seq, Trait.MAX_SEQUENCE_SIZE, Trait.class);
             if (seq.size() < Trait.MIN_SEQUENCE_SIZE) {
                 throw new IllegalArgumentException("Bad sequence size: " + seq.size());
             }

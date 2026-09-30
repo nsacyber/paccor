@@ -158,26 +158,14 @@ public final class PciFieldTranslator implements TraitValueTranslator {
      * Translate vendor ID or vendor name to canonical hex ID via pci.ids.
      * If input is already a valid hex ID, this returns normalized form.
      * If input is a vendor name, looks up the ID.
-     * If no match is found, returns normalized hex or input as-is.
+     * If no match is found, returns the input as-is.
      */
     private String translateVendorId(String input) {
         if (input == null || input.isEmpty()) {
             return "";
         }
 
-        Optional<String> vendorId = registry.canonicalVendorId(input);
-        if (vendorId.isPresent()) {
-            return vendorId.get();
-        }
-
-        // No match found - try normalizing as hex anyway
-        // (handles malformed hex that HexNormalizer can fix)
-        String normalized = HexNormalizer.normalize(input, 2);
-        if (!normalized.equals("0000")) {
-            return normalized;
-        }
-
-        // Complete failure, return input as-is
-        return input;
+        // No match: keep the input as-is
+        return registry.canonicalVendorId(input).orElse(input);
     }
 }

@@ -1,6 +1,7 @@
 package paccor.validator;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -12,6 +13,7 @@ import paccor.normalization.TraitValueTranslator;
 import paccor.normalization.pci.PciFieldTranslator;
 import org.bouncycastle.asn1.ASN1Object;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import paccor.tcg.credential.ComponentClassTrait;
 import paccor.tcg.credential.ComponentIdentifierV2;
 import paccor.tcg.credential.PlatformConfigurationV2;
 import paccor.tcg.credential.TCGObjectIdentifier;
@@ -21,8 +23,8 @@ import paccor.tcg.credential.TraitMap;
 
 /**
  * Translator-driven component matcher for both V2 and V3 configurations.
- * Matching always uses the same subset contract: expected components and traits
- * must be present in actual data, while actual data may contain additional detail.
+ * Each expected component is paired with a distinct actual component whose traits contain the
+ * expected component's traits. Callers decide whether unpaired actual components are acceptable.
  */
 public final class ComponentMatcher {
     public static final ASN1ObjectIdentifier PCI_REGISTRY_OID = TCGObjectIdentifier.tcgRegistryComponentClassPcie.intern();
@@ -37,8 +39,22 @@ public final class ComponentMatcher {
             TCGObjectIdentifier.tcgTrCatComponentRevision
     );
 
+    private static final Set<ASN1ObjectIdentifier> CASE_INSENSITIVE_CATEGORIES = Set.of(
+            TCGObjectIdentifier.tcgTrCatPlatformManufacturer,
+            TCGObjectIdentifier.tcgTrCatPlatformModel,
+            TCGObjectIdentifier.tcgTrCatComponentManufacturer,
+            TCGObjectIdentifier.tcgTrCatComponentModel
+    );
+
+    private static final Set<ASN1ObjectIdentifier> IDENTITY_CATEGORIES = Set.of(
+            TCGObjectIdentifier.tcgTrCatComponentClass,
+            TCGObjectIdentifier.tcgTrCatComponentManufacturer,
+            TCGObjectIdentifier.tcgTrCatComponentModel,
+            TCGObjectIdentifier.tcgTrCatComponentSerial
+    );
+
     private static final List<TraitValueTranslator> STANDARD_TRANSLATORS = List.of(
-            new StringSynonymTranslator(STRING_SYNONYM_CATEGORIES),
+            new StringSynonymTranslator(STRING_SYNONYM_CATEGORIES, CASE_INSENSITIVE_CATEGORIES),
             new PciFieldTranslator()
     );
 
@@ -59,37 +75,116 @@ public final class ComponentMatcher {
         return matchV3(expectedTraits, actualTraits);
     }
 
+    /**
+     * Check that every expected component is matched by a distinct actual component.
+     * Actual may contain additional components.
+     * @param expected Expected components.
+     * @param actual Actual components.
+     * @return true if every expected component has its own matching actual component.
+     */
     public boolean matchV3(List<TraitMap> expected, List<TraitMap> actual) {
-        List<TraitMap> exp = Optional.ofNullable(expected).orElse(List.of());
-        List<TraitMap> act = Optional.ofNullable(actual).orElse(List.of());
-        if (exp.size() > act.size()) {
-            return false;
-        }
-        for (TraitMap component : exp) {
-            if (!containsMatchingTraitMap(act, component)) {
-                return false;
-            }
-        }
-        return true;
+        return match(expected, actual).unmatchedExpected().isEmpty();
     }
 
-    private boolean containsMatchingTraitMap(List<TraitMap> haystack, TraitMap needle) {
-        TraitCollection expected = TraitCollection.from(normalizeTraitMap(needle));
-        for (TraitMap actual : haystack) {
-            TraitCollection actualTraits = TraitCollection.from(normalizeTraitMap(actual));
-            if (traitCollectionsMatch(actualTraits, expected)) {
+    /**
+     * Pair expected components with actual components one-to-one. Each expected component's traits
+     * must be contained in the traits of the actual component it is paired with, and no actual
+     * component is paired more than once. A maximum matching is computed so that a less specific
+     * expected component cannot claim an actual component that a more specific one needs.
+     * @param expected Expected components.
+     * @param actual Actual components.
+     * @return The components left unpaired on either side.
+     */
+    public MatchResult match(List<TraitMap> expected, List<TraitMap> actual) {
+        List<TraitMap> exp = Optional.ofNullable(expected).orElse(List.of());
+        List<TraitMap> act = Optional.ofNullable(actual).orElse(List.of());
+        List<List<CanonicalTrait>> expCanonical = exp.stream().map(this::canonicalComponent).toList();
+        List<List<CanonicalTrait>> actCanonical = act.stream().map(this::canonicalComponent).toList();
+
+        List<List<Integer>> candidates = new ArrayList<>();
+        for (List<CanonicalTrait> required : expCanonical) {
+            List<Integer> row = new ArrayList<>();
+            for (int j = 0; j < actCanonical.size(); j++) {
+                if (multisetContains(actCanonical.get(j), required)) {
+                    row.add(j);
+                }
+            }
+            candidates.add(row);
+        }
+
+        int[] actualOwner = new int[act.size()];
+        Arrays.fill(actualOwner, -1);
+        List<TraitMap> unmatchedExpected = new ArrayList<>();
+        for (int i = 0; i < exp.size(); i++) {
+            if (!assign(i, candidates, actualOwner, new boolean[act.size()])) {
+                unmatchedExpected.add(exp.get(i));
+            }
+        }
+        List<TraitMap> unmatchedActual = new ArrayList<>();
+        for (int j = 0; j < act.size(); j++) {
+            if (actualOwner[j] < 0) {
+                unmatchedActual.add(act.get(j));
+            }
+        }
+        return new MatchResult(unmatchedExpected, unmatchedActual);
+    }
+
+    /**
+     * Check whether a component carries the identifying fields needed to locate it in another
+     * configuration: a component class, manufacturer, and model.
+     * @param component Component traits.
+     * @return true if the component can be identified.
+     */
+    public boolean hasIdentity(TraitMap component) {
+        TraitCollection traits = TraitCollection.from(normalizeTraitMap(component));
+        return traits.firstTrait(ComponentClassTrait.class).isPresent()
+                && traits.containsCategory(TCGObjectIdentifier.tcgTrCatComponentManufacturer)
+                && traits.containsCategory(TCGObjectIdentifier.tcgTrCatComponentModel);
+    }
+
+    /**
+     * Check whether two components have the same identity (component class, manufacturer, model,
+     * and serial) after this matcher's normalization.
+     * @param left Component traits.
+     * @param right Component traits.
+     * @return true if both components can be identified and their identities are equal.
+     */
+    public boolean sameIdentity(TraitMap left, TraitMap right) {
+        if (!hasIdentity(left) || !hasIdentity(right)) {
+            return false;
+        }
+        List<CanonicalTrait> a = identityTraits(left);
+        List<CanonicalTrait> b = identityTraits(right);
+        return a.size() == b.size() && multisetContains(a, b);
+    }
+
+    private boolean assign(int expectedIndex, List<List<Integer>> candidates, int[] actualOwner, boolean[] visited) {
+        for (int actualIndex : candidates.get(expectedIndex)) {
+            if (visited[actualIndex]) {
+                continue;
+            }
+            visited[actualIndex] = true;
+            if (actualOwner[actualIndex] < 0
+                    || assign(actualOwner[actualIndex], candidates, actualOwner, visited)) {
+                actualOwner[actualIndex] = expectedIndex;
                 return true;
             }
         }
         return false;
     }
 
-    private TraitMap normalizeTraitMap(TraitMap traits) {
-        return ComponentIdentifierV2Converter.normalizeTraitMap(traits);
+    private List<CanonicalTrait> canonicalComponent(TraitMap component) {
+        return canonicalTraits(TraitCollection.from(normalizeTraitMap(component)));
     }
 
-    private boolean traitCollectionsMatch(TraitCollection actual, TraitCollection expected) {
-        return multisetContains(canonicalTraits(actual), canonicalTraits(expected));
+    private List<CanonicalTrait> identityTraits(TraitMap component) {
+        return canonicalComponent(component).stream()
+                .filter(trait -> IDENTITY_CATEGORIES.contains(trait.traitCategory()))
+                .toList();
+    }
+
+    private TraitMap normalizeTraitMap(TraitMap traits) {
+        return ComponentIdentifierV2Converter.normalizeTraitMap(traits);
     }
 
     private List<CanonicalTrait> canonicalTraits(TraitCollection traits) {
@@ -144,6 +239,22 @@ public final class ComponentMatcher {
             }
         }
         return true;
+    }
+
+    /**
+     * Components left unpaired by {@link #match(List, List)}.
+     * @param unmatchedExpected Expected components with no distinct matching actual component.
+     * @param unmatchedActual Actual components not paired with any expected component.
+     */
+    public record MatchResult(List<TraitMap> unmatchedExpected, List<TraitMap> unmatchedActual) {
+        public MatchResult {
+            unmatchedExpected = List.copyOf(unmatchedExpected);
+            unmatchedActual = List.copyOf(unmatchedActual);
+        }
+
+        public boolean complete() {
+            return unmatchedExpected.isEmpty() && unmatchedActual.isEmpty();
+        }
     }
 
     private record CanonicalTrait(

@@ -4,7 +4,6 @@ import java.lang.reflect.Constructor;
 import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import paccor.normalization.HexNormalizer;
 
 /**
  * Tests for HexNormalizer utility class.
@@ -40,9 +39,16 @@ class HexNormalizerTest {
     }
 
     @Test
-    void normalize_longHex_truncates() {
-        Assertions.assertEquals("abcd", HexNormalizer.normalize("1234abcd", 2));
-        Assertions.assertEquals("cd", HexNormalizer.normalize("abcd", 1));
+    void normalize_longHex_dropsOnlyLeadingZeros() {
+        Assertions.assertEquals("abcd", HexNormalizer.normalize("0000abcd", 2));
+        Assertions.assertEquals("0000000000000000", HexNormalizer.normalize("00000000000000000000000000000000", 8));
+    }
+
+    @Test
+    void normalize_longHex_withSignificantDigits_isMarkedInvalid() {
+        Assertions.assertEquals("?1234abcd", HexNormalizer.normalize("1234abcd", 2));
+        Assertions.assertEquals("?abcd", HexNormalizer.normalize("abcd", 1));
+        Assertions.assertNotEquals(HexNormalizer.normalize("abcd", 2), HexNormalizer.normalize("1abcd", 2));
     }
 
     @Test
@@ -53,10 +59,12 @@ class HexNormalizerTest {
     }
 
     @Test
-    void normalize_invalidHex_returnsZeroPadded() {
-        Assertions.assertEquals("0000", HexNormalizer.normalize("invalid", 2));
-        Assertions.assertEquals("0000", HexNormalizer.normalize("xyz", 2));
-        Assertions.assertEquals("0000", HexNormalizer.normalize("12g3", 2));
+    void normalize_invalidHex_isMarkedInvalid() {
+        Assertions.assertEquals("?invalid", HexNormalizer.normalize("invalid", 2));
+        Assertions.assertEquals("?xyz", HexNormalizer.normalize("xyz", 2));
+        Assertions.assertEquals("?12g3", HexNormalizer.normalize("12g3", 2));
+        // Invalid input must never collapse onto a valid value such as the all-zero ID.
+        Assertions.assertNotEquals("0000", HexNormalizer.normalize("xyz", 2));
     }
 
     @Test

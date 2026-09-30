@@ -11,11 +11,11 @@ import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.AttributeCertificateHolder;
 import org.bouncycastle.cert.X509AttributeCertificateHolder;
 import org.bouncycastle.cert.X509CertificateHolder;
+import paccor.cert.CertSpecVersion;
 import paccor.cert.CertType;
 import paccor.cert.PlatformCertificate;
 import paccor.cli.GlobFileResolver;
 import paccor.crypto.IssuerCertificateChecker;
-import paccor.normalization.PlatformConfigurationNormalizer;
 import paccor.tcg.credential.CertificateIdentifier;
 import paccor.tcg.credential.CertificateIdentifierTrait;
 import paccor.tcg.credential.PlatformConfigurationV3;
@@ -28,38 +28,40 @@ public final class PreviousPlatformCertificateValidator {
     private final List<String> previousPlatformCertificates;
     private final X509CertificateHolder issuerCertificate;
     private final List<X509CertificateHolder> trustAnchors;
+    private final ComponentMatcher matcher;
 
     public PlatformConfigurationV3 materialize(PlatformCertificate certificate, PlatformConfigurationV3 current) {
-        if (current == null) {
+        PlatformConfigurationV3 leaf = Optional.ofNullable(current)
+                .orElseGet(() -> isDelta(certificate) ? emptyConfiguration() : null);
+        if (leaf == null) {
             return null;
         }
 
         List<File> files = GlobFileResolver.resolve(previousPlatformCertificates);
         if (files.isEmpty()) {
-            return certificate.requiresPreviousPlatformCertificates() ? null : current;
+            return certificate.requiresPreviousPlatformCertificates() ? null : leaf;
         }
 
         List<ResolvedPrevious> resolved = loadPrevious(files);
         List<CertificateIdentifierTrait> chain = certificate.previousPlatformCertificateTraits();
-        return Optional.ofNullable(chain)
-                .filter(values -> !values.isEmpty())
-                .map(values -> materializeChain(certificate, values, resolved, current))
-                .orElseGet(() -> materializeWithoutChain(certificate, resolved, current));
+        // When a chain is present it is authoritative; a chain that fails must not fall back to holder matching.
+        return chain != null && !chain.isEmpty()
+                ? materializeChain(certificate, chain, resolved, leaf)
+                : materializeWithoutChain(certificate, resolved, leaf);
     }
 
     private PlatformConfigurationV3 materializeWithoutChain(PlatformCertificate certificate, List<ResolvedPrevious> resolved, PlatformConfigurationV3 current) {
+        if (!certificate.requiresPreviousPlatformCertificates()) {
+            return current;
+        }
         return resolved.stream()
+                .filter(previous -> holderMatches(certificate, previous.certificate()))
                 .findFirst()
-                .filter(previous -> !certificate.requiresPreviousPlatformCertificates()
-                                || holderMatches(certificate, previous.certificate()))
-                .map(ResolvedPrevious::configuration)
-                .filter(PlatformConfigurationNormalizer::hasContent)
-                .map(base -> PlatformConfigurationNormalizer.hasStatusTraits(current)
-                        ? ComponentValidator.materializeComponents(base, List.of(current))
-                        : current)
-                .orElseGet(() -> Optional.ofNullable(current)
-                        .filter(_ -> !certificate.requiresPreviousPlatformCertificates())
-                        .orElse(null));
+                .map(previous -> mergeCurrent(certificate, previous.configuration(), current))
+                .orElseGet(() -> {
+                    LOGGER.warning("No previous platform certificate matches the holder of the certificate being validated.");
+                    return null;
+                });
     }
 
     private PlatformConfigurationV3 materializeChain(PlatformCertificate certificate, List<CertificateIdentifierTrait> chain, List<ResolvedPrevious> resolved, PlatformConfigurationV3 current) {
@@ -68,9 +70,8 @@ public final class PreviousPlatformCertificateValidator {
                 .filter(progress -> !progress.failed())
                 .filter(progress -> currentType(certificate).isPresent()
                         && progress.configuration() != null
-                        && holderConsistentV2(certificate, progress.anchor()))
-                .map(ChainProgress::configuration)
-                .map(accumulated -> mergeCurrent(accumulated, current))
+                        && holderConsistent(certificate, progress.anchor()))
+                .map(progress -> mergeCurrent(certificate, progress.configuration(), current))
                 .orElse(null);
     }
 
@@ -94,28 +95,33 @@ public final class PreviousPlatformCertificateValidator {
     }
 
     private ChainProgress applyResolvedTrait(ChainProgress progress, CertificateIdentifierTrait trait, ResolvedPrevious previous) {
-        PlatformConfigurationV3 next = previous.configuration();
-        if (ComponentValidator.isDeltaTrait(trait)) {
-            return Optional.of(next)
-                    .filter(PlatformConfigurationNormalizer::hasStatusTraits)
-                    .filter(_ -> progress.anchor() != null
-                            && holderConsistentV2(previous.certificate(), progress.anchor()))
-                    .map(value -> ChainProgress.success(
-                            Optional.ofNullable(progress.configuration())
-                                    .map(configuration -> ComponentValidator.materializeComponents(
-                                            configuration, List.of(value)))
-                                    .orElse(value),
-                            progress.anchor()))
-                    .orElseGet(() -> {
-                        LOGGER.warning("Previous delta certificate is invalid or does not identify the certificate it is applied on top: "
-                                + trait.getTraitValue());
-                        return ChainProgress.failure();
-                    });
+        Optional<CertType> declared = ComponentValidator.certTypeOf(trait);
+        if (declared.isEmpty()) {
+            LOGGER.warning("Previous platform certificate entry has an unrecognized category "
+                    + trait.getTraitCategory() + ": " + trait.getTraitValue());
+            return ChainProgress.failure();
         }
-        return Optional.of(trait)
-                .filter(value -> ComponentValidator.isBaseTrait(value) || ComponentValidator.isRebaseTrait(value))
-                .map(_ -> ChainProgress.success(next, previous.certificate()))
-                .orElseGet(() -> ChainProgress.success(progress.configuration(), progress.anchor()));
+        CertType actual = previous.certificate().getCertType();
+        if (actual != null && actual != declared.get()) {
+            LOGGER.warning("Previous platform certificate is listed as " + declared.get()
+                    + " but its credential type is " + actual + ": " + trait.getTraitValue());
+            return ChainProgress.failure();
+        }
+        if (declared.get() != CertType.DELTA) {
+            return ChainProgress.success(previous.configuration(), previous.certificate());
+        }
+        if (progress.configuration() == null || progress.anchor() == null
+                || !holderConsistent(previous.certificate(), progress.anchor())) {
+            LOGGER.warning("Previous delta certificate does not identify the certificate it is applied on top of: "
+                    + trait.getTraitValue());
+            return ChainProgress.failure();
+        }
+        return ComponentValidator.materializeComponents(progress.configuration(), List.of(previous.configuration()), componentMatcher())
+                .map(configuration -> ChainProgress.success(configuration, progress.anchor()))
+                .orElseGet(() -> {
+                    LOGGER.warning("Previous delta certificate could not be applied: " + trait.getTraitValue());
+                    return ChainProgress.failure();
+                });
     }
 
     private ChainProgress missingTrait(CertificateIdentifier identifier) {
@@ -123,11 +129,12 @@ public final class PreviousPlatformCertificateValidator {
         return ChainProgress.failure();
     }
 
-    private PlatformConfigurationV3 mergeCurrent(PlatformConfigurationV3 accumulated, PlatformConfigurationV3 current) {
-        return Optional.ofNullable(accumulated)
-                .filter(_ -> PlatformConfigurationNormalizer.hasStatusTraits(current))
-                .map(value -> ComponentValidator.materializeComponents(value, List.of(current)))
-                .orElse(current);
+    private PlatformConfigurationV3 mergeCurrent(PlatformCertificate certificate, PlatformConfigurationV3 accumulated, PlatformConfigurationV3 current) {
+        if (!isDelta(certificate)) {
+            return current;
+        }
+        return ComponentValidator.materializeComponents(accumulated, List.of(current), componentMatcher())
+                .orElse(null);
     }
 
     private Optional<ChainStart> resolveChainStart(List<CertificateIdentifierTrait> chain) {
@@ -141,6 +148,10 @@ public final class PreviousPlatformCertificateValidator {
                 baseCount++;
             } else if (ComponentValidator.isRebaseTrait(trait)) {
                 rebase = index;
+            } else if (!ComponentValidator.isDeltaTrait(trait)) {
+                LOGGER.warning("Previous platform certificates contain an entry with an unrecognized category: "
+                        + (trait == null ? "null" : trait.getTraitCategory()));
+                return Optional.empty();
             }
         }
         if (baseCount > 1) {
@@ -189,7 +200,9 @@ public final class PreviousPlatformCertificateValidator {
     }
 
     private ResolvedPrevious resolvePrevious(LoadedPrevious previous) {
-        PlatformConfigurationV3 configuration = previous.certificate().canonicalizedPlatformConfigurationV3();
+        // A delta without a platform configuration attribute records no component changes.
+        PlatformConfigurationV3 configuration = Optional.ofNullable(previous.certificate().canonicalizedPlatformConfigurationV3())
+                .orElseGet(() -> isDelta(previous.certificate()) ? emptyConfiguration() : null);
         if (configuration == null) {
             LOGGER.warning("Rejected previous platform certificate file " + previous.file()
                     + ": no supported platform configuration was found.");
@@ -267,6 +280,17 @@ public final class PreviousPlatformCertificateValidator {
                 .orElse(false);
     }
 
+    /**
+     * V1.1 deltas name the certificate they update as their holder. V2.0 deltas and rebases share
+     * that certificate's holder.
+     */
+    private static boolean holderConsistent(PlatformCertificate delta, PlatformCertificate anchor) {
+        if (delta != null && delta.resolvedSpecVersion() == CertSpecVersion.V1_1) {
+            return holderMatches(delta, anchor);
+        }
+        return holderConsistentV2(delta, anchor);
+    }
+
     private static boolean holderConsistentV2(PlatformCertificate delta, PlatformCertificate anchor) {
         if (delta == null || anchor == null) {
             return false;
@@ -287,6 +311,18 @@ public final class PreviousPlatformCertificateValidator {
 
     private static Optional<CertType> currentType(PlatformCertificate certificate) {
         return Optional.ofNullable(certificate).map(PlatformCertificate::getCertType);
+    }
+
+    private static boolean isDelta(PlatformCertificate certificate) {
+        return currentType(certificate).filter(CertType.DELTA::equals).isPresent();
+    }
+
+    private static PlatformConfigurationV3 emptyConfiguration() {
+        return PlatformConfigurationV3.builder().build();
+    }
+
+    private ComponentMatcher componentMatcher() {
+        return Optional.ofNullable(matcher).orElse(ComponentMatcher.NORMALIZED);
     }
 
     private record LoadedPrevious(File file, PlatformCertificate certificate) {}

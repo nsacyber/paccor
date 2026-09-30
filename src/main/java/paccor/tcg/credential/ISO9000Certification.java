@@ -50,6 +50,7 @@ public class ISO9000Certification extends ASN1Object {
     }
 
     public static ISO9000Certification fromASN1Sequence(@NonNull ASN1Sequence seq) {
+        Definitions.warnOnExtraElements(seq, ISO9000Certification.MAX_SEQUENCE_SIZE, ISO9000Certification.class);
         if (seq.size() < ISO9000Certification.MIN_SEQUENCE_SIZE) {
             throw new IllegalArgumentException("Bad sequence size: " + seq.size());
         }
@@ -59,7 +60,7 @@ public class ISO9000Certification extends ASN1Object {
         builder.iso9000Certified(ASN1Utils.safeGetDefaultElementFromSequence(seq, 0, ASN1Boolean.FALSE, ASN1Utils::getBoolean));
 
         // iso9000Uri can only be at position 1 if it exists
-        Optional.ofNullable(ASN1Utils.safeGetDefaultElementFromSequence(seq, 1, null, ASN1Utils::getIA5String))
+        Optional.ofNullable(ASN1Utils.safeGetFirstInstanceFromSequenceGivenRange(seq, 0, 1, null, ASN1Utils::getIA5String))
                 .ifPresent(builder::iso9000Uri);
 
         return builder.build();
