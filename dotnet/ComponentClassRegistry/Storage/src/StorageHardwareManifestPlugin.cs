@@ -23,7 +23,6 @@ public sealed class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         Name = PluginName;
         Description = PluginDescription;
         CollectsV2HardwareInformation = true;
-        CollectsV3HardwareInformation = false;
     }
 
     public override bool GatherHardwareIdentifiers() {

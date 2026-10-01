@@ -20,6 +20,15 @@ namespace HardwareManifestPlugin {
         bool CollectsV2HardwareInformation {
             get; 
         }
+        /// <summary>
+        /// Will this plugin collect hardware information into structures defined under tcg-at-platformConfiguration-v3?
+        /// ManifestV3 was never implemented. Traits are carried in ManifestV2. This member will be removed in plugin interface 3.0.
+        /// </summary>
+        /// <returns>false</returns>
+        [Obsolete]
+        bool CollectsV3HardwareInformation {
+            get;
+        }
 
         ManifestV2 ManifestV2 {
             get;

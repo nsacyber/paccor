@@ -17,6 +17,7 @@ namespace HardwareManifestPlugin {
             protected set;
         } = false;
 
+        [Obsolete]
         public bool CollectsV3HardwareInformation {
             get;
             protected set;
