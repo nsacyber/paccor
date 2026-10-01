@@ -174,7 +174,7 @@ internal class PcieData {
     }
     private static async Task<Tuple<int, string, string>> PowershellMac(string interfaceId) {
         string escapedId = interfaceId.Replace("'", "''");
-        string cmd = $"Get-NetAdapter | where PNPDeviceID -eq '{escapedId}' | select MacAddress -ExpandProperty MacAddress";
+        string cmd = $"Get-NetAdapter | where PNPDeviceID -eq '{escapedId}' | select PermanentAddress -ExpandProperty PermanentAddress";
         byte[] bytes = Encoding.Unicode.GetBytes(cmd);
         string encoded = Convert.ToBase64String(bytes);
         return await ShellHelper.Powershell(encoded);
