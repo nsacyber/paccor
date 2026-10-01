@@ -1,5 +1,4 @@
 ﻿using Microsoft.Win32.SafeHandles;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace StorageLib;
@@ -64,57 +63,30 @@ internal static class StorageCommonHelpers {
         return buffer;
     }
 
+    private static readonly FileAccess[] DeviceAccessOrder = OperatingSystem.IsWindows()
+        ? [FileAccess.ReadWrite, FileAccess.Read]
+        : [FileAccess.Read, FileAccess.ReadWrite];
+
     public static SafeFileHandle OpenDevice(string devicePath) {
-        SafeFileHandle handle = new();
-        try {
-            handle = File.OpenHandle(devicePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-        } catch (FileNotFoundException) { // Any error should result in the handle being set to invalid
-            handle.SetHandleAsInvalid();
+        foreach (FileAccess access in DeviceAccessOrder) {
+            try {
+                SafeFileHandle handle = File.OpenHandle(devicePath, FileMode.Open, access, FileShare.ReadWrite);
+                if (IsDeviceHandleReady(handle)) {
+                    return handle;
+                }
+            } catch (FileNotFoundException) {
+                break; // The device does not exist. Another access mode will not help.
+            } catch (Exception e) when (e is IOException or UnauthorizedAccessException) {
+                // Try the next access mode
+            }
         }
 
-        if (!IsDeviceHandleReady(handle)) { // Also ensure handle is not closed
-            handle.SetHandleAsInvalid();
-        }
-        return handle;
+        SafeFileHandle invalid = new();
+        invalid.SetHandleAsInvalid();
+        return invalid;
     }
 
     public static bool IsDeviceHandleReady(SafeFileHandle handle) {
         return handle is { IsInvalid: false, IsClosed: false };
-    }
-
-    internal static Task<Tuple<int, string, string>> Execute(ProcessStartInfo info) {
-        TaskCompletionSource<Tuple<int, string, string>> source = new();
-
-        using Process process = new();
-        process.StartInfo = info;
-        process.EnableRaisingEvents = true;
-
-        try {
-            process.Start();
-
-            Task<string> outputTask = process.StandardOutput.ReadToEndAsync();
-            Task<string> errorTask = process.StandardError.ReadToEndAsync();
-
-            process.WaitForExit();
-
-            string output = outputTask.GetAwaiter().GetResult();
-            string error = errorTask.GetAwaiter().GetResult();
-
-            int exitCode = process.ExitCode;
-
-            if (exitCode == 0) {
-                source.SetResult(new Tuple<int, string, string>(exitCode, error, output));
-            } else {
-                if (error.IsWhiteSpace()) {
-                    error = "<empty>";
-                }
-                error = "Error message: " + error;
-                source.SetException(new Exception($"Command `{info.FileName} {info.Arguments}` failed with exit code `{exitCode}`. {error}"));
-            }
-        } catch (Exception e) {
-            source.SetException(e);
-        }
-
-        return source.Task;
     }
 }

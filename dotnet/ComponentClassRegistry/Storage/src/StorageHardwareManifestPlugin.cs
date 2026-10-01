@@ -190,7 +190,12 @@ public sealed class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
     }
 
     internal static string SPC_VPD_SN_String(byte[] vpdPage80) {
-        return vpdPage80.Length < 5 ? string.Empty : SPC_INQUIRY_String(vpdPage80[4..]);
+        if (vpdPage80.Length < 5) {
+            return string.Empty;
+        }
+
+        int end = Math.Min(4 + BinaryPrimitives.ReadUInt16BigEndian(vpdPage80.AsSpan(2, 2)), vpdPage80.Length);
+        return SPC_INQUIRY_String(vpdPage80[4..end]);
     }
 
     internal static string SPC_VPD_DI_UNIQUEID_String(byte[] vpdPage83) {

@@ -32,5 +32,11 @@ namespace HardwareManifestPlugin {
         public bool GatherHardwareIdentifiers(string[] args) {
             return GatherHardwareIdentifiers();
         }
+
+        public virtual bool SupportsComponentEvidence => false;
+
+        public virtual IReadOnlyList<ComponentEvidence> GatherComponentEvidence(byte[] nonce) {
+            return [];
+        }
     }
 }

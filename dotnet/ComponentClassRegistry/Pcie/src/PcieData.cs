@@ -1,7 +1,6 @@
 ﻿using PcieLib;
 using PcieWinCfgMgr;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace Pcie;
 
@@ -59,11 +58,9 @@ internal class PcieData {
                 case "0200":
                 case "0280":
                 case "0D11":
-                    // Ask NetAdapter for the permanent address.
-                    Task<Tuple<int, string, string>> task = Task.Run(() => PowershellMac(pciDeviceInstanceId));
-                    bool foundMac = ParseMacAddressFromResults(out string mac, task);
-                    if (foundMac) {
-                        device.NetworkMac = Convert.FromHexString(mac);
+                    // Ask the network stack for the permanent address.
+                    if (NetAdapterMac.GetPermanentAddressWindows(out byte[] mac, pciDeviceInstanceId)) {
+                        device.NetworkMac = mac;
                     }
                     break;
             }
@@ -122,11 +119,9 @@ internal class PcieData {
                         case "0200":
                         case "0280":
                         case "0D11":
-                            // Ask ethtool for the permanent address.
-                            Task<Tuple<int, string, string>> task = Task.Run(() => EthtoolP(interfaceName));
-                            bool foundMac = ParseMacAddressFromResults(out string mac, task);
-                            if (foundMac) {
-                                device.NetworkMac = Convert.FromHexString(mac);
+                            // Ask the kernel for the permanent address.
+                            if (NetAdapterMac.GetPermanentAddressLinux(out byte[] mac, interfaceName)) {
+                                device.NetworkMac = mac;
                             }
                             break;
                     }
@@ -140,44 +135,6 @@ internal class PcieData {
         }
 
         return true;
-    }
-
-    private static bool ParseMacAddressFromResults(out string mac, Task<Tuple<int, string, string>> task) {
-        mac = "";
-        bool result = false;
-
-        task.Wait(5000);
-
-        if (!task.IsCompleted || !task.IsCompletedSuccessfully) {
-            return result;
-        }
-
-        Tuple<int, string, string> results = task.Result;
-        mac = results.Item3;
-        // Parse results of  output
-        mac = CleanMacAddress(mac);
-        result = !string.IsNullOrWhiteSpace(mac);
-
-        return result;
-    }
-
-    public static string CleanMacAddress(string mac) {
-        mac = mac.Replace("Permanent address", "");
-        mac = mac.Replace(":", "");
-        mac = mac.Replace("-", "");
-        mac = mac.Trim();
-        return mac;
-    }
-
-    private static async Task<Tuple<int, string, string>> EthtoolP(string interfaceName) {
-        return await ShellHelper.Ethtool(interfaceName); // -P argument was integrated into ShellHelper.Ethtool
-    }
-    private static async Task<Tuple<int, string, string>> PowershellMac(string interfaceId) {
-        string escapedId = interfaceId.Replace("'", "''");
-        string cmd = $"Get-NetAdapter | where PNPDeviceID -eq '{escapedId}' | select PermanentAddress -ExpandProperty PermanentAddress";
-        byte[] bytes = Encoding.Unicode.GetBytes(cmd);
-        string encoded = Convert.ToBase64String(bytes);
-        return await ShellHelper.Powershell(encoded);
     }
 
     public static byte[] CatReadAllBytes(string path) {
