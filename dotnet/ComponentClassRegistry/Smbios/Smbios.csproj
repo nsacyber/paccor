@@ -23,8 +23,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="paccor.HardwareManifestPlugin" Version="2.1.0" />
-    <PackageReference Include="System.Management" Version="10.0.3" />
+    <PackageReference Include="paccor.HardwareManifestPlugin" Version="2.1.1" />
+    <PackageReference Include="System.Management" Version="10.0.12" />
   </ItemGroup>
 
   <ItemGroup>
