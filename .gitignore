@@ -65,6 +65,7 @@ build/
 *.user
 *.cache
 .vs/
+.vscode/
 bin/
 generated/
 obj/
