@@ -11,7 +11,7 @@ using static StorageLib.Windows.StorageWinStructs;
 namespace StorageScsi.Windows;
 
 [SupportedOSPlatform("windows")]
-public class StorageScsiWin : IStorageScsi {
+internal class StorageScsiWin : IStorageScsi {
     public bool CollectScsiData(out List<StorageScsiData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = [];
         bool noProblems = true;

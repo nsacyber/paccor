@@ -2,7 +2,7 @@
 using System.Text.RegularExpressions;
 
 namespace Pcie;
-public static partial class ShellHelper {
+internal static partial class ShellHelper {
     [GeneratedRegex(@"^[a-zA-Z0-9_-]{1,15}$")]
     private static partial Regex InterfaceNameRegex();
 

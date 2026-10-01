@@ -28,6 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="SmbiosTests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!--Package resources -->
     <None Include="..\..\..\LICENSE.md" Pack="true" PackagePath="LICENSE.md" />
     <None Include="..\..\..\images\paccorpluginslogoicon.png" Pack="true" PackagePath="icon.png" />

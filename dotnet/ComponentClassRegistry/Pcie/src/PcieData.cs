@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Pcie;
 
-public class Pcie {
+internal class PcieData {
 
     public IDictionary<int, IList<PcieDevice>> Devices {
         get;
@@ -20,8 +20,8 @@ public class Pcie {
         private set;
     }
 
-    public static Pcie GetPcie() {
-        Pcie pcie = new();
+    public static PcieData Collect() {
+        PcieData pcie = new();
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
             pcie.Valid = CollectPcieWindows(pcie.Devices);

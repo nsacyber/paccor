@@ -3,15 +3,17 @@ using HardwareManifestProto;
 using OidsProto;
 using StorageAta;
 using StorageLib;
+using StorageLib.Linux;
+using StorageLib.Windows;
 using StorageNvme;
 using StorageScsi;
-using System;
 using System.Buffers.Binary;
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace Storage;
-public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
+public sealed class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
     public static readonly string TraitDescription = "Storage Component Class Registry";
     public static readonly string TraitDescriptionUri = "https://trustedcomputinggroup.org/wp-content/uploads/Storage-Component-Class-Registry-Version-1.0-Revision-22_pub.pdf";
     public static readonly string PluginName = "paccor.storage";
@@ -27,9 +29,9 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
     public override bool GatherHardwareIdentifiers() {
         ImmutableList<StorageDiskDescriptor> disks = [];
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-            disks = StorageLib.Linux.StorageLinux.GetPhysicalDevicePaths();
+            disks = StorageLinux.GetPhysicalDevicePaths();
         } else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) {
-            disks = StorageLib.Windows.StorageWin.DescribePhysicalDisks();
+            disks = StorageWin.DescribePhysicalDisks();
         }
 
         bool nvmeValid = StorageNvmeHelpers.CollectNvmeData(out List<StorageNvmeData> nvmeData, disks);
@@ -45,7 +47,7 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         return true;
     }
 
-    public static void AddComponentsToManifestV2(List<StorageNvmeData> nvmeData, List<StorageAtaData> ataData, List<StorageScsiData> scsiData, ManifestV2 manifest) {
+    internal static void AddComponentsToManifestV2(List<StorageNvmeData> nvmeData, List<StorageAtaData> ataData, List<StorageScsiData> scsiData, ManifestV2 manifest) {
         string storageRegistryOid = OidsUtils.Find(TCG_REGISTRY_COMPONENTCLASS_NODE.TcgRegistryComponentclassDisk);
         foreach (StorageAtaData data in ataData) {
             ComponentIdentifier component = new() {
@@ -89,7 +91,7 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         }
     }
 
-    public static string ATA_FormFactor(byte[] ff) {
+    internal static string ATA_FormFactor(byte[] ff) {
         byte[] ffClone = (byte[])ff.Clone();
 
         string hex = NVMe_Val(ffClone, false);
@@ -98,7 +100,7 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
 
         // Least significant 4 bits of the 8 byte Form Factor field
         if (hex.Length == 16 && hex.StartsWith("80000000")) {
-            ffStr = "0" + hex[-1];
+            ffStr = "0" + hex[^1];
         } else if (hex.Length == 16 && hex.EndsWith("00000080")) {
             ffStr = "0" + hex[1];
         }
@@ -106,7 +108,7 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         return ffStr;
     }
 
-    public static string ATA_AOI(byte[] wwn) {
+    internal static string ATA_AOI(byte[] wwn) {
         byte[] wwnClone = ATA_Rotate(wwn);
 
         string hex = NVMe_Val(wwnClone, false);
@@ -121,7 +123,7 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         return wwnStr;
     }
 
-    public static string ATA_UNIQUEID(byte[] wwn) {
+    internal static string ATA_UNIQUEID(byte[] wwn) {
         byte[] wwnClone = ATA_Rotate(wwn);
 
         string hex = NVMe_Val(wwnClone, false);
@@ -136,7 +138,7 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         return wwnStr;
     }
 
-    public static byte[] ATA_Rotate(byte[] val) {
+    internal static byte[] ATA_Rotate(byte[] val) {
         byte[] valClone = (byte[])val.Clone();
         int len = valClone.Length - valClone.Length % 2;
         for (int i = 0; i < len; i += 2) {
@@ -147,17 +149,17 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         return valClone;
     }
 
-    public static string ATA_String(byte[] val) {
+    internal static string ATA_String(byte[] val) {
         byte[] valClone = ATA_Rotate(val);
-        return System.Text.Encoding.ASCII.GetString(valClone).Trim(' ', '\0');
+        return Encoding.ASCII.GetString(valClone).Trim(' ', '\0');
     }
 
-    public static string NVMe_Val(byte val) {
+    internal static string NVMe_Val(byte val) {
         byte valClone = val;
         return NVMe_Val([valClone], false);
     }
 
-    public static string NVMe_Val(byte[] val, bool littleEndianField) {
+    internal static string NVMe_Val(byte[] val, bool littleEndianField) {
         byte[] valClone = (byte[])val.Clone();
 
         if (littleEndianField) {
@@ -166,32 +168,32 @@ public class StorageHardwareManifestPlugin : HardwareManifestPluginBase {
         return Convert.ToHexString(valClone).PadLeft(valClone.Length / 2 + valClone.Length % 2, '0');
     }
 
-    public static string NVMe_OUI(byte[] val) {
+    internal static string NVMe_OUI(byte[] val) {
         byte[] valClone = (byte[])val.Clone();
 
         // These fields are specified to be little endian
         return NVMe_Val(valClone, true);
     }
 
-    public static string NVMe_String(byte[] val) {
+    internal static string NVMe_String(byte[] val) {
         byte[] valClone = (byte[])val.Clone();
-        return System.Text.Encoding.ASCII.GetString(valClone).TrimEnd(' ', '\0');
+        return Encoding.ASCII.GetString(valClone).TrimEnd(' ', '\0');
     }
 
-    public static string SPC_INQUIRY_Class(byte val) {
+    internal static string SPC_INQUIRY_Class(byte val) {
         return Convert.ToHexString([val]).PadLeft(2, '0');
     }
 
-    public static string SPC_INQUIRY_String(byte[] val) {
+    internal static string SPC_INQUIRY_String(byte[] val) {
         byte[] valClone = (byte[])val.Clone();
-        return System.Text.Encoding.ASCII.GetString(valClone);
+        return Encoding.ASCII.GetString(valClone);
     }
 
-    public static string SPC_VPD_SN_String(byte[] vpdPage80) {
+    internal static string SPC_VPD_SN_String(byte[] vpdPage80) {
         return vpdPage80.Length < 5 ? string.Empty : SPC_INQUIRY_String(vpdPage80[4..]);
     }
 
-    public static string SPC_VPD_DI_UNIQUEID_String(byte[] vpdPage83) {
+    internal static string SPC_VPD_DI_UNIQUEID_String(byte[] vpdPage83) {
         if (vpdPage83.Length < 5) {
             return string.Empty;
         }

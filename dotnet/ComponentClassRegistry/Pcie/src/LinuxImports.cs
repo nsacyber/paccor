@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 
 namespace Pcie;
-public class LinuxImports {
+internal class LinuxImports {
     /// <summary>
     /// This method is imported to query the Linux Kernel whether the program was run with privileges.
     /// </summary>

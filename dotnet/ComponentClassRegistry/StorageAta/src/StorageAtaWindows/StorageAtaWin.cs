@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace StorageAta.Windows;
 
 [SupportedOSPlatform("windows")]
-public class StorageAtaWin : IStorageAta {
+internal class StorageAtaWin : IStorageAta {
     public bool CollectAtaData(out List<StorageAtaData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = [];
         bool noProblems = true;

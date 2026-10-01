@@ -4,7 +4,7 @@ using System.Runtime.Versioning;
 namespace StorageAta.Linux;
 
 [SupportedOSPlatform("linux")]
-public class StorageAtaLinuxStructs {
+internal class StorageAtaLinuxStructs {
     [StructLayout(LayoutKind.Sequential)]
     public struct AtaPassThroughCdb16 {
         public byte opcode;

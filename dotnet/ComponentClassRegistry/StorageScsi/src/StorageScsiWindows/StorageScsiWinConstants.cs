@@ -5,7 +5,7 @@ using static StorageLib.Windows.StorageWinConstants;
 namespace StorageScsi.Windows;
 
 [SupportedOSPlatform("windows")]
-public class StorageScsiWinConstants {
+internal class StorageScsiWinConstants {
     //public static readonly uint IOCTL_SCSI_PASS_THROUGH_DIRECT = StorageWin.CTL_CODE(IOCTL_SCSI_BASE, 0x0405, IoctlMethodCodes.METHOD_BUFFERED, IoctlFileAccess.FILE_ANY_ACCESS); // ntddscsi.h
     public static readonly uint IOCTL_SCSI_PASS_THROUGH_DIRECT = 0x4D014; // ntddscsi.h
 

@@ -6,7 +6,7 @@ using System.Runtime.Versioning;
 namespace StorageLib.Windows;
 
 [SupportedOSPlatform("windows")]
-public class StorageWinImports {
+internal class StorageWinImports {
     public const string kernelDll = "kernel32.dll";
 
     [DllImport(kernelDll, ExactSpelling = true, SetLastError = true)]

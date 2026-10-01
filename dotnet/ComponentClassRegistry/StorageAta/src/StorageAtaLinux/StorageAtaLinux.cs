@@ -8,7 +8,7 @@ using System.Runtime.Versioning;
 namespace StorageAta.Linux;
 
 [SupportedOSPlatform("linux")]
-public class StorageAtaLinux : IStorageAta {
+internal class StorageAtaLinux : IStorageAta {
     public bool CollectAtaData(out List<StorageAtaData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = new();
         bool noProblems = true;

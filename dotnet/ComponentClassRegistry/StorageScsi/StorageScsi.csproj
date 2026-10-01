@@ -28,6 +28,11 @@
     </ItemGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="Storage" />
+        <InternalsVisibleTo Include="StorageTests" />
+    </ItemGroup>
+
+    <ItemGroup>
         <!--Package resources -->
         <None Include="..\..\..\LICENSE.md" Pack="true" PackagePath="LICENSE.md" />
         <None Include="..\..\..\images\paccorpluginslogoicon.png" Pack="true" PackagePath="icon.png" />

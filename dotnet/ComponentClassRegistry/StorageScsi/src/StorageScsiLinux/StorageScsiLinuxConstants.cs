@@ -4,5 +4,5 @@ using System.Runtime.Versioning;
 namespace StorageScsi.Linux;
 
 [SupportedOSPlatform("linux")]
-public class StorageScsiLinuxConstants {
+internal class StorageScsiLinuxConstants {
 }

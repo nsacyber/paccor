@@ -3,7 +3,7 @@
 namespace StorageLib.Linux;
 
 [SupportedOSPlatform("linux")]
-public class StorageLinuxConstants {
+internal class StorageLinuxConstants {
     public static readonly byte SCSI_SB_LEN_MAX = 0xFF; 
     /**
      * synchronous SCSI command ioctl, (only in version 3 interface)

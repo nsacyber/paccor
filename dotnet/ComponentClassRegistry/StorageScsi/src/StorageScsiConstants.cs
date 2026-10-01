@@ -1,6 +1,6 @@
 namespace StorageScsi;
 
-public class StorageScsiConstants {
+internal class StorageScsiConstants {
     public const uint SCSI_INQUIRY_DATA_BUFFER_SIZE_CONST = 36;
     public static readonly uint SCSI_INQUIRY_DATA_BUFFER_SIZE = SCSI_INQUIRY_DATA_BUFFER_SIZE_CONST;
     

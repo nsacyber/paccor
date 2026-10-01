@@ -268,7 +268,7 @@ public class PcieTests {
         Assert.That(jsonManifestV2, Contains.Substring(ComponentIdentifiersInJson[2]));
     }
 
-    public static IDictionary<int, IList<PcieDevice>> CreateDictionary(IList<PcieDevice> list) {
+    private static IDictionary<int, IList<PcieDevice>> CreateDictionary(IList<PcieDevice> list) {
         IDictionary<int, IList<PcieDevice>> devices = new Dictionary<int, IList<PcieDevice>>();
         foreach (PcieDevice device in list) {
             if (!devices.ContainsKey(device.ClassCode.Class)) {

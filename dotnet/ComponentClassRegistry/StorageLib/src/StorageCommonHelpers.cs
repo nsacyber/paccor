@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace StorageLib;
-public static class StorageCommonHelpers {
+internal static class StorageCommonHelpers {
     // Expects unmanaged memory of given len to be allocated to ptr
     public static void ZeroMemory(IntPtr ptr, int len) {
         for (int i = 0; i < len; i++) {

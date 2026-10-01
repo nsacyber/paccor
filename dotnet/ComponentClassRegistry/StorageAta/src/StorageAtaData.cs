@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace StorageAta;
-public class StorageAtaData(StorageAtaStructs.AtaIdentifyData identData, StorageAtaStructs.AtaCapabilitiesData capData, StorageAtaStructs.AtaStringsData stringsData) {
+internal class StorageAtaData(StorageAtaStructs.AtaIdentifyData identData, StorageAtaStructs.AtaCapabilitiesData capData, StorageAtaStructs.AtaStringsData stringsData) {
     public StorageAtaStructs.AtaIdentifyData Identify {
         get;
     } = identData;

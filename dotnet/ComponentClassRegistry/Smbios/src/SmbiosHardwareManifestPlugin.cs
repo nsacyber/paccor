@@ -18,22 +18,18 @@ public sealed class SmbiosHardwareManifestPlugin : HardwareManifestPluginBase {
     }
 
     public override bool GatherHardwareIdentifiers() {
-        bool result = false;
-
-        Smbios smbios = Smbios.GetSmbios();
+        SmbiosData smbios = SmbiosData.Collect();
 
         if (smbios.Structures.Count == 0) {
-            return result;
+            return false;
         }
 
         AddComponentsToManifestV2(smbios.Structures, ManifestV2);
 
-        result = true;
-
-        return result;
+        return true;
     }
 
-    public static void AddComponentsToManifestV2(IDictionary<int, IList<SmbiosTable>> structures, ManifestV2 manifest) {
+    internal static void AddComponentsToManifestV2(IDictionary<int, IList<SmbiosTable>> structures, ManifestV2 manifest) {
         string dmtfRegistryOid = OidsUtils.Find(TCG_REGISTRY_COMPONENTCLASS_NODE.TcgRegistryComponentclassDmtf);
 
         foreach (int type in structures.Keys) {
@@ -135,7 +131,7 @@ public sealed class SmbiosHardwareManifestPlugin : HardwareManifestPluginBase {
         }
     }
 
-    public static string Strref(SmbiosTable table, int offset) {
+    internal static string Strref(SmbiosTable table, int offset) {
         if (offset >= table.Data.Length) {
             return "";
         }
@@ -143,7 +139,7 @@ public sealed class SmbiosHardwareManifestPlugin : HardwareManifestPluginBase {
         return index > 0 ? table.Strings[table.Data[offset]-1] : "";
     }
 
-    public static string Value(SmbiosTable table, int offset, int length = 1) {
+    internal static string Value(SmbiosTable table, int offset, int length = 1) {
         int end = offset + length;
         byte[] data;
         if (end <= table.Data.Length) {
@@ -155,11 +151,11 @@ public sealed class SmbiosHardwareManifestPlugin : HardwareManifestPluginBase {
         return Convert.ToHexString(data);
     }
 
-    public static bool BitField(SmbiosTable table, int offset, int testValue) {
+    internal static bool BitField(SmbiosTable table, int offset, int testValue) {
         return offset < table.Data.Length && table.Data[offset] != testValue;
     }
 
-    public static bool BitField(SmbiosTable table, int offset, int mask, int testValue) {
+    internal static bool BitField(SmbiosTable table, int offset, int mask, int testValue) {
         return offset < table.Data.Length && (table.Data[offset] & mask) != testValue;
     }
 }

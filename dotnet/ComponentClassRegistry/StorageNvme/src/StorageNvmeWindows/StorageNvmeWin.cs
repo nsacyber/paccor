@@ -11,7 +11,7 @@ using System.Text;
 namespace StorageNvme.Windows;
 
 [SupportedOSPlatform("windows")]
-public class StorageNvmeWin : IStorageNvme {
+internal class StorageNvmeWin : IStorageNvme {
     public bool CollectNvmeData(out List<StorageNvmeData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = [];
         bool noProblems = true;

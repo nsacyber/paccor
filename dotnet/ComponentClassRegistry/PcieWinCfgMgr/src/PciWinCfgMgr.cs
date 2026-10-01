@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace PcieWinCfgMgr;
 
-public class PciWinCfgMgr {
+internal class PciWinCfgMgr {
     public static bool GetAllPciDeviceInstanceIds(out List<string> pciDeviceInstanceIdsW) {
         string filter = CfgConstants.PCI_DEVICEID_PREFIX;
         uint flags = CfgConstants.CM_GETIDLIST_FILTER_ENUMERATOR;

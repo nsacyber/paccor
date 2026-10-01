@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace StorageAta;
-public class StorageAtaConstants {
+internal class StorageAtaConstants {
     public static readonly uint ATA_LOG_SIZE_BYTES = 512;
 
     public enum AtaCommand : byte {

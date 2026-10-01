@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace StorageScsi;
 
-public class StorageScsiStructs {
+internal class StorageScsiStructs {
     [StructLayout(LayoutKind.Sequential)]
     public struct ScsiInquiryDataNoVendorSpecific {
         public byte PeripheralQualifierAndDeviceType;

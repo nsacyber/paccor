@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 namespace StorageLib.Linux;
 
 [SupportedOSPlatform("linux")]
-public static class StorageLinux {
+internal static class StorageLinux {
     
     public static string[] GetPhysicalDevicePaths(ImmutableList<StorageDiskDescriptor> paths, StorageLinuxConstants.BlockType type) {
         string[] matches = paths

@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 
 namespace StorageNvme;
-public class StorageNvmeHelpers {
+internal class StorageNvmeHelpers {
     public static bool CollectNvmeData(out List<StorageNvmeData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = new();
         bool result = false;

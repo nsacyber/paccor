@@ -5,7 +5,7 @@ using System.Runtime.Versioning;
 namespace StorageNvme.Windows;
 
 [SupportedOSPlatform("windows")]
-public class StorageNvmeWinStructs {
+internal class StorageNvmeWinStructs {
     [StructLayout(LayoutKind.Sequential)]
     public struct IntelNvmePassthroughParameters {
         // NVME_PASS_THROUGH_PARAMETERS

@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 namespace StorageNvme.Linux;
 
 [SupportedOSPlatform("linux")]
-public class StorageNvmeLinux : IStorageNvme {
+internal class StorageNvmeLinux : IStorageNvme {
     public StorageNvmeLinux() {
     }
 

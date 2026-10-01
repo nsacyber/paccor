@@ -6,7 +6,7 @@ using System.Runtime.Versioning;
 namespace StorageLib.Linux;
 
 [SupportedOSPlatform("linux")]
-public static class StorageLinuxImports {
+internal static class StorageLinuxImports {
     private const string LibcName = "libc";
 
     [DllImport(LibcName, SetLastError = true)]

@@ -19,22 +19,18 @@ public sealed class PcieHardwareManifestPlugin : HardwareManifestPluginBase {
     }
 
     public override bool GatherHardwareIdentifiers() {
-        bool result = false;
-
-        Pcie pcie = Pcie.GetPcie();
+        PcieData pcie = PcieData.Collect();
 
         if (!pcie.Valid) {
-            return result;
+            return false;
         }
 
         AddComponentsToManifestV2(pcie.Devices, ManifestV2);
 
-        result = pcie.Valid;
-
         return true;
     }
 
-    public static void AddComponentsToManifestV2(IDictionary<int, IList<PcieDevice>> devices, ManifestV2 manifest) {
+    internal static void AddComponentsToManifestV2(IDictionary<int, IList<PcieDevice>> devices, ManifestV2 manifest) {
         string pcieRegistryOid = OidsUtils.Find(TCG_REGISTRY_COMPONENTCLASS_NODE.TcgRegistryComponentclassPcie);
 
         foreach (int type in devices.Keys) {
