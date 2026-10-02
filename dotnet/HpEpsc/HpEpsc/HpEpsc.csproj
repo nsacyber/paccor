@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Authors>NSA Cybersecurity Directorate</Authors>
+    <PackageId>paccor.hp.epsc</PackageId>
+    <PackageVersion>0.1.0</PackageVersion>
+    <Description>Prototype hardware manifest plugin for the HP Endpoint Security Controller (EpSC). Requires HP's EpSC cmdlets (the HP.Security or HP.Validator module).</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <IsPackable>false</IsPackable><!--Prototype. Not ready to publish.-->
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="paccor.HardwareManifestPlugin" Version="2.2.0" /><!--2.2 adds GatherComponentEvidence-->
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="HpEpscCli" />
+    <InternalsVisibleTo Include="HpEpscTests" />
+  </ItemGroup>
+</Project>
