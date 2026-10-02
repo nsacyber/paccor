@@ -2,7 +2,7 @@ using StorageLib;
 
 namespace StorageScsi;
 
-public class StorageScsiData(StorageScsiStructs.ScsiInquiryDataNoVendorSpecific inquiry, byte[] vpd80, byte[] vpd83) {
+internal class StorageScsiData(StorageScsiStructs.ScsiInquiryDataNoVendorSpecific inquiry, byte[] vpd80, byte[] vpd83) {
     public StorageScsiStructs.ScsiInquiryDataNoVendorSpecific Inquiry {
         get;
     } = inquiry;

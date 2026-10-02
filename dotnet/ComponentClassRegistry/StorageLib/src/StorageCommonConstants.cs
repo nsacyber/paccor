@@ -1,6 +1,6 @@
 ﻿namespace StorageLib;
 
-public class StorageCommonConstants {
+internal class StorageCommonConstants {
 
     
 }

@@ -4,7 +4,7 @@ using System.Runtime.Versioning;
 namespace StorageLib.Windows;
 
 [SupportedOSPlatform("windows")]
-public class StorageWinStructs {
+internal class StorageWinStructs {
     [StructLayout(LayoutKind.Sequential)]
     public struct SrbIoControl {
         // SRB_IO_CONTROL

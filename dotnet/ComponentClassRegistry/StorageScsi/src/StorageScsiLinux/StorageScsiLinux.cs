@@ -10,7 +10,7 @@ using static StorageLib.Windows.StorageWinStructs;
 namespace StorageScsi.Linux;
 
 [SupportedOSPlatform("linux")]
-public class StorageScsiLinux : IStorageScsi {
+internal class StorageScsiLinux : IStorageScsi {
     public bool CollectScsiData(out List<StorageScsiData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = new();
         bool noProblems = true;

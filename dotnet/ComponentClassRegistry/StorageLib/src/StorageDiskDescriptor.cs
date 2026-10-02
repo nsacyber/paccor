@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace StorageLib;
-public class StorageDiskDescriptor(string diskId) {
+internal class StorageDiskDescriptor(string diskId) {
     public string DiskId {
         get;
     } = diskId;

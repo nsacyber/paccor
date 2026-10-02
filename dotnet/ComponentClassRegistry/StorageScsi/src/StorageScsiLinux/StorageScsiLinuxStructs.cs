@@ -4,5 +4,5 @@ using System.Runtime.Versioning;
 namespace StorageScsi.Linux;
 
 [SupportedOSPlatform("linux")]
-public class StorageScsiLinuxStructs {
+internal class StorageScsiLinuxStructs {
 }

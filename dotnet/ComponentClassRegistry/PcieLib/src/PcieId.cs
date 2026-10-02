@@ -1,6 +1,6 @@
 ﻿namespace PcieLib;
 
-public class PcieId {
+internal class PcieId {
     public byte[] Data {
         get;
         private set;

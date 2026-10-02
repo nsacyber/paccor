@@ -116,7 +116,7 @@ namespace SmbiosTests {
         public void TestSampleDataA2() {
             byte[] data = Convert.FromBase64String(RegistrySampleDataA2Base64);
             ManifestV2 manifestV2 = new();
-            Dictionary<int, IList<SmbiosTable>> structures = Smbios.Smbios.ParseSmbiosData(data);
+            Dictionary<int, IList<SmbiosTable>> structures = SmbiosData.ParseSmbiosData(data);
             SmbiosHardwareManifestPlugin.AddComponentsToManifestV2(structures, manifestV2);
             string jsonManifestV2 = manifestV2.ToString();
 
@@ -131,7 +131,7 @@ namespace SmbiosTests {
         public void TruncatedStringAreaIsInvalidAndDoesNotThrow() {
             byte[] data = [0x01, 0x04, 0x00, 0x00, (byte)'a'];
 
-            Dictionary<int, IList<SmbiosTable>> structures = Smbios.Smbios.ParseSmbiosData(data);
+            Dictionary<int, IList<SmbiosTable>> structures = SmbiosData.ParseSmbiosData(data);
 
             Assert.That(structures[0x01], Has.Count.EqualTo(1));
             Assert.That(structures[0x01][0].Valid, Is.False);

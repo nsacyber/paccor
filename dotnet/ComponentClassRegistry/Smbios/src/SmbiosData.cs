@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Smbios {
-    public class Smbios {
+    internal class SmbiosData {
         public static readonly string WindowsQueryScope = $"root\\WMI";
         public static readonly string WindowsQueryString = "SELECT * FROM MSSMBios_RawSMBiosTables";
         public static readonly string LinuxPathEntryTable = "/sys/firmware/dmi/tables/smbios_entry_point";
@@ -45,7 +45,7 @@ namespace Smbios {
         /// Calls internal methods to gather raw SMBIOS data from the OS. Then parses that data into a dictionary of SmbiosTable objects.
         /// </summary>
         /// <returns>Smbios data organized by structure type.</returns>
-        public static Smbios GetSmbios() {
+        public static SmbiosData Collect() {
             int majorVersion = 0;
             int minorVersion = 0;
             byte[] data = Array.Empty<byte>();
@@ -57,7 +57,7 @@ namespace Smbios {
             }
 
             // Parse full smbios table into objects
-            Smbios smbios = new() {
+            SmbiosData smbios = new() {
                 MajorVersion = majorVersion,
                 MinorVersion = minorVersion,
                 Structures = ParseSmbiosData(data)

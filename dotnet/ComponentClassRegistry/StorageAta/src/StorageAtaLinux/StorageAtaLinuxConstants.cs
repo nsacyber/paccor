@@ -4,7 +4,7 @@ using System.Runtime.Versioning;
 namespace StorageAta.Linux;
 
 [SupportedOSPlatform("linux")]
-public class StorageAtaLinuxConstants {
+internal class StorageAtaLinuxConstants {
     public enum AtaPassThroughOpCodes : byte {
         AtaPassThrough16 = 0x85
     }

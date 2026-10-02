@@ -1,5 +1,5 @@
 ﻿namespace Smbios {
-    public class SmbiosTable {
+    internal class SmbiosTable {
         public int Type {
             get;
             private set;

@@ -17,6 +17,7 @@ namespace HardwareManifestPlugin {
             protected set;
         } = false;
 
+        [Obsolete]
         public bool CollectsV3HardwareInformation {
             get;
             protected set;
@@ -31,6 +32,12 @@ namespace HardwareManifestPlugin {
 
         public bool GatherHardwareIdentifiers(string[] args) {
             return GatherHardwareIdentifiers();
+        }
+
+        public virtual bool SupportsComponentEvidence => false;
+
+        public virtual IReadOnlyList<ComponentEvidence> GatherComponentEvidence(byte[] nonce) {
+            return [];
         }
     }
 }

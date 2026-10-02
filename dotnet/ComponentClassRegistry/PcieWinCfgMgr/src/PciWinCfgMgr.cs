@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace PcieWinCfgMgr;
 
-public class PciWinCfgMgr {
+internal class PciWinCfgMgr {
     public static bool GetAllPciDeviceInstanceIds(out List<string> pciDeviceInstanceIdsW) {
         string filter = CfgConstants.PCI_DEVICEID_PREFIX;
         uint flags = CfgConstants.CM_GETIDLIST_FILTER_ENUMERATOR;
@@ -48,22 +48,38 @@ public class PciWinCfgMgr {
         return GetDevInterfaces(out diskDeviceInterfaceIdsW, guid);
     }
 
-    // Public so other libraries can use these ids as handles
-    public static bool GetDevInterfaces(out List<string> deviceInterfaceIdsW, Guid guid) {
-        deviceInterfaceIdsW = [];
-        
-        IntPtr pDeviceId = IntPtr.Zero; // List all Interfaces
-        uint flags = CfgConstants.CM_GET_DEVICE_INTERFACE_LIST_ALL_DEVICES;
+    public static bool GetNetAdapterInterfaceGuid(out Guid interfaceGuid, string deviceInstanceId) {
+        interfaceGuid = Guid.Empty;
 
-        // Get the buffer size required to store all the device interface IDs
-        CfgConstants.ConfigRet response = CfgImports.CM_Get_Device_Interface_List_SizeW(out uint dataLength, ref guid, pDeviceId, flags);
-        
-        if (response != CfgConstants.ConfigRet.CR_SUCCESS) {
+        if (!GetDevInterfaces(out List<string> interfaceIds, CfgConstants.GUID_NDIS_LAN_CLASS, deviceInstanceId) || interfaceIds.Count == 0) {
             return false;
         }
-        
+
+        string referenceString = interfaceIds[0][(interfaceIds[0].LastIndexOf('\\') + 1)..];
+        return Guid.TryParse(referenceString, out interfaceGuid);
+    }
+
+    // Public so other libraries can use these ids as handles
+    public static bool GetDevInterfaces(out List<string> deviceInterfaceIdsW, Guid guid) {
+        return GetDevInterfaces(out deviceInterfaceIdsW, guid, null);
+    }
+
+    // List the interfaces of one device instance, or of all devices when deviceInstanceId is null
+    public static bool GetDevInterfaces(out List<string> deviceInterfaceIdsW, Guid guid, string? deviceInstanceId) {
+        deviceInterfaceIdsW = [];
+
+        IntPtr pDeviceId = deviceInstanceId == null ? IntPtr.Zero : Marshal.StringToHGlobalUni(deviceInstanceId);
+        uint flags = CfgConstants.CM_GET_DEVICE_INTERFACE_LIST_ALL_DEVICES;
         IntPtr dataPtr = IntPtr.Zero;
+
         try {
+            // Get the buffer size required to store all the device interface IDs
+            CfgConstants.ConfigRet response = CfgImports.CM_Get_Device_Interface_List_SizeW(out uint dataLength, ref guid, pDeviceId, flags);
+
+            if (response != CfgConstants.ConfigRet.CR_SUCCESS) {
+                return false;
+            }
+
             // Allocate memory for the device interface IDs given the previous dataLength response
             dataPtr = Marshal.AllocHGlobal((int)dataLength*2); // double because of wide strings
 
@@ -82,6 +98,7 @@ public class PciWinCfgMgr {
         } finally {
             // Free allocated memory
             Marshal.FreeHGlobal(dataPtr);
+            Marshal.FreeHGlobal(pDeviceId);
         }
 
         return true;

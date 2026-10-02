@@ -10,6 +10,7 @@
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageId>paccor.pcie</PackageId>
+    <Description>Hardware manifest plugin that collects component identifiers according to the TCG PCIe Component Class Registry on Windows and Linux.</Description>
     <PackageVersion>$(Version)</PackageVersion><!--Defined in shared props file-->
     <PackageTags>paccor;platform;certificate;hardware;manifest;component;class;registry;pci;pcie;evidence;collection</PackageTags>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -23,12 +24,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="paccor.HardwareManifestPlugin" Version="2.1.0" />
+    <PackageReference Include="paccor.HardwareManifestPlugin" Version="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\PcieLib\PcieLib.csproj" />
     <ProjectReference Include="..\PcieWinCfgMgr\PcieWinCfgMgr.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PcieLibTests" />
   </ItemGroup>
 
   <ItemGroup>

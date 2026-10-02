@@ -10,6 +10,7 @@
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageId>paccor.storage.storageata</PackageId>
+    <Description>Internal dependency of paccor.storage: reads ATA IDENTIFY DEVICE data.</Description>
     <PackageVersion>$(Version)</PackageVersion>
     <!--Defined in shared props file-->
     <PackageTags>paccor;storage;ata</PackageTags>
@@ -25,6 +26,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\StorageLib\StorageLib.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Storage" />
+    <InternalsVisibleTo Include="StorageTests" />
   </ItemGroup>
 
   <ItemGroup>

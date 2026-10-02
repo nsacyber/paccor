@@ -1,8 +1,9 @@
 ﻿using System.Text.RegularExpressions;
 
 namespace PcieWinCfgMgr;
-public class CfgConstants {
+internal class CfgConstants {
     public static readonly Guid GUID_DEVINTERFACE_DISK = new(0x53f56307, 0xb6bf, 0x11d0, 0x94, 0xf2, 0x00, 0xa0, 0xc9, 0x1e, 0xfb, 0x8b); // ntddstor.h
+    public static readonly Guid GUID_NDIS_LAN_CLASS = new(0xad498944, 0x762f, 0x11d0, 0x8d, 0xcb, 0x00, 0xc0, 0x4f, 0xc3, 0x35, 0x8c); // ntddndis.h
     public static readonly Guid GUID_PCI_DEVICE_DEVPKEY = new(0x3ab22e31, 0x8264, 0x4b4e, 0x9a, 0xf5, 0xa8, 0xd2, 0xd8, 0xe3, 0x3e, 0x62); // pciprop.h
     public static readonly CfgStructs.DevPropKey DEVPKEY_PciDevice_BaseClass = new() { DEVPROPGUID = GUID_PCI_DEVICE_DEVPKEY, DEVPROPID = 0x03 }; // pciprop.h
     public static readonly CfgStructs.DevPropKey DEVPKEY_PciDevice_SubClass = new() { DEVPROPGUID = GUID_PCI_DEVICE_DEVPKEY, DEVPROPID = 0x04 }; // pciprop.h

@@ -1,5 +1,5 @@
 ﻿namespace StorageNvme;
-public class StorageNvmeConstants {
+internal class StorageNvmeConstants {
     public static readonly uint NVME_IDENTIFY_DATA_BUFFER_SIZE = 4096;
 
     // NVMe Constants

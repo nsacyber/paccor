@@ -6,7 +6,8 @@
     <Nullable>enable</Nullable>
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageId>paccor.HardwareManifestPluginManager</PackageId>
-    <PackageVersion>2.1.0</PackageVersion>
+    <Description>Loads paccor hardware manifest plugins by name so a .NET program can collect component identifiers for TCG Platform Certificates.</Description>
+    <PackageVersion>2.1.1</PackageVersion>
     <PackageTags>paccor;platform;certificate;hardware;manifest;plugin;manager</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -19,17 +20,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Serilog" Version="4.1.0" />
+    <PackageReference Include="Serilog" Version="4.4.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\HardwareManifestPlugin\HardwareManifestPlugin.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <!--Source Link -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
-  </ItemGroup>
   <ItemGroup>
     <!--Package resources -->
     <None Include="..\..\..\LICENSE.md" Pack="true" PackagePath="LICENSE.md" />

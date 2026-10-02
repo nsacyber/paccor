@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 
 namespace StorageNvme;
-public class StorageNvmeStructs {
+internal class StorageNvmeStructs {
 
     [StructLayout(LayoutKind.Sequential)]
     public struct NvmeIdentifyControllerData {

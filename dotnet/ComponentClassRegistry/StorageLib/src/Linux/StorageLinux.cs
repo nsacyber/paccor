@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 namespace StorageLib.Linux;
 
 [SupportedOSPlatform("linux")]
-public static class StorageLinux {
+internal static class StorageLinux {
     
     public static string[] GetPhysicalDevicePaths(ImmutableList<StorageDiskDescriptor> paths, StorageLinuxConstants.BlockType type) {
         string[] matches = paths
@@ -39,66 +39,68 @@ public static class StorageLinux {
         throw new InvalidOperationException(errMsg, lastException);
     }
     
-    private static ImmutableList<StorageDiskDescriptor> AttemptPhysicalDevicePathResolution()
-    {
-        Tuple<int, string, string> lsblk =
-            StorageLinuxImports.LsblkPhysicalDisks()
-                .GetAwaiter()
-                .GetResult();
+    private static ImmutableList<StorageDiskDescriptor> AttemptPhysicalDevicePathResolution() {
+        Dictionary<string, List<string>> disksById = ReadDisksById();
+        List<StorageLinuxDiskDescriptor> matches = [];
 
-        Tuple<int, string, string> byId =
-            StorageLinuxImports.ListDisksById()
-                .GetAwaiter()
-                .GetResult();
-
-        string lsblkOutput = lsblk.Item3; // lsblkOutput should have each PD on separate line with form: path maj:min
-        string disksById = byId.Item3; // Custom format. Each line: path under /dev/,path under /dev/disk/by-id
-        Dictionary<string, List<string>> parsingDisksById = [];
-        foreach (string disk in disksById.Split(Environment.NewLine, StringSplitOptions.TrimEntries)) {
-            string[] line = disk.Split(',', StringSplitOptions.TrimEntries);
-
-            if (line.Length < 2) {
+        // Each entry in /sys/block is a whole disk. Its dev file holds major:minor. Sorted for a stable component order.
+        foreach (string blockFolder in Directory.GetDirectories(StorageLinuxConstants.SYS_BLOCK_DIR).Order(StringComparer.Ordinal)) {
+            string devFile = Path.Combine(blockFolder, "dev");
+            if (!File.Exists(devFile)) {
                 continue;
             }
-            
-            if (!parsingDisksById.ContainsKey(line[0])) {
-                parsingDisksById.Add(line[0], []);
+
+            string majMin = File.ReadAllText(devFile).Trim();
+            string devicePath = "/dev/" + Path.GetFileName(blockFolder).Replace('!', '/'); // sysfs encodes '/' in device names as '!'
+
+            if (!Regex.IsMatch(majMin, "^[0-9]+:[0-9]+$") || !disksById.TryGetValue(devicePath, out List<string>? pathsById)) {
+                continue;
             }
 
-            List<string> value = parsingDisksById[line[0]];
-            value.Add(line[1]);
-            parsingDisksById[line[0]] = value;
+            int major = int.Parse(majMin.Split(':')[0]);
+            matches.Add(new(devicePath, ClassifyBlockDevice(major, pathsById)));
         }
-        
-        List<StorageLinuxDiskDescriptor> matches = [];
-        string[] devs = lsblkOutput.Split('\n'); // each device in devs should have the form: path maj:min 
-        foreach (string dev in devs) {
-            string[] devInfo = dev.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (devInfo.Length >= 2 && Regex.IsMatch(devInfo[1], "^[0-9]+:[0-9]+$")) {
-                if (!parsingDisksById.TryGetValue(devInfo[0], out List<string>? pathsById) || pathsById.Count == 0) {
-                    continue;
-                }
-                
-                int maj = int.Parse(devInfo[1].Split(':')[0]);
-                StorageLinuxConstants.BlockType type = StorageLinuxConstants.BlockType.NOT_SUPPORTED;
-                switch (maj) {
-                    case 8:
-                        if (pathsById.Any(x => x.StartsWith("/dev/disk/by-id/ata-"))) {
-                            type = StorageLinuxConstants.BlockType.ATA;
-                        } else if (pathsById.Any(x => x.StartsWith("/dev/disk/by-id/scsi-"))) {
-                            type = StorageLinuxConstants.BlockType.SCSI;
-                        }
-                        break;
-                    case 259:
-                        if (pathsById.Any(x => x.StartsWith("/dev/disk/by-id/nvme-"))) {
-                            type = StorageLinuxConstants.BlockType.NVME;
-                        }
-                        break;
-                }
-                matches.Add(new (devInfo[0], type));
-            }
-        }
-        
+
         return [.. matches]; // convert to ImmutableList
+    }
+
+    /// <summary>
+    /// Maps each disk's device path to its /dev/disk/by-id links. Partitions and unsupported link types are skipped.
+    /// </summary>
+    private static Dictionary<string, List<string>> ReadDisksById() {
+        Dictionary<string, List<string>> disksById = [];
+
+        foreach (string link in Directory.EnumerateFileSystemEntries(StorageLinuxConstants.DISKS_BY_ID_DIR)) {
+            string name = Path.GetFileName(link);
+            if (name.Contains("-part") || !StorageLinuxConstants.SUPPORTED_BY_ID_PREFIXES.Any(name.StartsWith)) {
+                continue;
+            }
+
+            FileSystemInfo? target = File.ResolveLinkTarget(link, returnFinalTarget: true);
+            if (target == null) {
+                continue;
+            }
+
+            if (!disksById.TryGetValue(target.FullName, out List<string>? links)) {
+                links = [];
+                disksById.Add(target.FullName, links);
+            }
+            links.Add(link);
+        }
+
+        return disksById;
+    }
+
+    private static StorageLinuxConstants.BlockType ClassifyBlockDevice(int major, List<string> pathsById) {
+        return major switch {
+            8 when HasByIdPrefix(pathsById, "ata-") => StorageLinuxConstants.BlockType.ATA,
+            8 when HasByIdPrefix(pathsById, "scsi-") => StorageLinuxConstants.BlockType.SCSI,
+            259 when HasByIdPrefix(pathsById, "nvme-") => StorageLinuxConstants.BlockType.NVME,
+            _ => StorageLinuxConstants.BlockType.NOT_SUPPORTED
+        };
+    }
+
+    private static bool HasByIdPrefix(List<string> pathsById, string prefix) {
+        return pathsById.Any(path => path.StartsWith(StorageLinuxConstants.DISKS_BY_ID_DIR + "/" + prefix));
     }
 }

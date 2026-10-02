@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 
 namespace StorageScsi;
-public class StorageScsiHelpers {
+internal class StorageScsiHelpers {
     public static bool CollectScsiData(out List<StorageScsiData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = new();
         bool result = false;

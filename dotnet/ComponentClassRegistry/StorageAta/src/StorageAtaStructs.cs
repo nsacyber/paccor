@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 
 namespace StorageAta;
-public class StorageAtaStructs {
+internal class StorageAtaStructs {
     [StructLayout(LayoutKind.Sequential)]
     public struct AtaPageDataWords {
         [MarshalAs(UnmanagedType.U2)] public ushort Word0;

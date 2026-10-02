@@ -6,7 +6,7 @@ using System.Runtime.Versioning;
 namespace StorageLib.Windows;
 
 [SupportedOSPlatform("windows")]
-public class StorageWin {
+internal class StorageWin {
     public static uint CTL_CODE(uint deviceType, uint function, uint method, uint access) {
         return ((deviceType << 16) | (access << 14) | (function << 2) | method);
     }
@@ -200,15 +200,7 @@ public class StorageWin {
     }
 
     public static int GetNumPhysicalDisks() {
-        int num = 2048;
-        /* AV software is conflicting with powershell
-        Task<Tuple<int, string, string>> task = StorageWinImports.PowershellNumPhysicalDisks();
-        Tuple<int, string, string> results = task.Result;
-        if (task.Exception == null) {
-            num = int.Parse(results.Item3);
-        }
-        */
-        return num;
+        return 2048; // Upper bound on PhysicalDrive numbers to probe
     }
 
     public static ImmutableList<StorageDiskDescriptor> DescribePhysicalDisks() {

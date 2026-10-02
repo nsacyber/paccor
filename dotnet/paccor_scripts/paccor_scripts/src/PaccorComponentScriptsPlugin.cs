@@ -20,7 +20,6 @@ namespace paccor_scripts {
             Name = "paccor_scripts";
             Description = "paccor component gathering scripts";
             CollectsV2HardwareInformation = true;
-            CollectsV3HardwareInformation = false;
         }
 
         public override bool GatherHardwareIdentifiers() {

@@ -8,7 +8,7 @@ using static StorageScsi.Windows.StorageScsiWinConstants;
 namespace StorageScsi.Windows;
 
 [SupportedOSPlatform("windows")]
-public class StorageScsiWinStructs {
+internal class StorageScsiWinStructs {
     // ntddscsi.h
     [StructLayout(LayoutKind.Sequential)]
     public struct ScsiPassThroughDirect {

@@ -2,6 +2,6 @@
 using System.Collections.Immutable;
 
 namespace StorageAta;
-public interface IStorageAta {
+internal interface IStorageAta {
     bool CollectAtaData(out List<StorageAtaData> list, ImmutableList<StorageDiskDescriptor> disks);
 }

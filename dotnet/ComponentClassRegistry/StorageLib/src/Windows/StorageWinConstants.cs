@@ -3,7 +3,7 @@
 namespace StorageLib.Windows;
 
 [SupportedOSPlatform("windows")]
-public class StorageWinConstants {// Windows Constants
+internal class StorageWinConstants {// Windows Constants
     public static readonly string DISK_HANDLE_PD = @"\\.\PhysicalDrive{0}"; // PD
     public static readonly string DISK_HANDLE_SCSI = @"\\.\Scsi{0}:"; // SCSI
     public static readonly uint NVME_PASS_THROUGH_SRB_IO_CODE = 0xe0002000;

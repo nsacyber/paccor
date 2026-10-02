@@ -4,7 +4,7 @@ using System.Runtime.Versioning;
 namespace StorageAta.Windows;
 
 [SupportedOSPlatform("windows")]
-public class StorageAtaWinStructs {
+internal class StorageAtaWinStructs {
     [StructLayout(LayoutKind.Sequential)]
     public struct AtaPassThroughDirect {
         [MarshalAs(UnmanagedType.U2)]

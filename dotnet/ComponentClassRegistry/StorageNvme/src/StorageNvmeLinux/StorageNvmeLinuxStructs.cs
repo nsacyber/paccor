@@ -4,7 +4,7 @@ using System.Runtime.Versioning;
 namespace StorageNvme.Linux;
 
 [SupportedOSPlatform("linux")]
-public class StorageNvmeLinuxStructs {
+internal class StorageNvmeLinuxStructs {
 
     [StructLayout(LayoutKind.Sequential)]
     public struct NvmePassthruCmd {

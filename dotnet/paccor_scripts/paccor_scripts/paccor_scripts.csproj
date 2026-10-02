@@ -7,7 +7,8 @@
     <RuntimeIdentifiers>linux-x64;win-x64</RuntimeIdentifiers>
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageId>paccor.paccor_scripts</PackageId>
-    <PackageVersion>2.6.5</PackageVersion>
+    <Description>Hardware manifest plugin that runs paccor's component gathering shell scripts on Windows and Linux.</Description>
+    <PackageVersion>2.7.0</PackageVersion>
     <PackageTags>paccor;platform;certificate;hardware;manifest;scripts;component;class;registry;evidence;collection</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -46,9 +47,7 @@
   </Target>
 
   <ItemGroup>
-    <PackageReference Include="paccor.HardwareManifestPlugin" Version="2.1.0" />
-    <!--Source Link -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.103" PrivateAssets="All" />
+    <PackageReference Include="paccor.HardwareManifestPlugin" Version="2.2.0" />
   </ItemGroup>
   <ItemGroup>
     <!--Package resources -->

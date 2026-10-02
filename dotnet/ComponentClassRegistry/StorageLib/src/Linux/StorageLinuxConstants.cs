@@ -3,7 +3,11 @@
 namespace StorageLib.Linux;
 
 [SupportedOSPlatform("linux")]
-public class StorageLinuxConstants {
+internal class StorageLinuxConstants {
+    public static readonly string SYS_BLOCK_DIR = "/sys/block";
+    public static readonly string DISKS_BY_ID_DIR = "/dev/disk/by-id";
+    public static readonly string[] SUPPORTED_BY_ID_PREFIXES = ["ata-", "scsi-", "nvme-"];
+
     public static readonly byte SCSI_SB_LEN_MAX = 0xFF; 
     /**
      * synchronous SCSI command ioctl, (only in version 3 interface)

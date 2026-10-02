@@ -4,7 +4,7 @@ using System.Runtime.Versioning;
 namespace StorageLib.Linux;
 
 [SupportedOSPlatform("linux")]
-public class StorageLinuxStructs {
+internal class StorageLinuxStructs {
     [StructLayout(LayoutKind.Sequential)]
     public struct SgIoHdr {
         [MarshalAs(UnmanagedType.I4)] 

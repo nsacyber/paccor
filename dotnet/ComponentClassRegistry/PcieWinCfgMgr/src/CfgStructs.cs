@@ -3,7 +3,7 @@
 namespace PcieWinCfgMgr;
 
 // Of course Windows has to make reading static PCIe device information more complicated than necessary.
-public class CfgStructs {
+internal class CfgStructs {
     [StructLayout(LayoutKind.Sequential)]
     public struct SpDevinfoData { // SP_DEVINFO_DATA: setupapi.h
         [MarshalAs(UnmanagedType.U4)] public uint cbSize;

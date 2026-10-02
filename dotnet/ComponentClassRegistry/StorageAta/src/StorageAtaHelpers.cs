@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 
 namespace StorageAta;
-public class StorageAtaHelpers {
+internal class StorageAtaHelpers {
     public static bool CollectAtaData(out List<StorageAtaData> list, ImmutableList<StorageDiskDescriptor> disks) {
         list = new();
         bool result = false;

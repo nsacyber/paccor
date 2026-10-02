@@ -1,3 +1,4 @@
+using HardwareManifestPlugin;
 using HardwareManifestProto;
 using NUnit.Framework;
 
@@ -17,6 +18,69 @@ namespace HardwareManifestPluginTests {
             ManifestV2 v2WithTraits = new Google.Protobuf.JsonParser(settings).Parse<ManifestV2>(V2ManifestJsonStrWithTraits);
             Assert.That(v2WithTraits.PLATFORM.TRAITS.Count, Is.EqualTo(4));
             Assert.That(v2WithTraits.COMPONENTS[0].TRAITS.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void TestPluginsWithoutEvidence() {
+            IHardwareManifestPlugin basePlugin = new IdentifiersOnlyPlugin();
+            IHardwareManifestPlugin interfaceOnlyPlugin = new InterfaceOnlyPlugin();
+
+            Assert.Multiple(() => {
+                Assert.That(basePlugin.SupportsComponentEvidence, Is.False);
+                Assert.That(basePlugin.GatherComponentEvidence(new byte[32]), Is.Empty);
+                Assert.That(interfaceOnlyPlugin.SupportsComponentEvidence, Is.False);
+                Assert.That(interfaceOnlyPlugin.GatherComponentEvidence(new byte[32]), Is.Empty);
+            });
+        }
+
+        [Test]
+        public void TestReturnComponentEvidence() {
+            IHardwareManifestPlugin plugin = new EvidencePlugin();
+            byte[] nonce = [1, 2, 3];
+
+            IReadOnlyList<ComponentEvidence> evidence = plugin.GatherComponentEvidence(nonce);
+
+            Assert.Multiple(() => {
+                Assert.That(plugin.SupportsComponentEvidence, Is.True);
+                Assert.That(evidence, Has.Count.EqualTo(1));
+                Assert.That(evidence[0].EvidenceFormat, Is.EqualTo("TEST_FORMAT"));
+                Assert.That(evidence[0].Evidence, Is.EqualTo(nonce));
+            });
+        }
+
+        private sealed class IdentifiersOnlyPlugin : HardwareManifestPluginBase {
+            public override bool GatherHardwareIdentifiers() {
+                return true;
+            }
+        }
+
+        private sealed class EvidencePlugin : HardwareManifestPluginBase {
+            public override bool GatherHardwareIdentifiers() {
+                return true;
+            }
+
+            public override bool SupportsComponentEvidence => true;
+
+            public override IReadOnlyList<ComponentEvidence> GatherComponentEvidence(byte[] nonce) {
+                return [new ComponentEvidence { ComponentIndex = 0, EvidenceFormat = "TEST_FORMAT", Evidence = nonce }];
+            }
+        }
+
+        // Legacy interface
+        private sealed class InterfaceOnlyPlugin : IHardwareManifestPlugin {
+            public string Name => "";
+            public string Description => "";
+            public bool CollectsV2HardwareInformation => false;
+            public bool CollectsV3HardwareInformation => false;
+            public ManifestV2 ManifestV2 => new();
+
+            public bool GatherHardwareIdentifiers() {
+                return true;
+            }
+
+            public bool GatherHardwareIdentifiers(string[] args) {
+                return true;
+            }
         }
     }
 }

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace PcieLib;
 
-public class PcieDevice {
+internal class PcieDevice {
     public byte[] Config {
         get;
         private set;

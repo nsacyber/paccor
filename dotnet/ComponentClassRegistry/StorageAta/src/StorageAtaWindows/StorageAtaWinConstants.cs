@@ -4,7 +4,7 @@ using System.Runtime.Versioning;
 namespace StorageAta.Windows;
 
 [SupportedOSPlatform("windows")]
-public class StorageAtaWinConstants {
+internal class StorageAtaWinConstants {
     public static readonly uint IOCTL_ATA_PASS_THROUGH = StorageWin.CTL_CODE(StorageWinConstants.IOCTL_SCSI_BASE, 0x040B, StorageWinConstants.IoctlMethodCodes.METHOD_BUFFERED, StorageWinConstants.IoctlFileAccess.FILE_READ_ACCESS | StorageWinConstants.IoctlFileAccess.FILE_WRITE_ACCESS);
     public static readonly uint IOCTL_ATA_PASS_THROUGH_DIRECT = StorageWin.CTL_CODE(StorageWinConstants.IOCTL_SCSI_BASE, 0x040C, StorageWinConstants.IoctlMethodCodes.METHOD_BUFFERED, StorageWinConstants.IoctlFileAccess.FILE_READ_ACCESS | StorageWinConstants.IoctlFileAccess.FILE_WRITE_ACCESS);
     public static readonly uint IOCTL_ATA_MINIPORT = StorageWin.CTL_CODE(StorageWinConstants.IOCTL_SCSI_BASE, 0x040D, StorageWinConstants.IoctlMethodCodes.METHOD_BUFFERED, StorageWinConstants.IoctlFileAccess.FILE_READ_ACCESS | StorageWinConstants.IoctlFileAccess.FILE_WRITE_ACCESS);

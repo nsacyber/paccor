@@ -328,6 +328,18 @@ public class StorageTests {
             Assert.That(StorageHardwareManifestPlugin.SPC_VPD_SN_String(page802), Is.EqualTo(RegistryA32ScsiComponentSample2VpdSn));
         });
     }
+
+    [Test]
+    public void TestScsiVpdSnStringIgnoresBytesPastPageLength() {
+        byte[] emptySerial = new byte[36]; // Page length 0 followed by zero padding, as returned by Hyper-V virtual disks
+        emptySerial[1] = 0x80;
+        byte[] paddedSerial = [0x00, 0x80, 0x00, 0x03, (byte)'A', (byte)'B', (byte)'C', 0x00, 0x00];
+
+        Assert.Multiple(() => {
+            Assert.That(StorageHardwareManifestPlugin.SPC_VPD_SN_String(emptySerial), Is.Empty);
+            Assert.That(StorageHardwareManifestPlugin.SPC_VPD_SN_String(paddedSerial), Is.EqualTo("ABC"));
+        });
+    }
     
     
     
