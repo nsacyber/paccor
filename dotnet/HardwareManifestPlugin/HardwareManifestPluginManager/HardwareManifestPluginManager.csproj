@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageId>paccor.HardwareManifestPluginManager</PackageId>
+    <Description>Loads paccor hardware manifest plugins by name so a .NET program can collect component identifiers for TCG Platform Certificates.</Description>
     <PackageVersion>2.1.1</PackageVersion>
     <PackageTags>paccor;platform;certificate;hardware;manifest;plugin;manager</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

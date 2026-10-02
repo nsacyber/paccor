@@ -10,6 +10,7 @@
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageId>paccor.storage</PackageId>
+    <Description>Hardware manifest plugin that collects ATA, SCSI, and NVMe disk identifiers according to the TCG Storage Component Class Registry on Windows and Linux.</Description>
     <PackageVersion>$(Version)</PackageVersion><!--Defined in shared props file-->
     <PackageTags>paccor;platform;certificate;hardware;manifest;component;class;registry;storage;ata;scsi;nvme;evidence;collection</PackageTags>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -23,7 +24,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="paccor.HardwareManifestPlugin" Version="2.1.1" />
+    <PackageReference Include="paccor.HardwareManifestPlugin" Version="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>

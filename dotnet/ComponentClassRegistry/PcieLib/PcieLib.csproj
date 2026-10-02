@@ -10,6 +10,7 @@
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageId>paccor.pcie.pcielib</PackageId>
+    <Description>Internal dependency of paccor.pcie: parses PCIe configuration space and VPD.</Description>
     <PackageVersion>$(Version)</PackageVersion>
     <!--Defined in shared props file-->
     <PackageTags>paccor;pci;pcie</PackageTags>

@@ -10,6 +10,7 @@
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageId>paccor.storage.storagelib</PackageId>
+    <Description>Internal dependency of paccor.storage: disk discovery and common storage device access.</Description>
     <PackageVersion>$(Version)</PackageVersion>
     <!--Defined in shared props file-->
     <PackageTags>paccor;storage;ata;scsi;nvme</PackageTags>

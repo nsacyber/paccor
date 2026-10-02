@@ -10,6 +10,7 @@
     <Authors>NSA Cybersecurity Directorate</Authors>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageId>paccor.pcie.pciewincfgmgr</PackageId>
+    <Description>Internal dependency of paccor.pcie and paccor.storage: reads PCI device properties through the Windows Configuration Manager.</Description>
     <PackageVersion>$(Version)</PackageVersion>
     <!--Defined in shared props file-->
     <PackageTags>paccor;pci;pcie;windows;cfgmgr32</PackageTags>
