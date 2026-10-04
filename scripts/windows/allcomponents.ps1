@@ -18,10 +18,9 @@ $INCLUDE_SMBIOS_REGISTRY=$true
 $INCLUDE_PCIE_REGISTRY=$true
 $INCLUDE_STORAGE_REGISTRY=$true
 $INCLUDE_TCG_REGISTRY=$false
-#### Expected paths of
-$SMBIOS_REGISTRY_UTILITY="$APP_HOME/SmbiosCli.exe"
-$PCIE_REGISTRY_UTILITY="$APP_HOME/PcieCli.exe"
-$STORAGE_REGISTRY_UTILITY="$APP_HOME/StorageCli.exe"
+$SMBIOS_REGISTRY_UTILITY="$APP_HOME/../SmbiosCli.exe"
+$PCIE_REGISTRY_UTILITY="$APP_HOME/../PcieCli.exe"
+$STORAGE_REGISTRY_UTILITY="$APP_HOME/../StorageCli.exe"
 
 ## Some of the commands below require admin.
 If(!(New-Object Security.Principal.WindowsPrincipal(
@@ -49,19 +48,20 @@ $TCG_REGISTRY_SCRIPT="$APP_HOME/tcg_ccr.ps1" # Functions to collect hardware inf
 Write-Progress -Id 1 -Activity "Gathering component details" -PercentComplete 10
 $platformList=$(parseSystemData)
 $platformObject=$(jsonPlatformObject "$platformList")
-$smbiosRegistryData=""
-$pcieRegistryData=""
-$storageRegistryData=""
 $tcgRegistryData=""
-if ($INCLUDE_SMBIOS_REGISTRY -and (Test-Path -Path "$SMBIOS_REGISTRY_UTILITY")) {
-    $smbiosRegistryData=$(& "$SMBIOS_REGISTRY_UTILITY" "--components-only")
+function collectRegistryComponents ([bool]$include, [string]$utility) {
+    if (!$include) {
+        return ""
+    }
+    if (!(Test-Path -Path "$utility")) {
+        Write-Warning "Registry utility not found, skipping: $utility"
+        return ""
+    }
+    return $(& "$utility" "--components-only")
 }
-if ($INCLUDE_PCIE_REGISTRY -and (Test-Path -Path "$PCIE_REGISTRY_UTILITY")) {
-    $pcieRegistryData=$(& "$PCIE_REGISTRY_UTILITY" "--components-only")
-}
-if ($INCLUDE_STORAGE_REGISTRY -and (Test-Path -Path "$STORAGE_REGISTRY_UTILITY")) {
-    $storageRegistryData=$(& "$STORAGE_REGISTRY_UTILITY" "--components-only")
-}
+$smbiosRegistryData=$(collectRegistryComponents $INCLUDE_SMBIOS_REGISTRY "$SMBIOS_REGISTRY_UTILITY")
+$pcieRegistryData=$(collectRegistryComponents $INCLUDE_PCIE_REGISTRY "$PCIE_REGISTRY_UTILITY")
+$storageRegistryData=$(collectRegistryComponents $INCLUDE_STORAGE_REGISTRY "$STORAGE_REGISTRY_UTILITY")
 if ($INCLUDE_TCG_REGISTRY) {
     $tcgRegistryData=$(collectOldTcgRegistryComponents)
 }
