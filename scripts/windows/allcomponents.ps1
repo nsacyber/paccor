@@ -18,7 +18,6 @@ $INCLUDE_SMBIOS_REGISTRY=$true
 $INCLUDE_PCIE_REGISTRY=$true
 $INCLUDE_STORAGE_REGISTRY=$true
 $INCLUDE_TCG_REGISTRY=$false
-#### Expected paths of the registry utilities (installed one level up, in the scripts directory)
 $SMBIOS_REGISTRY_UTILITY="$APP_HOME/../SmbiosCli.exe"
 $PCIE_REGISTRY_UTILITY="$APP_HOME/../PcieCli.exe"
 $STORAGE_REGISTRY_UTILITY="$APP_HOME/../StorageCli.exe"
