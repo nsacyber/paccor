@@ -246,11 +246,17 @@ public class TbsEncoder {
                     .build();
         }
         addAttribute(attributes, TCGObjectIdentifier.tcgAtPlatformConfigUri, uri);
-        addAttribute(attributes, TCGObjectIdentifier.tcgAtPreviousPlatformCertificates, platformInfo.getPreviousPlatformCertificates());
-        addAttribute(attributes, TCGObjectIdentifier.tcgAtCryptographicAnchors, platformInfo.getCryptographicAnchors());
-        addAttribute(attributes, TCGObjectIdentifier.tcgAtPlatformOwnership, platformInfo.getPlatformOwnership());
-        addAttribute(attributes, TCGObjectIdentifier.tcgAtManufacturingAssertions, platformInfo.getManufacturingAssertions());
+        addV2SpecificAttributes(attributes);
         return attributes;
+    }
+
+    private void addV2SpecificAttributes(List<CertificateAttribute> attributes) {
+        if (profile.specVersion() == CertSpecVersion.V2_0) { // Can be converted to switch if later versions also need these attributes
+            addAttribute(attributes, TCGObjectIdentifier.tcgAtPreviousPlatformCertificates, platformInfo.getPreviousPlatformCertificates());
+            addAttribute(attributes, TCGObjectIdentifier.tcgAtCryptographicAnchors, platformInfo.getCryptographicAnchors());
+            addAttribute(attributes, TCGObjectIdentifier.tcgAtPlatformOwnership, platformInfo.getPlatformOwnership());
+            addAttribute(attributes, TCGObjectIdentifier.tcgAtManufacturingAssertions, platformInfo.getManufacturingAssertions());
+        }
     }
 
     private void addPlatformConfigurationAttribute(List<CertificateAttribute> attributes, CertKind kind) {

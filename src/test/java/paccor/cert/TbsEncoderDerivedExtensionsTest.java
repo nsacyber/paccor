@@ -20,6 +20,7 @@ import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.Attribute;
+import org.bouncycastle.asn1.x509.AttributeCertificateInfo;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.ExtendedKeyUsage;
@@ -143,10 +144,13 @@ public class TbsEncoderDerivedExtensionsTest {
     void buildTbs_v11DerivesLegacyDirectoryNameSubjectAlternativeName() throws Exception {
         PlatformCertificateInformationModel pi = sampleAcModel();
         pi.applyHardwareManifest(readHardwareManifest(COMP_JSON_BARE_BONES));
+        pi.setPreviousPlatformCertificates(samplePlatformTraits());
 
         byte[] tbs = new TbsEncoder(pi, CertificateProfile.platformV1_1()).buildTbs(SIG_ALG);
 
         Assertions.assertNotNull(tbs);
+        AttributeCertificateInfo certificateInfo = AttributeCertificateInfo.getInstance(ASN1Primitive.fromByteArray(tbs));
+        Assertions.assertFalse(hasAttribute(certificateInfo, TCGObjectIdentifier.tcgAtPreviousPlatformCertificates));
         GeneralNames names = subjectAlternativeNames(pi);
         Assertions.assertEquals(1, names.getNames().length);
         Assertions.assertEquals(GeneralName.directoryName, names.getNames()[0].getTagNo());
@@ -276,6 +280,16 @@ public class TbsEncoderDerivedExtensionsTest {
     private static boolean hasAttribute(SubjectDirectoryAttributes attributes, org.bouncycastle.asn1.ASN1ObjectIdentifier oid) {
         for (Object attribute : attributes.getAttributes()) {
             if (((Attribute) attribute).getAttrType().equals(oid)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean hasAttribute(AttributeCertificateInfo certificateInfo, org.bouncycastle.asn1.ASN1ObjectIdentifier oid) {
+        for (org.bouncycastle.asn1.ASN1Encodable encoded : certificateInfo.getAttributes()) {
+            Attribute attribute = Attribute.getInstance(encoded);
+            if (attribute.getAttrType().equals(oid)) {
                 return true;
             }
         }
