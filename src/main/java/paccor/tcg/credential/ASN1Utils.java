@@ -12,9 +12,9 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 import lombok.NonNull;
+import lombok.extern.java.Log;
 import paccor.exception.MalformedCredentialException;
 import org.bouncycastle.asn1.ASN1BitString;
 import org.bouncycastle.asn1.ASN1Boolean;
@@ -40,9 +40,8 @@ import org.bouncycastle.asn1.DERUTF8String;
 /**
  * Common methods to transform ASN1 objects.
  */
+@Log
 public class ASN1Utils {
-    private static final Logger LOGGER = Logger.getLogger(ASN1Utils.class.getName());
-
     /**
      * Given a list of ASN1Objects, put all elements into an ASN1 vector.
      * @param list List of ASN1Encodable objects, usually ASN1Objects
@@ -155,7 +154,7 @@ public class ASN1Utils {
         try {
             return decoder.apply(obj);
         } catch (Exception ignored) {
-            LOGGER.log(Level.FINE, "tagAware decoding of obj failed, but allowing to continue.");
+            log.log(Level.FINE, "tagAware decoding of obj failed, but allowing to continue.");
         }
 
         return defaultAnswer;
@@ -293,7 +292,7 @@ public class ASN1Utils {
         ASN1Sequence content = implicitContent(tagged);
         return decodeExplicitlyWrapped(content, decoder)
                 .map(items -> {
-                    LOGGER.warning(field + " uses EXPLICIT tagging. The specification requires IMPLICIT.");
+                    log.warning(field + " uses EXPLICIT tagging. The specification requires IMPLICIT.");
                     return items;
                 })
                 .orElseGet(() -> decodeEach(content, decoder));

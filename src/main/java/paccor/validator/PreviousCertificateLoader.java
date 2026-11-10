@@ -5,9 +5,9 @@ import java.time.Clock;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 import lombok.Builder;
+import lombok.extern.java.Log;
 import org.bouncycastle.cert.X509CertificateHolder;
 import paccor.cert.PlatformCertificate;
 import paccor.crypto.CertificateValidity;
@@ -19,9 +19,8 @@ import paccor.tcg.credential.PlatformConfigurationV3;
  * issuer or trust anchor, and carry a platform configuration.
  */
 @Builder
+@Log
 final class PreviousCertificateLoader {
-    private static final Logger LOGGER = Logger.getLogger(PreviousCertificateLoader.class.getName());
-
     private final X509CertificateHolder issuerCertificate;
     private final List<X509CertificateHolder> trustAnchors;
     @Builder.Default private final Clock clock = Clock.systemUTC();
@@ -49,7 +48,7 @@ final class PreviousCertificateLoader {
 
     private boolean isReadable(File file) {
         if (file == null || !file.exists()) {
-            LOGGER.warning("Rejected previous platform certificate file " + file + ": file does not exist.");
+            log.warning("Rejected previous platform certificate file " + file + ": file does not exist.");
             return false;
         }
         return true;
@@ -58,7 +57,7 @@ final class PreviousCertificateLoader {
     private LoadedPrevious parse(File file) {
         PlatformCertificate certificate = PlatformCertificate.loadSafe(file);
         if (certificate == null) {
-            LOGGER.warning("Rejected previous platform certificate file " + file + ": could not be parsed.");
+            log.warning("Rejected previous platform certificate file " + file + ": could not be parsed.");
             return null;
         }
         return new LoadedPrevious(file, certificate);
@@ -69,7 +68,7 @@ final class PreviousCertificateLoader {
         PlatformConfigurationV3 configuration = Optional.ofNullable(previous.certificate().canonicalizedPlatformConfigurationV3())
                 .orElseGet(() -> previous.certificate().isDelta() ? PlatformConfigurationV3.builder().build() : null);
         if (configuration == null) {
-            LOGGER.warning("Rejected previous platform certificate file " + previous.file()
+            log.warning("Rejected previous platform certificate file " + previous.file()
                     + ": no supported platform configuration was found.");
             return null;
         }
@@ -81,7 +80,7 @@ final class PreviousCertificateLoader {
         boolean signed = candidateIssuers().stream()
                 .anyMatch(issuer -> acceptsFromIssuer(certificate, issuer, checker));
         if (!signed) {
-            LOGGER.warning("Rejected previous platform certificate file " + file + ": " + rejectionReason() + ".");
+            log.warning("Rejected previous platform certificate file " + file + ": " + rejectionReason() + ".");
         }
         return signed;
     }

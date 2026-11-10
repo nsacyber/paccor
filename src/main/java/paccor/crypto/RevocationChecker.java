@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.java.Log;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.CRLDistPoint;
@@ -24,8 +24,8 @@ import paccor.cert.PlatformCertificate;
 /**
  * Performs CRL checks for platform certificates.
  */
+@Log
 public final class RevocationChecker {
-    private static final Logger LOGGER = Logger.getLogger(RevocationChecker.class.getName());
     private final Clock clock;
 
     public RevocationChecker() {
@@ -58,12 +58,12 @@ public final class RevocationChecker {
                     .filter(crl -> isUsable(crl, issuerName, now, verifier))
                     .toList();
             if (usableCrls.stream().noneMatch(crl -> isComplete(crl, platform))) {
-                LOGGER.warning("No complete CRL covering the platform certificate was provided.");
+                log.warning("No complete CRL covering the platform certificate was provided.");
                 return false;
             }
             return usableCrls.stream().noneMatch(crl -> crl.getRevokedCertificate(serial) != null);
         } catch (Exception e) {
-            LOGGER.log(Level.FINE, "CRL validation could not be completed.", e);
+            log.log(Level.FINE, "CRL validation could not be completed.", e);
             return false;
         }
     }
@@ -80,13 +80,13 @@ public final class RevocationChecker {
             return false;
         }
         if (!RECOGNIZED_CRITICAL_EXTENSIONS.containsAll(criticalExtensions(crl))) {
-            LOGGER.warning("Ignoring CRL from " + crl.getIssuer() + ": it has an unrecognized critical extension.");
+            log.warning("Ignoring CRL from " + crl.getIssuer() + ": it has an unrecognized critical extension.");
             return false;
         }
         try {
             return crl.isSignatureValid(verifier);
         } catch (Exception e) {
-            LOGGER.log(Level.FINE, "Ignoring this CRL because its signature could not be verified.", e);
+            log.log(Level.FINE, "Ignoring this CRL because its signature could not be verified.", e);
             return false;
         }
     }

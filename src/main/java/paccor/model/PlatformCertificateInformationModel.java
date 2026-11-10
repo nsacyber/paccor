@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.logging.Logger;
 import paccor.json.AttributesJsonHelper;
 import paccor.json.HardwareManifestJsonHelper;
 import paccor.json.ObjectMapperFactory;
@@ -27,6 +26,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Singular;
+import lombok.extern.java.Log;
 import paccor.normalization.PlatformConfigurationNormalizer;
 import paccor.tcg.credential.ASN1Utils;
 import paccor.tcg.credential.EnumWithStringValue;
@@ -51,10 +51,9 @@ import paccor.tcg.credential.TraitMap;
 @Builder(toBuilder = true)
 @Data
 @NoArgsConstructor
+@Log
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PlatformCertificateInformationModel {
-    private static final Logger LOGGER = Logger.getLogger(PlatformCertificateInformationModel.class.getName());
-
     private BigInteger certSerialNumber;
     private Date notBefore;
     private Date notAfter;
@@ -320,7 +319,7 @@ public class PlatformCertificateInformationModel {
         try {
             return ObjectMapperFactory.get().writeValueAsString(this);
         } catch (Exception e) {
-            LOGGER.warning("Could not serialize the platform model: " + e.getMessage());
+            log.warning("Could not serialize the platform model: " + e.getMessage());
             return null;
         }
     }
@@ -329,7 +328,7 @@ public class PlatformCertificateInformationModel {
         try {
             return Optional.ofNullable(reader.call());
         } catch (Exception e) {
-            Optional.ofNullable(failureMessage).ifPresent(message -> LOGGER.warning(message + ": " + e.getMessage()));
+            Optional.ofNullable(failureMessage).ifPresent(message -> log.warning(message + ": " + e.getMessage()));
             return Optional.empty();
         }
     }

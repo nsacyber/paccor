@@ -205,6 +205,7 @@ public class ValidateCmdPolicyTest extends TestSupport {
         Path current = issue("current", ATTR_V20, addDimm.toString(), "delta",
                 rebase.toString(), rebase, CA_CERT, CA_KEY, "4");
         PlatformCertificate certificate = PlatformCertificate.load(current.toFile());
+        Assertions.assertNotNull(certificate);
         PlatformConfigurationV3 expected = PreviousPlatformCertificateValidator.builder()
                 .previousPlatformCertificates(List.of(base.toFile(), delta.toFile(), rebase.toFile()))
                 .issuerCertificate(CliHelper.loadPKCSafe(CA_CERT))
@@ -236,8 +237,13 @@ public class ValidateCmdPolicyTest extends TestSupport {
     void platformValidityBoundariesAreInclusive() throws Exception {
         Path base = issue("base", ATTR_V20, BASE_COMPONENTS, null, EK_CERT, null, CA_CERT, CA_KEY, "1");
         PlatformCertificate certificate = PlatformCertificate.load(base.toFile());
-        Instant start = certificate.extractNotBefore().toInstant();
-        Instant end = certificate.extractNotAfter().toInstant();
+        Assertions.assertNotNull(certificate);
+        Date notBefore = certificate.extractNotBefore();
+        Assertions.assertNotNull(notBefore);
+        Instant start = notBefore.toInstant();
+        Date notAfter = certificate.extractNotAfter();
+        Assertions.assertNotNull(notAfter);
+        Instant end = notAfter.toInstant();
         Assertions.assertEquals(CertificateValidity.OK, CertificateValidity.at(certificate, start));
         Assertions.assertEquals(CertificateValidity.OK, CertificateValidity.at(certificate, end));
         Assertions.assertEquals(CertificateValidity.NOT_YET_VALID, CertificateValidity.at(certificate, start.minusNanos(1)));
@@ -257,6 +263,19 @@ public class ValidateCmdPolicyTest extends TestSupport {
         String help = command.getSubcommands().get("validate").getUsageMessage();
         Assertions.assertTrue(help.contains("systemUTC"), help);
         Assertions.assertFalse(help.contains("--at"), help);
+    }
+
+    @Test
+    void explicitlyRequestedTrustAndCrlChecksDoNotDisappearWhenGlobsMatchNothing() throws Exception {
+        Path base = issue("base", ATTR_V20, BASE_COMPONENTS, null, EK_CERT, null, CA_CERT, CA_KEY, "1");
+        String missingFiles = tempDir().resolve("missing-*.pem").toString();
+        for (String option : List.of("--trust-anchor", "--crl")) {
+            List<String> output = captureOutput(() -> Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(),
+                    validateWith(base, "--skip-component-validation", "--reference-time", REFERENCE_TIME,
+                            option, missingFiles)));
+            Assertions.assertTrue(output.contains(option.equals("--crl") ? "CRL validation: FAILED"
+                    : "Trust-anchor validation: FAILED"), output.toString());
+        }
     }
 
     @Test
@@ -307,6 +326,7 @@ public class ValidateCmdPolicyTest extends TestSupport {
         Path delta = issue("delta", ATTR_V20, DELTA_COMPONENTS, "delta", base.toString(), base, CA_CERT, CA_KEY, "2");
 
         PlatformCertificate deltaCert = PlatformCertificate.load(delta.toFile());
+        Assertions.assertNotNull(deltaCert);
         Assertions.assertEquals(CertSpecVersion.V2_0, deltaCert.resolvedSpecVersion());
         Assertions.assertEquals(CertType.DELTA, deltaCert.getCertType());
         Assertions.assertFalse(deltaCert.previousPlatformCertificateTraits().isEmpty(),
@@ -399,7 +419,9 @@ public class ValidateCmdPolicyTest extends TestSupport {
         Path unrelated = issue("a-unrelated", ATTR_V11, BASE_COMPONENTS, null, EK_CERT, null, CA_CERT, CA_KEY, "7");
         Path base = issue("b-base", ATTR_V11, BASE_COMPONENTS, null, EK_CERT, null, CA_CERT, CA_KEY, "1");
         Path delta = issue("delta", ATTR_V11, DELTA_COMPONENTS, "delta", base.toString(), null, CA_CERT, CA_KEY, "2");
-        Assertions.assertEquals(CertSpecVersion.V1_1, PlatformCertificate.load(delta.toFile()).resolvedSpecVersion());
+        PlatformCertificate certificate = PlatformCertificate.load(delta.toFile());
+        Assertions.assertNotNull(certificate);
+        Assertions.assertEquals(CertSpecVersion.V1_1, certificate.resolvedSpecVersion());
         Assertions.assertTrue(unrelated.getFileName().toString().compareTo(base.getFileName().toString()) < 0);
 
         Assertions.assertEquals(0, validate(delta, AFTER_DELTA_COMPONENTS, unrelated.toString(), base.toString()));

@@ -6,8 +6,8 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.logging.Logger;
 import lombok.Builder;
+import lombok.extern.java.Log;
 import org.bouncycastle.cert.X509CertificateHolder;
 import paccor.cert.PlatformCertificate;
 import paccor.cert.SubjectAlternativeNameHelper;
@@ -21,9 +21,8 @@ import paccor.tcg.credential.TraitMap;
 
 /** Validates expected components, including previous-platform-certificate materialization. */
 @Builder
+@Log
 public final class ComponentValidationService {
-    private static final Logger LOGGER = Logger.getLogger(ComponentValidationService.class.getName());
-
     private final List<File> previousPlatformCertificates;
     private final X509CertificateHolder issuerCertificate;
     private final List<X509CertificateHolder> trustAnchors;
@@ -33,12 +32,12 @@ public final class ComponentValidationService {
 
     public boolean validate(PlatformCertificate certificate, File jsonFile, String matcherName) {
         if (jsonFile == null || !jsonFile.exists()) {
-            LOGGER.warning("Components JSON file was not found: " + jsonFile);
+            log.warning("Components JSON file was not found: " + jsonFile);
             return false;
         }
         boolean previousCertificatesProvided = hasPreviousCertificates();
         if (certificate.requiresPreviousPlatformCertificates() && !previousCertificatesProvided) {
-            LOGGER.warning("Component validation for delta or rebase certificates requires --prev-pcert.");
+            log.warning("Component validation for delta or rebase certificates requires --prev-pcert.");
             return false;
         }
         HardwareManifestJsonHelper manifest = HardwareManifestJsonHelper.readComponents(jsonFile);
@@ -72,14 +71,14 @@ public final class ComponentValidationService {
         }
         boolean matches = actual != null && !actual.isEmpty()
                 && matcher.covers(expected, actual);
-        if (!matches) LOGGER.fine(() -> "Platform identifier validation failed; expected=" + expected
+        if (!matches) log.fine(() -> "Platform identifier validation failed; expected=" + expected
                 + ", actual=" + actual);
         return matches;
     }
 
     private boolean compare(List<TraitMap> expected, List<TraitMap> actual, ComponentMatcher matcher) {
         ComponentValidationReport report = ComponentValidator.compareComponents(expected, actual, matcher);
-        if (!report.ok()) LOGGER.warning("Component validation issues:" + System.lineSeparator() + report.detail());
+        if (!report.ok()) log.warning("Component validation issues:" + System.lineSeparator() + report.detail());
         return report.ok();
     }
 

@@ -2,17 +2,16 @@ package paccor.tcg.credential;
 
 import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.logging.Logger;
 import lombok.NonNull;
+import lombok.extern.java.Log;
 import org.bouncycastle.asn1.ASN1Sequence;
 import org.bouncycastle.asn1.ASN1String;
 
 /**
  * Static definitions from the Platform Certificate specification(s).
  */
+@Log
 public class Definitions {
-	private static final Logger LOGGER = Logger.getLogger(Definitions.class.getName());
-
 	/**
 	 * URIMAX is a constant used to provide an upper bound on the length of a URI included in the platform certificate.
 	 */
@@ -126,7 +125,7 @@ public class Definitions {
 	public static void warnOnExtraElements(@NonNull ASN1Sequence seq, int knownElements, @NonNull Class<?> type) {
 		Optional.of(seq.size())
 				.filter(size -> size > knownElements)
-				.ifPresent(size -> LOGGER.warning(type.getSimpleName() + " has " + size
+				.ifPresent(size -> log.warning(type.getSimpleName() + " has " + size
 						+ " elements but only " + knownElements + " are defined. The extra elements were ignored."));
 	}
 }

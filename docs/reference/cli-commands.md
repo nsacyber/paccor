@@ -175,12 +175,65 @@ proof of historical validity: appropriate archived CRLs and trusted evidence of 
 attestation time are still needed. The CRL checker is not a complete historical revocation
 reconstruction engine.
 
-Java library callers can inject `Clock` into `IssuerCertificateChecker` and `RevocationChecker`,
-and use `.clock(clock).enforceValidity(true)` on `ComponentValidationService` or
-`PreviousPlatformCertificateValidator` builders. No-argument checker constructors and
-omitted builder clocks default to `Clock.systemUTC()`. Component materialization enforces
-participating previous certificates and their signers; it is not a full validation of the
-current certificate. Issuance defaults are unchanged.
+### Java library validation
+
+`PlatformCertificateValidationService` runs the same policy as `validate`, without CLI
+argument parsing, status output, or exit codes. The CLI delegates to this service.
+Library callers can enable the complete policy with one `.enforceValidity(true)` setting:
+
+```java
+import java.io.File;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import paccor.cert.PlatformCertificate;
+import paccor.validator.PlatformCertificateValidationService;
+import paccor.validator.ValidationReport;
+
+// signer is an X509CertificateHolder; previousFiles is a List<File>.
+PlatformCertificateValidationService service = PlatformCertificateValidationService.builder()
+        .issuerCertificate(signer)
+        .componentsJson(new File("current-components.json"))
+        .previousPlatformCertificates(previousFiles)
+        .enforceValidity(true)
+        .clock(Clock.fixed(Instant.parse("2027-01-15T00:00:00Z"), ZoneOffset.UTC))
+        .build();
+
+PlatformCertificate certificate = PlatformCertificate.load(new File("example-delta.pem"));
+ValidationReport report = service.validate(certificate);
+boolean accepted = report.ok();
+```
+
+An omitted clock defaults to `Clock.systemUTC()`; each invocation captures one instant and
+shares it across all checks. Setting a clock does not enable validity enforcement. With
+enforcement enabled, the service checks the current certificate and its signer as well as
+participating previous certificates and their signers. Issuance defaults are unchanged.
+
+Signature and specification checks always run. A missing signer fails signature validation.
+Components JSON is required unless `.skipComponentValidation(true)` is set; combining that
+setting with a components file is an `IllegalArgumentException`. `validate` requires a
+non-null, parsed `PlatformCertificate`.
+
+Supply `.trustAnchors(certificates)` and `.crls(crls)` to enable the respective optional
+checks. Nonempty lists automatically request those checks. To require a check even when
+the supplied list is empty (for example, after input resolution finds no usable files),
+use `.checkTrust(true)` or `.checkRevocation(true)`; the check will fail rather than silently
+be omitted. Neither validity enforcement nor clock selection requires these inputs.
+Previous-certificate revocation checks are not added.
+
+For diagnostic details, call `service.validateDetailed(certificate)` **instead of**
+`validate`. Its `Result` contains the same acceptance report plus `evaluationTime`,
+`platformValidity`, optional `signerValidity`, specification details, and `trustChecked` /
+`crlChecked` flags. Unrequested trust/CRL checks have `true` acceptance terms in
+`ValidationReport`; the flags distinguish them from checks that actually passed. Observed
+validity statuses remain available even when enforcement is disabled. Failures of participating
+previous certificates also affect component/materialization acceptance.
+
+Lower-level callers can still inject `Clock` into `IssuerCertificateChecker` and
+`RevocationChecker`, or use `.clock(clock).enforceValidity(true)` on
+`ComponentValidationService` and `PreviousPlatformCertificateValidator` builders.
+Those component/materialization services do **not** validate the current certificate's
+signature or validity window; use the shared service for the complete acceptance policy.
 
 Component matching pairs every hardware component with a certificate component. For a delta or rebase certificate, pass the earlier certificates in the chain with `--prev-pcert` (repeatable, globs allowed). The base and deltas are applied in order to produce the expected component list. Every delta component must carry a status. A `removed` or `modified` entry must identify a component from the earlier certificates.
 

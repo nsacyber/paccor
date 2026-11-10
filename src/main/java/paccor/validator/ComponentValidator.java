@@ -3,7 +3,7 @@ package paccor.validator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.logging.Logger;
+import lombok.extern.java.Log;
 import paccor.cert.CertType;
 import paccor.normalization.HexNormalizer;
 import paccor.normalization.PlatformConfigurationNormalizer;
@@ -21,9 +21,8 @@ import paccor.tcg.credential.TraitMap;
 /**
  * Validator for Platform Configuration V3 components.
  */
+@Log
 public final class ComponentValidator {
-    private static final Logger LOGGER = Logger.getLogger(ComponentValidator.class.getName());
-
     private ComponentValidator() {}
 
     /**
@@ -64,7 +63,7 @@ public final class ComponentValidator {
             for (TraitMap component : PlatformConfigurationNormalizer.componentsForValidation(delta)) {
                 Optional<String> problem = applyDeltaComponent(current, component, matcher);
                 if (problem.isPresent()) {
-                    LOGGER.warning("Could not apply delta component (" + summarize(component) + "): " + problem.get());
+                    log.warning("Could not apply delta component (" + summarize(component) + "): " + problem.get());
                     return Optional.empty();
                 }
             }
