@@ -2,7 +2,7 @@ package paccor.crypto;
 
 import java.util.Optional;
 import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.java.Log;
 import paccor.cert.CertSigEncoding;
 import paccor.exception.PaccorException;
 import paccor.exception.SignatureFailedException;
@@ -52,9 +52,8 @@ import org.bouncycastle.crypto.signers.MLDSASigner;
 /**
  * Centralized algorithm support utilities for CLI commands.
  */
+@Log
 public class AlgorithmSupport {
-    private static final Logger LOGGER = Logger.getLogger(AlgorithmSupport.class.getName());
-
     private static final Map<ASN1ObjectIdentifier, String> OID_TO_JCA_SIGNATURE = Map.ofEntries(
             // ECDSA
             Map.entry(X9ObjectIdentifiers.ecdsa_with_SHA1, "SHA1withECDSA"),
@@ -400,7 +399,7 @@ public class AlgorithmSupport {
     public static byte[] ecdsaP1363ToDer(byte[] sig) {
         if (sig == null || sig.length == 0 || sig.length % 2 != 0) {
             String msg = "P1363 signature size is invalid.";
-            LOGGER.log(Level.FINE, msg);
+            log.log(Level.FINE, msg);
             throw new RuntimeException(msg);
         }
 
@@ -415,7 +414,7 @@ public class AlgorithmSupport {
                         }
                     ).getEncoded("DER");
         } catch (Exception e) {
-            LOGGER.log(Level.FINE, "P1363 signature conversion failed", e);
+            log.log(Level.FINE, "P1363 signature conversion failed", e);
             throw new RuntimeException(e);
         }
     }
@@ -454,7 +453,7 @@ public class AlgorithmSupport {
             }
             return signer.getSignature();
         } catch (IOException | OperatorCreationException e) {
-            LOGGER.log(Level.FINE, "Signature failed", e);
+            log.log(Level.FINE, "Signature failed", e);
             throw new SignatureFailedException(e.getMessage(), e);
         }
     }

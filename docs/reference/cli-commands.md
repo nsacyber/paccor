@@ -107,6 +107,7 @@ paccor assemble \
 Validates a certificate against these groups of checks:
 
 - signature verification against `--issuer-cert`
+- platform-certificate validity status (informational by default)
 - issuer trust path, when `--trust-anchor` is given
 - revocation, when `--crl` is given
 - certificate profile/specification checks
@@ -126,6 +127,113 @@ Component validation: SKIPPED (user requested to bypass)
 ```
 
 `--skip-component-validation` cannot be combined with `--components-json`.
+
+### Validity windows and reference time
+
+By default, `validate` reports the platform certificate's validity window but does not require
+it to contain the evaluation time. This applies to both attribute certificates and public key
+certificates. An expired platform certificate can therefore have a valid signature and an overall
+`OK` result:
+
+```text
+Platform certificate validity: EXPIRED as of 2027-01-15T00:00:00Z (not enforced)
+```
+
+Use `--enforce-validity` to require validity windows for **all certificates actually used**:
+the current platform certificate, its signer (even without `--trust-anchor`), previous platform
+certificates used to materialize the configuration, and their signers. Intermediate CAs and
+the self-signed anchor in an accepted trust path must also be valid. Unrelated expired files
+matched by a glob do not cause failure; previous entries before the last rebase that are not
+used in materialization do not need to be valid. With `--skip-component-validation`, previous
+platform certificates are not used or checked. Enforced output ends in `(enforced)`.
+
+The flag does **not** require trust anchors or CRLs, fetch missing evidence, or add revocation
+checks for previous platform certificates. Existing issuer-path validity and CRL freshness
+checks remain enforced whenever `--trust-anchor` or `--crl` is supplied, even without the flag.
+Unusable CRLs can be ignored when another usable CRL supplies the required coverage.
+
+`--reference-time TIMESTAMP` selects one evaluation instant shared by validity-window,
+issuer-path, and CRL freshness checks, including issuer paths for previous certificates.
+Its default is the current systemUTC time. It does **not** enable `--enforce-validity`.
+Use an RFC 3339 (Internet Timestamp Format) timestamp with `Z` or a numeric offset,
+such as `2027-01-15T00:00:00Z` or `2027-01-15T02:00:00+02:00`; fractional seconds are allowed.
+Invalid input is a usage error. Output timestamps are normalized to UTC.
+
+```bash
+paccor validate \
+  --x509v2AttrCert example-delta.pem \
+  --issuer-cert TestCA.cert.example.pem \
+  --prev-pcert example-base.pem \
+  --components-json current-components.json \
+  --reference-time 2027-01-15T00:00:00Z \
+  --enforce-validity
+```
+
+A strict chain must have overlapping validity windows at the chosen instant; an expired
+base causes failure even when the current delta is valid. Historical evaluation is not
+proof of historical validity: appropriate archived CRLs and trusted evidence of the
+attestation time are still needed. The CRL checker is not a complete historical revocation
+reconstruction engine.
+
+### Java library validation
+
+`PlatformCertificateValidationService` runs the same policy as `validate`, without CLI
+argument parsing, status output, or exit codes. The CLI delegates to this service.
+Library callers can enable the complete policy with one `.enforceValidity(true)` setting:
+
+```java
+import java.io.File;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import paccor.cert.PlatformCertificate;
+import paccor.validator.PlatformCertificateValidationService;
+import paccor.validator.ValidationReport;
+
+// signer is an X509CertificateHolder; previousFiles is a List<File>.
+PlatformCertificateValidationService service = PlatformCertificateValidationService.builder()
+        .issuerCertificate(signer)
+        .componentsJson(new File("current-components.json"))
+        .previousPlatformCertificates(previousFiles)
+        .enforceValidity(true)
+        .clock(Clock.fixed(Instant.parse("2027-01-15T00:00:00Z"), ZoneOffset.UTC))
+        .build();
+
+PlatformCertificate certificate = PlatformCertificate.load(new File("example-delta.pem"));
+ValidationReport report = service.validate(certificate);
+boolean accepted = report.ok();
+```
+
+An omitted clock defaults to `Clock.systemUTC()`; each invocation captures one instant and
+shares it across all checks. Setting a clock does not enable validity enforcement. With
+enforcement enabled, the service checks the current certificate and its signer as well as
+participating previous certificates and their signers. Issuance defaults are unchanged.
+
+Signature and specification checks always run. A missing signer fails signature validation.
+Components JSON is required unless `.skipComponentValidation(true)` is set; combining that
+setting with a components file is an `IllegalArgumentException`. `validate` requires a
+non-null, parsed `PlatformCertificate`.
+
+Supply `.trustAnchors(certificates)` and `.crls(crls)` to enable the respective optional
+checks. Nonempty lists automatically request those checks. To require a check even when
+the supplied list is empty (for example, after input resolution finds no usable files),
+use `.checkTrust(true)` or `.checkRevocation(true)`; the check will fail rather than silently
+be omitted. Neither validity enforcement nor clock selection requires these inputs.
+Previous-certificate revocation checks are not added.
+
+For diagnostic details, call `service.validateDetailed(certificate)` **instead of**
+`validate`. Its `Result` contains the same acceptance report plus `evaluationTime`,
+`platformValidity`, optional `signerValidity`, specification details, and `trustChecked` /
+`crlChecked` flags. Unrequested trust/CRL checks have `true` acceptance terms in
+`ValidationReport`; the flags distinguish them from checks that actually passed. Observed
+validity statuses remain available even when enforcement is disabled. Failures of participating
+previous certificates also affect component/materialization acceptance.
+
+Lower-level callers can still inject `Clock` into `IssuerCertificateChecker` and
+`RevocationChecker`, or use `.clock(clock).enforceValidity(true)` on
+`ComponentValidationService` and `PreviousPlatformCertificateValidator` builders.
+Those component/materialization services do **not** validate the current certificate's
+signature or validity window; use the shared service for the complete acceptance policy.
 
 Component matching pairs every hardware component with a certificate component. For a delta or rebase certificate, pass the earlier certificates in the chain with `--prev-pcert` (repeatable, globs allowed). The base and deltas are applied in order to produce the expected component list. Every delta component must carry a status. A `removed` or `modified` entry must identify a component from the earlier certificates.
 

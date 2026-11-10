@@ -62,6 +62,8 @@ public final class CliOptionNames {
     public static final String PREV_PCERT_LONG = "--prev-pcert";
     public static final String TRUST_ANCHOR_LONG = "--trust-anchor";
     public static final String CRL_LONG = "--crl";
+    public static final String ENFORCE_VALIDITY_LONG = "--enforce-validity";
+    public static final String REFERENCE_TIME_LONG = "--reference-time";
     public static final String CERTIFICATE_LONG = "--certificate";
 
 }

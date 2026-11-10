@@ -1,6 +1,6 @@
 package paccor.crypto;
 
-import java.util.logging.Logger;
+import lombok.extern.java.Log;
 import org.bouncycastle.operator.OperatorCreationException;
 import paccor.cli.CliHelper;
 import paccor.exception.InvalidKeyException;
@@ -19,13 +19,11 @@ import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
  * Centralized signature utilities for CLI commands.
  * Uses AlgorithmSupport for algorithm-specific checks.
  */
+@Log
 public final class SignatureService {
-    private static final Logger LOGGER = Logger.getLogger(SignatureService.class.getName());
-
     private SignatureService() {}
 
     public static byte[] sign(byte[] tbs, AlgorithmIdentifier algId, File keyFile) throws PaccorException {
-        // trying sample_testgen1 ways to load the Key.
         PrivateKeyInfo pki = CliHelper.loadCertSafe(keyFile.getPath(), CliHelper.x509type.PRIVATE_KEY);
         if (pki == null) {
             pki = CliHelper.loadCertSafe(keyFile.getPath(), CliHelper.x509type.RSA_PRIVATE_KEY);
@@ -49,7 +47,7 @@ public final class SignatureService {
             try (OutputStream os = verifier.getOutputStream()) { os.write(tbs); }
             return verifier.verify(sig);
         } catch (Exception e) {
-            LOGGER.log(Level.FINE, "Signature verification failed", e);
+            log.log(Level.FINE, "Signature verification failed", e);
             return false;
         }
     }

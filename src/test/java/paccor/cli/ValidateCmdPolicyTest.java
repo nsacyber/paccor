@@ -1,19 +1,40 @@
 package paccor.cli;
 
+import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Handler;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.X509v2CRLBuilder;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import picocli.CommandLine;
 import paccor.cert.CertSpecVersion;
 import paccor.cert.CertType;
 import paccor.cert.PlatformCertificate;
+import paccor.crypto.CertificateValidity;
+import paccor.tcg.credential.PlatformConfigurationV3;
+import paccor.validator.ComponentValidationService;
+import paccor.validator.PreviousPlatformCertificateValidator;
 
 /**
  * End-to-end policy tests for component validation across base, delta, and rebase chains.
@@ -31,6 +52,231 @@ public class ValidateCmdPolicyTest extends TestSupport {
     private static final String BASE_COMPONENTS = "src/test/resources/tutorials/v2/components.json";
     private static final String DELTA_COMPONENTS = "src/test/resources/tutorials/v2/deltacomponents1.json";
     private static final String AFTER_DELTA_COMPONENTS = "src/test/resources/tutorials/v2/rebasecomponents1.json";
+    private static final String REFERENCE_TIME = "2027-01-15T00:00:00Z";
+
+    @Test
+    void platformValidityIsInformationalUnlessEnforcedForAcAndPkc() throws Exception {
+        for (String kind : List.of("ac", "pkc")) {
+            Path expired = issueWithValidity("expired-" + kind, ATTR_V20, BASE_COMPONENTS, null,
+                    EK_CERT, null, CA_CERT, CA_KEY, "10", "20240101", "20260101", kind);
+            Path future = issueWithValidity("future-" + kind, ATTR_V20, BASE_COMPONENTS, null,
+                    EK_CERT, null, CA_CERT, CA_KEY, "11", "20280101", "20300101", kind);
+            List<String> output = captureOutput(() -> Assertions.assertEquals(0,
+                    validateWith(expired, "--skip-component-validation", "--reference-time", REFERENCE_TIME)));
+            Assertions.assertTrue(output.contains("Platform certificate validity: EXPIRED as of "
+                    + REFERENCE_TIME + " (not enforced)"), output.toString());
+            output = captureOutput(() -> Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(),
+                    validateWith(expired, "--skip-component-validation", "--reference-time", REFERENCE_TIME,
+                            "--enforce-validity")));
+            Assertions.assertTrue(output.contains("Platform certificate validity: EXPIRED as of "
+                    + REFERENCE_TIME + " (enforced)"), output.toString());
+            output = captureOutput(() -> Assertions.assertEquals(0,
+                    validateWith(future, "--skip-component-validation", "--reference-time", REFERENCE_TIME)));
+            Assertions.assertTrue(output.contains("Platform certificate validity: NOT_YET_VALID as of "
+                    + REFERENCE_TIME + " (not enforced)"), output.toString());
+            Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(), validateWith(future,
+                    "--skip-component-validation", "--reference-time", REFERENCE_TIME, "--enforce-validity"));
+        }
+    }
+
+    @Test
+    void validityEnforcementDoesNotRequireTrustAnchorsOrCrls() throws Exception {
+        Path base = issue("base", ATTR_V20, BASE_COMPONENTS, null, EK_CERT, null, CA_CERT, CA_KEY, "1");
+        List<String> output = captureOutput(() -> Assertions.assertEquals(0, validateWith(base,
+                "--skip-component-validation", "--reference-time", "2027-01-15T02:00:00+02:00",
+                "--enforce-validity")));
+        Assertions.assertTrue(output.contains("Platform certificate validity: OK as of "
+                + REFERENCE_TIME + " (enforced)"), output.toString());
+        Assertions.assertTrue(output.stream().noneMatch(line -> line.startsWith("Trust-anchor validation:")
+                || line.startsWith("CRL validation:")), output.toString());
+    }
+
+    @Test
+    void signerValidityIsEnforcedEvenWithoutTrustAnchors() throws Exception {
+        Path base = issue("base", ATTR_V20, BASE_COMPONENTS, null, EK_CERT, null, CA_CERT, CA_KEY, "1");
+        for (String[] window : List.of(new String[] {"2024-01-01T00:00:00Z", "2026-01-01T00:00:00Z", "EXPIRED"},
+                new String[] {"2028-01-01T00:00:00Z", "2030-01-01T00:00:00Z", "NOT_YET_VALID"})) {
+            Path signer = issuerWithValidity("signer-" + window[2], CA_CERT, CA_KEY, window[0], window[1]);
+            Assertions.assertEquals(0, validateSignedBy(base, signer.toString(), "--skip-component-validation",
+                    "--reference-time", REFERENCE_TIME));
+            List<String> output = captureOutput(() -> Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(),
+                    validateSignedBy(base, signer.toString(), "--skip-component-validation",
+                            "--reference-time", REFERENCE_TIME, "--enforce-validity")));
+            Assertions.assertTrue(output.contains("Signer certificate validity: " + window[2] + " as of "
+                    + REFERENCE_TIME + " (enforced)"), output.toString());
+            Assertions.assertTrue(output.contains("Signature validation: OK"), output.toString());
+        }
+    }
+
+    @Test
+    void onlyPreviousCertificatesUsedInMaterializationMustBeValid() throws Exception {
+        Path base = issueWithValidity("expired-base", ATTR_V20, BASE_COMPONENTS, null, EK_CERT, null,
+                CA_CERT, CA_KEY, "1", "20240101", "20260101", "ac");
+        Path delta = issue("delta", ATTR_V20, DELTA_COMPONENTS, "delta", base.toString(), base, CA_CERT, CA_KEY, "2");
+        Assertions.assertEquals(0, validateWith(delta, "--components-json", AFTER_DELTA_COMPONENTS,
+                "--prev-pcert", base.toString(), "--reference-time", REFERENCE_TIME));
+        Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(), validateWith(delta,
+                "--components-json", AFTER_DELTA_COMPONENTS, "--prev-pcert", base.toString(),
+                "--reference-time", REFERENCE_TIME, "--enforce-validity"));
+
+        Path validBase = issue("valid-base", ATTR_V20, BASE_COMPONENTS, null, EK_CERT, null, CA_CERT, CA_KEY, "3");
+        Path validDelta = issue("valid-delta", ATTR_V20, DELTA_COMPONENTS, "delta", validBase.toString(),
+                validBase, CA_CERT, CA_KEY, "4");
+        Assertions.assertEquals(0, validateWith(validDelta, "--components-json", AFTER_DELTA_COMPONENTS,
+                "--prev-pcert", tempDir().resolve("*base.pem").toString(), "--reference-time", REFERENCE_TIME,
+                "--enforce-validity"));
+        // If materialization is skipped, even the referenced expired base is not used.
+        Assertions.assertEquals(0, validateWith(delta, "--skip-component-validation", "--prev-pcert", base.toString(),
+                "--reference-time", REFERENCE_TIME, "--enforce-validity"));
+    }
+
+    @Test
+    void previousDeltaValidityAndHistoricalIssuerPathsUseReferenceTime() throws Exception {
+        Path historicalIssuer = issuerWithValidity("historical-issuer", OTHER_CA_CERT, OTHER_CA_KEY,
+                "2027-01-01T00:00:00Z", "2028-01-01T00:00:00Z");
+        Path base = issue("base", ATTR_V20, BASE_COMPONENTS, null, EK_CERT, null,
+                historicalIssuer.toString(), OTHER_CA_KEY, "1");
+        Path delta = issue("delta", ATTR_V20, DELTA_COMPONENTS, "delta", base.toString(), base, CA_CERT, CA_KEY, "2");
+        Assertions.assertEquals(0, validateWith(delta, "--components-json", AFTER_DELTA_COMPONENTS,
+                "--prev-pcert", base.toString(), "--trust-anchor", CA_CERT,
+                "--trust-anchor", historicalIssuer.toString(), "--reference-time", REFERENCE_TIME, "--enforce-validity"));
+        Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(), validateWith(delta,
+                "--components-json", AFTER_DELTA_COMPONENTS, "--prev-pcert", base.toString(),
+                "--trust-anchor", CA_CERT, "--trust-anchor", historicalIssuer.toString(),
+                "--reference-time", "2026-01-15T00:00:00Z"));
+
+        Path expiredDelta = issueWithValidity("expired-delta", ATTR_V20, DELTA_COMPONENTS, "delta",
+                base.toString(), base, CA_CERT, CA_KEY, "3", "20240101", "20260101", "ac");
+        Path removeCpu = writeJson("remove-cpu.json", manifest(
+                component(CLASS_CPU, "Intel(R) Corporation", "C6", " ", "removed")));
+        Path afterSecondDelta = writeJson("after-second-delta.json", manifest(
+                component(CLASS_BIOS, "American Megatrends International, LLC.", "UP6502ZA.305", null, null, "05NO"),
+                component(CLASS_BASEBOARD, "ASUSTeK COMPUTER INC.", "Zenbook UP6502ZA_Q529ZA", "A3A2PI88M1789543", null, "1.0       "),
+                withWlanMac(component(CLASS_NIC, "8086:8086:", "51F0:0094:", null, null, "01"), "AAB1238907EE")));
+        Path currentDelta = issue("current-delta", ATTR_V20, removeCpu.toString(), "delta",
+                base.toString(), expiredDelta, CA_CERT, CA_KEY, "4");
+        Assertions.assertEquals(0, validateWith(currentDelta, "--components-json", afterSecondDelta.toString(),
+                "--prev-pcert", base.toString(), "--prev-pcert", expiredDelta.toString(),
+                "--trust-anchor", CA_CERT, "--trust-anchor", historicalIssuer.toString(), "--reference-time", REFERENCE_TIME));
+        Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(), validateWith(currentDelta,
+                "--components-json", afterSecondDelta.toString(), "--prev-pcert", base.toString(),
+                "--prev-pcert", expiredDelta.toString(), "--trust-anchor", CA_CERT,
+                "--trust-anchor", historicalIssuer.toString(), "--reference-time", REFERENCE_TIME, "--enforce-validity"));
+    }
+
+    @Test
+    void previousSignerValidityWithoutTrustPathAndLegacyHolderMatchingAreEnforced() throws Exception {
+        Path expiredSigner = issuerWithValidity("expired-signer", CA_CERT, CA_KEY,
+                "2024-01-01T00:00:00Z", "2026-01-01T00:00:00Z");
+        Path base = issue("base", ATTR_V11, BASE_COMPONENTS, null, EK_CERT, null, CA_CERT, CA_KEY, "1");
+        Path delta = issue("delta", ATTR_V11, DELTA_COMPONENTS, "delta", base.toString(), null, CA_CERT, CA_KEY, "2");
+        Assertions.assertEquals(0, validateSignedBy(delta, expiredSigner.toString(),
+                "--components-json", AFTER_DELTA_COMPONENTS, "--prev-pcert", base.toString(),
+                "--reference-time", REFERENCE_TIME));
+        // Exercise previous-certificate signer policy directly, without a current-signer failure masking it.
+        ComponentValidationService service = ComponentValidationService.builder()
+                .previousPlatformCertificates(List.of(base.toFile()))
+                .issuerCertificate(CliHelper.loadPKCSafe(expiredSigner.toString()))
+                .clock(Clock.fixed(Instant.parse(REFERENCE_TIME), ZoneOffset.UTC))
+                .enforceValidity(true).build();
+        Assertions.assertFalse(service.validate(PlatformCertificate.load(delta.toFile()),
+                new File(AFTER_DELTA_COMPONENTS), "NORMALIZED"));
+
+        Path expiredBase = issueWithValidity("expired-base", ATTR_V11, BASE_COMPONENTS, null,
+                EK_CERT, null, CA_CERT, CA_KEY, "3", "20240101", "20260101", "ac");
+        Path legacyDelta = issue("legacy-delta", ATTR_V11, DELTA_COMPONENTS, "delta", expiredBase.toString(),
+                null, CA_CERT, CA_KEY, "4");
+        Assertions.assertEquals(0, validateWith(legacyDelta, "--components-json", AFTER_DELTA_COMPONENTS,
+                "--prev-pcert", expiredBase.toString(), "--reference-time", REFERENCE_TIME));
+        Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(), validateWith(legacyDelta,
+                "--components-json", AFTER_DELTA_COMPONENTS, "--prev-pcert", expiredBase.toString(),
+                "--reference-time", REFERENCE_TIME, "--enforce-validity"));
+    }
+
+    @Test
+    void expiredEntriesBeforeLastRebaseDoNotAffectValidityEnforcement() throws Exception {
+        Path base = issueWithValidity("expired-base", ATTR_V20, BASE_COMPONENTS, null,
+                EK_CERT, null, CA_CERT, CA_KEY, "1", "20240101", "20260101", "ac");
+        Path delta = issueWithValidity("expired-delta", ATTR_V20, DELTA_COMPONENTS, "delta",
+                base.toString(), base, CA_CERT, CA_KEY, "2", "20240101", "20260101", "ac");
+        Path rebase = issue("rebase", ATTR_V20, AFTER_DELTA_COMPONENTS, "rebase",
+                base.toString(), delta, CA_CERT, CA_KEY, "3");
+        Path addDimm = writeJson("add-dimm.json", manifest(component(CLASS_RAM, "Acme", "DIMM-16G", "SN-A", "added")));
+        Path current = issue("current", ATTR_V20, addDimm.toString(), "delta",
+                rebase.toString(), rebase, CA_CERT, CA_KEY, "4");
+        PlatformCertificate certificate = PlatformCertificate.load(current.toFile());
+        Assertions.assertNotNull(certificate);
+        PlatformConfigurationV3 expected = PreviousPlatformCertificateValidator.builder()
+                .previousPlatformCertificates(List.of(base.toFile(), delta.toFile(), rebase.toFile()))
+                .issuerCertificate(CliHelper.loadPKCSafe(CA_CERT))
+                .clock(Clock.fixed(Instant.parse(REFERENCE_TIME), ZoneOffset.UTC))
+                .enforceValidity(true).build()
+                .materialize(certificate, certificate.canonicalizedPlatformConfigurationV3());
+        Assertions.assertNotNull(expected);
+        Assertions.assertEquals(0, validateWith(current, "--skip-component-validation",
+                "--prev-pcert", tempDir().resolve("*.pem").toString(), "--reference-time", REFERENCE_TIME,
+                "--enforce-validity"));
+    }
+
+    @Test
+    void crlFreshnessUsesReferenceTimeIndependentlyOfEnforcement() throws Exception {
+        Path base = issue("base", ATTR_V20, BASE_COMPONENTS, null, EK_CERT, null, CA_CERT, CA_KEY, "1");
+        Path usable = crlWithWindow("usable", "2027-01-01T00:00:00Z", "2027-02-01T00:00:00Z");
+        Path expired = crlWithWindow("expired", "2026-01-01T00:00:00Z", "2026-02-01T00:00:00Z");
+        Assertions.assertEquals(0, validateWith(base, "--skip-component-validation", "--crl", usable.toString(),
+                "--reference-time", REFERENCE_TIME));
+        Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(), validateWith(base,
+                "--skip-component-validation", "--crl", usable.toString(), "--reference-time", "2027-02-02T00:00:00Z"));
+        Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(), validateWith(base,
+                "--skip-component-validation", "--crl", usable.toString(), "--reference-time", "2026-12-31T00:00:00Z"));
+        Assertions.assertEquals(0, validateWith(base, "--skip-component-validation", "--crl", usable.toString(),
+                "--crl", expired.toString(), "--reference-time", REFERENCE_TIME, "--enforce-validity"));
+    }
+
+    @Test
+    void platformValidityBoundariesAreInclusive() throws Exception {
+        Path base = issue("base", ATTR_V20, BASE_COMPONENTS, null, EK_CERT, null, CA_CERT, CA_KEY, "1");
+        PlatformCertificate certificate = PlatformCertificate.load(base.toFile());
+        Assertions.assertNotNull(certificate);
+        Date notBefore = certificate.extractNotBefore();
+        Assertions.assertNotNull(notBefore);
+        Instant start = notBefore.toInstant();
+        Date notAfter = certificate.extractNotAfter();
+        Assertions.assertNotNull(notAfter);
+        Instant end = notAfter.toInstant();
+        Assertions.assertEquals(CertificateValidity.OK, CertificateValidity.at(certificate, start));
+        Assertions.assertEquals(CertificateValidity.OK, CertificateValidity.at(certificate, end));
+        Assertions.assertEquals(CertificateValidity.NOT_YET_VALID, CertificateValidity.at(certificate, start.minusNanos(1)));
+        Assertions.assertEquals(CertificateValidity.EXPIRED, CertificateValidity.at(certificate, end.plusNanos(1)));
+        Assertions.assertEquals(0, validateWith(base, "--skip-component-validation", "--reference-time", end.toString(),
+                "--enforce-validity"));
+    }
+
+    @Test
+    void invalidReferenceTimeIsUsageErrorAndHelpDocumentsSystemUtcDefault() {
+        CommandLine command = RootCmd.commandLine();
+        StringWriter errors = new StringWriter();
+        command.setErr(new PrintWriter(errors));
+        Assertions.assertEquals(ClientExitCodes.USAGE_ERROR.code(), command.execute("validate", "-X", CA_CERT,
+                "--reference-time", "2027-01-15T00:00:00"));
+        Assertions.assertTrue(errors.toString().contains("RFC 3339"), errors.toString());
+        String help = command.getSubcommands().get("validate").getUsageMessage();
+        Assertions.assertTrue(help.contains("systemUTC"), help);
+        Assertions.assertFalse(help.contains("--at"), help);
+    }
+
+    @Test
+    void explicitlyRequestedTrustAndCrlChecksDoNotDisappearWhenGlobsMatchNothing() throws Exception {
+        Path base = issue("base", ATTR_V20, BASE_COMPONENTS, null, EK_CERT, null, CA_CERT, CA_KEY, "1");
+        String missingFiles = tempDir().resolve("missing-*.pem").toString();
+        for (String option : List.of("--trust-anchor", "--crl")) {
+            List<String> output = captureOutput(() -> Assertions.assertEquals(ClientExitCodes.VALIDATION_FAILED.code(),
+                    validateWith(base, "--skip-component-validation", "--reference-time", REFERENCE_TIME,
+                            option, missingFiles)));
+            Assertions.assertTrue(output.contains(option.equals("--crl") ? "CRL validation: FAILED"
+                    : "Trust-anchor validation: FAILED"), output.toString());
+        }
+    }
 
     @Test
     void missing_components_json_fails_with_reason() throws Exception {
@@ -80,6 +326,7 @@ public class ValidateCmdPolicyTest extends TestSupport {
         Path delta = issue("delta", ATTR_V20, DELTA_COMPONENTS, "delta", base.toString(), base, CA_CERT, CA_KEY, "2");
 
         PlatformCertificate deltaCert = PlatformCertificate.load(delta.toFile());
+        Assertions.assertNotNull(deltaCert);
         Assertions.assertEquals(CertSpecVersion.V2_0, deltaCert.resolvedSpecVersion());
         Assertions.assertEquals(CertType.DELTA, deltaCert.getCertType());
         Assertions.assertFalse(deltaCert.previousPlatformCertificateTraits().isEmpty(),
@@ -172,7 +419,9 @@ public class ValidateCmdPolicyTest extends TestSupport {
         Path unrelated = issue("a-unrelated", ATTR_V11, BASE_COMPONENTS, null, EK_CERT, null, CA_CERT, CA_KEY, "7");
         Path base = issue("b-base", ATTR_V11, BASE_COMPONENTS, null, EK_CERT, null, CA_CERT, CA_KEY, "1");
         Path delta = issue("delta", ATTR_V11, DELTA_COMPONENTS, "delta", base.toString(), null, CA_CERT, CA_KEY, "2");
-        Assertions.assertEquals(CertSpecVersion.V1_1, PlatformCertificate.load(delta.toFile()).resolvedSpecVersion());
+        PlatformCertificate certificate = PlatformCertificate.load(delta.toFile());
+        Assertions.assertNotNull(certificate);
+        Assertions.assertEquals(CertSpecVersion.V1_1, certificate.resolvedSpecVersion());
         Assertions.assertTrue(unrelated.getFileName().toString().compareTo(base.getFileName().toString()) < 0);
 
         Assertions.assertEquals(0, validate(delta, AFTER_DELTA_COMPONENTS, unrelated.toString(), base.toString()));
@@ -222,13 +471,21 @@ public class ValidateCmdPolicyTest extends TestSupport {
 
     private Path issue(String name, String attributes, String components, String type, String holder,
                        Path previous, String caCert, String caKey, String serial) throws Exception {
+        return issueWithValidity(name, attributes, components, type, holder, previous, caCert, caKey, serial,
+                "20240101", "20300101", "ac");
+    }
+
+    private Path issueWithValidity(String name, String attributes, String components, String type, String holder,
+                                   Path previous, String caCert, String caKey, String serial,
+                                   String notBefore, String notAfter, String kind) throws Exception {
         Path env = tempPath(name + ".json");
         Path cer = tempPath(name + ".pem");
         List<String> args = new ArrayList<>(List.of(
                 "certgen",
                 "--serial", serial,
-                "--not-before", "20240101",
-                "--not-after", "20300101",
+                "--not-before", notBefore,
+                "--not-after", notAfter,
+                "--kind", kind,
                 "--issuer-cert", caCert,
                 "--holder-cert", holder,
                 "--attributes-json", attributes,
@@ -254,11 +511,43 @@ public class ValidateCmdPolicyTest extends TestSupport {
         return cer;
     }
 
+    private Path issuerWithValidity(String name, String caCert, String caKey, String notBefore, String notAfter) throws Exception {
+        X509CertificateHolder original = CliHelper.loadCert(caCert, CliHelper.x509type.CERTIFICATE);
+        PrivateKeyInfo keyInfo = CliHelper.loadCert(caKey, CliHelper.x509type.PRIVATE_KEY);
+        X509v3CertificateBuilder builder = new X509v3CertificateBuilder(original.getIssuer(), BigInteger.TEN,
+                Date.from(Instant.parse(notBefore)), Date.from(Instant.parse(notAfter)),
+                original.getSubject(), original.getSubjectPublicKeyInfo());
+        for (ASN1ObjectIdentifier oid : original.getExtensions().getExtensionOIDs()) {
+            builder.addExtension(original.getExtension(oid));
+        }
+        X509CertificateHolder certificate = builder.build(new JcaContentSignerBuilder("SHA256withRSA")
+                .build(new JcaPEMKeyConverter().getPrivateKey(keyInfo)));
+        Path file = tempPath(name + ".pem");
+        try (JcaPEMWriter writer = new JcaPEMWriter(Files.newBufferedWriter(file))) {
+            writer.writeObject(certificate);
+        }
+        return file;
+    }
+
+    private Path crlWithWindow(String name, String thisUpdate, String nextUpdate) throws Exception {
+        X509CertificateHolder issuer = CliHelper.loadCert(CA_CERT, CliHelper.x509type.CERTIFICATE);
+        PrivateKeyInfo keyInfo = CliHelper.loadCert(CA_KEY, CliHelper.x509type.PRIVATE_KEY);
+        X509v2CRLBuilder builder = new X509v2CRLBuilder(issuer.getSubject(), Date.from(Instant.parse(thisUpdate)));
+        builder.setNextUpdate(Date.from(Instant.parse(nextUpdate)));
+        Path file = tempPath(name + ".crl.pem");
+        try (JcaPEMWriter writer = new JcaPEMWriter(Files.newBufferedWriter(file))) {
+            writer.writeObject(builder.build(new JcaContentSignerBuilder("SHA256withRSA")
+                    .build(new JcaPEMKeyConverter().getPrivateKey(keyInfo))));
+        }
+        return file;
+    }
+
     private int validate(Path certificate, String components, String... previous) {
         List<String> args = new ArrayList<>(List.of(
                 "validate",
                 "--x509v2AttrCert", certificate.toString(),
                 "--issuer-cert", CA_CERT,
+                "--reference-time", REFERENCE_TIME,
                 "--components-json", components));
         for (String prev : previous) {
             args.addAll(List.of("--prev-pcert", prev));

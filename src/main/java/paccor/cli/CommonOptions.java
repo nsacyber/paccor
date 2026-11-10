@@ -2,7 +2,7 @@ package paccor.cli;
 
 import java.io.File;
 import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.java.Log;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
@@ -10,9 +10,8 @@ import picocli.CommandLine.Option;
  * Common options for commands.
  */
 @Command
+@Log
 public class CommonOptions {
-    private static final Logger LOGGER = Logger.getLogger(CommonOptions.class.getName());
-
     @Option(names = CliOptionNames.LOG_LEVEL_LONG, description = "Options: " + LogBootstrap.AVAILABLE_LEVELS, defaultValue = "INFO")
     String logLevel;
     @Option(names = CliOptionNames.LOG_FILE_LONG, description = "Path to save rotating logs. If null or omitted, file logging is disabled.")
@@ -25,7 +24,7 @@ public class CommonOptions {
      * @param msg Message to log.
      */
     public void printInfo(String msg){
-        LOGGER.log(Level.INFO, msg);
+        log.log(Level.INFO, msg);
     }
 
     /**
@@ -33,7 +32,7 @@ public class CommonOptions {
      * @param msg Message to log.
      */
     public void printError(String msg){
-        LOGGER.log(Level.SEVERE, msg);
+        log.log(Level.SEVERE, msg);
     }
 
     /**
@@ -41,6 +40,6 @@ public class CommonOptions {
      * @param msg Warning message.
      */
     public void printWarning(String msg){
-        LOGGER.log(Level.WARNING, msg);
+        log.log(Level.WARNING, msg);
     }
 }

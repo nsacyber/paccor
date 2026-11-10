@@ -1,15 +1,18 @@
 package paccor.validator;
 
 import java.io.File;
+import java.time.Clock;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
-import java.util.logging.Logger;
 import java.util.stream.IntStream;
 import lombok.Builder;
+import lombok.extern.java.Log;
 import org.bouncycastle.cert.X509CertificateHolder;
 import paccor.cert.CertType;
 import paccor.cert.PlatformCertificate;
 import paccor.cert.PlatformCertificateHolders;
+import paccor.crypto.CertificateValidity;
 import paccor.tcg.credential.CertificateIdentifier;
 import paccor.tcg.credential.CertificateIdentifierTrait;
 import paccor.tcg.credential.PlatformConfigurationV3;
@@ -17,13 +20,14 @@ import paccor.validator.PreviousCertificateLoader.ResolvedPrevious;
 
 /** Validates and materializes the previous-platform-certificate chain. */
 @Builder
+@Log
 public final class PreviousPlatformCertificateValidator {
-    private static final Logger LOGGER = Logger.getLogger(PreviousPlatformCertificateValidator.class.getName());
-
     private final List<File> previousPlatformCertificates;
     private final X509CertificateHolder issuerCertificate;
     private final List<X509CertificateHolder> trustAnchors;
     private final ComponentMatcher matcher;
+    @Builder.Default private final Clock clock = Clock.systemUTC();
+    private final boolean enforceValidity;
 
     public PlatformConfigurationV3 materialize(PlatformCertificate certificate, PlatformConfigurationV3 current) {
         // A delta without a platform configuration attribute records no component changes.
@@ -41,35 +45,43 @@ public final class PreviousPlatformCertificateValidator {
             return certificate.requiresPreviousPlatformCertificates() ? null : leaf;
         }
 
+        Clock evaluationClock = Clock.fixed(clock.instant(), ZoneOffset.UTC);
         List<ResolvedPrevious> resolved = PreviousCertificateLoader.builder()
                 .issuerCertificate(issuerCertificate)
                 .trustAnchors(trustAnchors)
+                .clock(evaluationClock)
+                .enforceValidity(enforceValidity)
                 .build()
                 .load(files);
         List<CertificateIdentifierTrait> chain = certificate.previousPlatformCertificateTraits();
         // When a chain is present it is authoritative; a chain that fails must not fall back to holder matching.
         return chain != null && !chain.isEmpty()
-                ? materializeChain(certificate, chain, resolved, leaf)
-                : materializeWithoutChain(certificate, resolved, leaf);
+                ? materializeChain(certificate, chain, resolved, leaf, evaluationClock)
+                : materializeWithoutChain(certificate, resolved, leaf, evaluationClock);
     }
 
-    private PlatformConfigurationV3 materializeWithoutChain(PlatformCertificate certificate, List<ResolvedPrevious> resolved, PlatformConfigurationV3 current) {
+    private PlatformConfigurationV3 materializeWithoutChain(
+            PlatformCertificate certificate, List<ResolvedPrevious> resolved,
+            PlatformConfigurationV3 current, Clock evaluationClock) {
         if (!certificate.requiresPreviousPlatformCertificates()) {
             return current;
         }
         return resolved.stream()
                 .filter(previous -> PlatformCertificateHolders.holderMatches(certificate, previous.certificate()))
+                .filter(previous -> acceptsValidity(previous.certificate(), evaluationClock))
                 .findFirst()
                 .map(previous -> mergeCurrent(certificate, previous.configuration(), current))
                 .orElseGet(() -> {
-                    LOGGER.warning("No previous platform certificate matches the holder of the certificate being validated.");
+                    log.warning("No previous platform certificate matches the holder of the certificate being validated.");
                     return null;
                 });
     }
 
-    private PlatformConfigurationV3 materializeChain(PlatformCertificate certificate, List<CertificateIdentifierTrait> chain, List<ResolvedPrevious> resolved, PlatformConfigurationV3 current) {
+    private PlatformConfigurationV3 materializeChain(
+            PlatformCertificate certificate, List<CertificateIdentifierTrait> chain,
+            List<ResolvedPrevious> resolved, PlatformConfigurationV3 current, Clock evaluationClock) {
         return resolveChainStart(chain)
-                .map(start -> applyResolvedChain(chain, resolved, start))
+                .map(start -> applyResolvedChain(chain, resolved, start, evaluationClock))
                 .filter(progress -> !progress.failed())
                 .filter(progress -> certificate.getCertType() != null
                         && progress.configuration() != null
@@ -78,20 +90,25 @@ public final class PreviousPlatformCertificateValidator {
                 .orElse(null);
     }
 
-    private ChainProgress applyResolvedChain(List<CertificateIdentifierTrait> chain, List<ResolvedPrevious> resolved, int start) {
+    private ChainProgress applyResolvedChain(
+            List<CertificateIdentifierTrait> chain, List<ResolvedPrevious> resolved,
+            int start, Clock evaluationClock) {
         ChainProgress progress = ChainProgress.initial();
         for (int index = start; index < chain.size() && !progress.failed(); index++) {
-            progress = applyTrait(progress, chain.get(index), resolved);
+            progress = applyTrait(progress, chain.get(index), resolved, evaluationClock);
         }
         return progress;
     }
 
-    private ChainProgress applyTrait(ChainProgress progress, CertificateIdentifierTrait trait, List<ResolvedPrevious> resolved) {
+    private ChainProgress applyTrait(
+            ChainProgress progress, CertificateIdentifierTrait trait,
+            List<ResolvedPrevious> resolved, Clock evaluationClock) {
         return Optional.ofNullable(trait)
                 .flatMap(value -> resolved.stream()
                         .filter(r -> r.certificate().identifies(value.getTraitValue()))
                         .findFirst())
-                .map(previous -> applyResolvedTrait(progress, trait, previous))
+                .map(previous -> acceptsValidity(previous.certificate(), evaluationClock)
+                        ? applyResolvedTrait(progress, trait, previous) : ChainProgress.failure())
                 .orElseGet(() -> Optional.ofNullable(trait)
                         .map(value -> missingTrait(value.getTraitValue()))
                         .orElse(progress));
@@ -100,13 +117,13 @@ public final class PreviousPlatformCertificateValidator {
     private ChainProgress applyResolvedTrait(ChainProgress progress, CertificateIdentifierTrait trait, ResolvedPrevious previous) {
         Optional<CertType> declared = ComponentValidator.certTypeOf(trait);
         if (declared.isEmpty()) {
-            LOGGER.warning("Previous platform certificate entry has an unrecognized category "
+            log.warning("Previous platform certificate entry has an unrecognized category "
                     + trait.getTraitCategory() + ": " + trait.getTraitValue());
             return ChainProgress.failure();
         }
         CertType actual = previous.certificate().getCertType();
         if (actual != null && actual != declared.get()) {
-            LOGGER.warning("Previous platform certificate is listed as " + declared.get()
+            log.warning("Previous platform certificate is listed as " + declared.get()
                     + " but its credential type is " + actual + ": " + trait.getTraitValue());
             return ChainProgress.failure();
         }
@@ -115,20 +132,20 @@ public final class PreviousPlatformCertificateValidator {
         }
         if (progress.configuration() == null || progress.anchor() == null
                 || !PlatformCertificateHolders.holderConsistent(previous.certificate(), progress.anchor())) {
-            LOGGER.warning("Previous delta certificate does not identify the certificate it is applied on top of: "
+            log.warning("Previous delta certificate does not identify the certificate it is applied on top of: "
                     + trait.getTraitValue());
             return ChainProgress.failure();
         }
         return ComponentValidator.materializeComponents(progress.configuration(), List.of(previous.configuration()), componentMatcher())
                 .map(configuration -> ChainProgress.success(configuration, progress.anchor()))
                 .orElseGet(() -> {
-                    LOGGER.warning("Previous delta certificate could not be applied: " + trait.getTraitValue());
+                    log.warning("Previous delta certificate could not be applied: " + trait.getTraitValue());
                     return ChainProgress.failure();
                 });
     }
 
     private ChainProgress missingTrait(CertificateIdentifier identifier) {
-        LOGGER.warning("Missing previous platform certificate: " + identifier);
+        log.warning("Missing previous platform certificate: " + identifier);
         return ChainProgress.failure();
     }
 
@@ -146,17 +163,17 @@ public final class PreviousPlatformCertificateValidator {
      */
     private Optional<Integer> resolveChainStart(List<CertificateIdentifierTrait> chain) {
         if (chain.stream().anyMatch(trait -> ComponentValidator.certTypeOf(trait).isEmpty())) {
-            LOGGER.warning("Previous platform certificates contain an entry with an unrecognized category.");
+            log.warning("Previous platform certificates contain an entry with an unrecognized category.");
             return Optional.empty();
         }
         if (chain.stream().filter(ComponentValidator::isBaseTrait).count() > 1) {
-            LOGGER.warning("Previous platform certificates contain more than one base certificate.");
+            log.warning("Previous platform certificates contain more than one base certificate.");
             return Optional.empty();
         }
         return lastIndexOf(chain, CertType.REBASE)
                 .or(() -> lastIndexOf(chain, CertType.BASE))
                 .or(() -> {
-                    LOGGER.warning("No base or rebase certificate found in PreviousPlatformCertificates.");
+                    log.warning("No base or rebase certificate found in PreviousPlatformCertificates.");
                     return Optional.empty();
                 });
     }
@@ -169,6 +186,16 @@ public final class PreviousPlatformCertificateValidator {
 
     private ComponentMatcher componentMatcher() {
         return Optional.ofNullable(matcher).orElse(ComponentMatcher.NORMALIZED);
+    }
+
+    private boolean acceptsValidity(PlatformCertificate certificate, Clock evaluationClock) {
+        if (!enforceValidity) return true;
+        CertificateValidity validity = CertificateValidity.at(certificate, evaluationClock.instant());
+        if (validity != CertificateValidity.OK) {
+            log.warning("Previous platform certificate validity: " + validity + " as of "
+                    + evaluationClock.instant() + " (enforced): " + certificate.serialNumber());
+        }
+        return validity == CertificateValidity.OK;
     }
 
     private record ChainProgress(PlatformConfigurationV3 configuration, PlatformCertificate anchor, boolean failed) {

@@ -17,9 +17,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Vector;
 import java.util.function.Function;
-import java.util.logging.Logger;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.java.Log;
 import paccor.crypto.AlgorithmSupport;
 import paccor.model.CertificateReference;
 import org.bouncycastle.asn1.ASN1Encodable;
@@ -55,9 +55,8 @@ import paccor.tcg.credential.URIReference;
  * branching at each call site.
  */
 @Getter
+@Log
 public final class PlatformCertificate {
-    private static final Logger LOGGER = Logger.getLogger(PlatformCertificate.class.getName());
-
     private final File file;
     private final CertKind certKind;
     private final CertSpecVersion certSpecVersion;
@@ -395,7 +394,7 @@ public final class PlatformCertificate {
         try {
             ASN1ObjectIdentifier hashAlgorithm = identifier.getHashAlgorithm().getAlgorithm();
             if (AlgorithmSupport.isSha1Digest(hashAlgorithm)) {
-                LOGGER.warning("WARNING: A certificate identifier uses SHA-1; SHA-1 is deprecated and should only be used for legacy compatibility.");
+                log.warning("WARNING: A certificate identifier uses SHA-1; SHA-1 is deprecated and should only be used for legacy compatibility.");
             }
             byte[] expected = identifier.getHashOverSignatureValue().getOctets();
             byte[] actual = AlgorithmSupport.digest(signatureBytes(), hashAlgorithm);
