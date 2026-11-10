@@ -1,6 +1,8 @@
 package paccor.validator;
 
 import java.io.File;
+import java.time.Clock;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -25,6 +27,9 @@ public final class ComponentValidationService {
     private final List<File> previousPlatformCertificates;
     private final X509CertificateHolder issuerCertificate;
     private final List<X509CertificateHolder> trustAnchors;
+    @Builder.Default
+    private final Clock clock = Clock.systemUTC();
+    private final boolean enforceValidity;
 
     public boolean validate(PlatformCertificate certificate, File jsonFile, String matcherName) {
         if (jsonFile == null || !jsonFile.exists()) {
@@ -135,6 +140,8 @@ public final class ComponentValidationService {
                 .previousPlatformCertificates(previousPlatformCertificates)
                 .issuerCertificate(issuerCertificate)
                 .trustAnchors(trustAnchors)
+                .clock(Clock.fixed(clock.instant(), ZoneOffset.UTC))
+                .enforceValidity(enforceValidity)
                 .matcher(matcher)
                 .build()
                 .materialize(certificate, current);

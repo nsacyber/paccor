@@ -83,9 +83,11 @@ Passing example:
 
 ```text
 $ bin/paccor validate ...
+Platform certificate validity: OK as of 2027-01-15T00:00:00Z (not enforced)
+Signer certificate validity: OK as of 2027-01-15T00:00:00Z (not enforced)
 Signature validation: OK
 Specification validation: OK
-Components validation: OK
+Component validation: OK
 Platform Certificate validation: OK
 ```
 
@@ -93,19 +95,22 @@ Missing-input example:
 
 ```text
 $ bin/paccor validate --x509v2AttrCert example-cert.pem
-Signature validation: Skipped. No issuer certificate provided.
+Platform certificate validity: OK as of 2027-01-15T00:00:00Z (not enforced)
+Signature validation: FAILED
 Specification validation: OK
-Component validation: Skipped. No components JSON provided.
+Component validation: FAILED (--components-json not provided)
 Platform Certificate validation: FAILED
 ```
 
-That final non-zero result is intentional since some tests were skipped.
+That final non-zero result is intentional since required inputs were missing.
 
 Interpretation:
 
 - `OK` means that check ran and passed
-- `Skipped` means you did not provide enough inputs for that check
-- the final result is still non-zero when required checks were skipped
+- `SKIPPED` means a check was explicitly bypassed, for example with `--skip-component-validation`
+- validity output includes the evaluation instant and whether the window is enforced
+- platform-certificate validity does not affect the exit code unless `--enforce-validity` is given
+- issuer trust-path dates and CRL freshness are enforced whenever those checks run
 
 ## `view` console output
 

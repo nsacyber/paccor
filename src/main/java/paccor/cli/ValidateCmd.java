@@ -2,12 +2,17 @@ package paccor.cli;
 
 import paccor.cert.PlatformCertificate;
 import java.io.File;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.logging.Logger;
 import paccor.cli.pv.ReadableFileConverter;
+import paccor.cli.pv.ReferenceTimeConverter;
+import paccor.crypto.CertificateValidity;
 import paccor.crypto.IssuerCertificateChecker;
 import paccor.crypto.RevocationChecker;
 import org.bouncycastle.cert.X509CertificateHolder;
@@ -23,13 +28,12 @@ import paccor.validator.ValidationReport;
 @Command(name = "validate", mixinStandardHelpOptions = true, description = {
         "Validate a platform certificate.",
         "Exits 0 only when signature and component validation pass. Profile checks always run, and trust-anchor and CRL checks run when their inputs are given.",
+        "Validity windows are informational unless --enforce-validity is given.",
         "Use " + CliOptionNames.SKIP_COMPONENT_VALIDATION_LONG + " to validate without a components file."})
 public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
     private static final Logger LOGGER = Logger.getLogger(ValidateCmd.class.getName());
 
     @Mixin private CommonOptions common;
-    private final IssuerCertificateChecker issuerChecker = new IssuerCertificateChecker();
-    private final RevocationChecker revocationChecker = new RevocationChecker();
 
     @Option(names = { CliOptionNames.PLATFORM_CERT_FILE_SHORT, CliOptionNames.X509V2_ATTR_CERT_LONG/*backwards compatibility*/, CliOptionNames.PKC_PLATFORM_CERT_LONG }, description = "Platform certificate file", required = true, converter = ReadableFileConverter.class)
     private File platformCertFile;
@@ -47,6 +51,10 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
     private List<String> trustAnchorList;
     @Option(names = CliOptionNames.CRL_LONG, description = "CRL file(s) for revocation checking. Repeatable. Globs allowed.")
     private List<String> crlList;
+    @Option(names = CliOptionNames.ENFORCE_VALIDITY_LONG, description = "Enforce validity window checking for the platform certificate, previous certificates used in materialization, and their signers.")
+    private boolean enforceValidity;
+    @Option(names = CliOptionNames.REFERENCE_TIME_LONG, paramLabel = "TIMESTAMP", converter = ReferenceTimeConverter.class, description = "Evaluation time for validity in RFC 3339 format (e.g. 2024-01-01T00:00:00Z). Default: current system time.")
+    private Instant referenceTime;
     @Override
     public CommonOptions commonOptions() {
         return common;
@@ -64,8 +72,20 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
             return reportOverall(false, ClientExitCodes.USAGE_ERROR).code();
         }
 
+        Instant evaluationTime = referenceTime == null ? Clock.systemUTC().instant() : referenceTime;
+        Clock clock = Clock.fixed(evaluationTime, ZoneOffset.UTC);
+        IssuerCertificateChecker issuerChecker = new IssuerCertificateChecker(clock);
+        RevocationChecker revocationChecker = new RevocationChecker(clock);
+        CertificateValidity platformValidity = CertificateValidity.at(certificate, evaluationTime);
+        reportValidity("Platform certificate", platformValidity, evaluationTime, enforceValidity);
         Optional<X509CertificateHolder> signer = Optional.ofNullable(
                 signerFile == null ? null : CliHelper.loadPKCSafe(signerFile.getPath()));
+        boolean signerValidityOk = signer.map(value -> {
+            CertificateValidity validity = CertificateValidity.at(value, evaluationTime);
+            reportValidity("Signer certificate", validity, evaluationTime,
+                    enforceValidity || (trustAnchorList != null && !trustAnchorList.isEmpty()));
+            return validity == CertificateValidity.OK;
+        }).orElse(false);
         boolean signatureOk = signer.map(value -> issuerChecker.validateSignature(certificate, value))
                 .map(this::reportSignature)
                 .orElseGet(() -> reportSignature(false));
@@ -80,7 +100,7 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
                         .map(this::reportCrl)
                         .orElseGet(() -> reportCrl(false));
         boolean specificationOk = validateSpecification(certificate);
-        boolean componentsOk = validateComponents(certificate, signer);
+        boolean componentsOk = validateComponents(certificate, signer, clock);
 
         ValidationReport report = ValidationReport.builder()
                 .signatureOk(signatureOk)
@@ -88,8 +108,14 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
                 .crlOk(crlOk)
                 .specificationOk(specificationOk)
                 .componentsOk(componentsOk)
+                .validityOk(!enforceValidity || (platformValidity == CertificateValidity.OK && signerValidityOk))
                 .build();
         return reportOverall(report.ok()).code();
+    }
+
+    private void reportValidity(String scope, CertificateValidity validity, Instant evaluationTime, boolean enforced) {
+        common.printInfo(scope + " validity: " + validity + " as of " + evaluationTime
+                + (enforced ? " (enforced)" : " (not enforced)"));
     }
 
     private boolean reportSignature(boolean ok) {
@@ -104,7 +130,7 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
         common.printInfo("CRL validation: " + (ok ? "OK" : "FAILED"));
         return ok;
     }
-    private boolean validateComponents(PlatformCertificate certificate, Optional<X509CertificateHolder> signer) {
+    private boolean validateComponents(PlatformCertificate certificate, Optional<X509CertificateHolder> signer, Clock clock) {
         if (skipComponentValidation) {
             common.printInfo("Component validation: SKIPPED (user requested to bypass)");
             return true;
@@ -113,6 +139,8 @@ public class ValidateCmd implements Callable<Integer>, HasCommonOptions {
                 .map(json -> ComponentValidationService.builder()
                         .previousPlatformCertificates(GlobFileResolver.resolve(previousPlatformCertsList))
                         .issuerCertificate(signer.orElse(null))
+                        .clock(clock)
+                        .enforceValidity(enforceValidity)
                         .trustAnchors(Optional.ofNullable(trustAnchorList)
                                 .map(GlobFileResolver::resolve)
                                 .map(CliHelper::loadCertificates)

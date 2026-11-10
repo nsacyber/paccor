@@ -3,6 +3,9 @@ package paccor.crypto;
 import java.io.File;
 import java.math.BigInteger;
 import java.security.PrivateKey;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 import java.util.function.Consumer;
@@ -33,11 +36,12 @@ public class RevocationCheckerTest {
     private static final String CA_CERT = "src/test/resources/sample_testgen1/PCTestCA.example.com.pem";
     private static final String CA_KEY = "src/test/resources/sample_testgen1/private.pem";
     private static final long DAY = 24L * 60 * 60 * 1000;
+    private static final Instant NOW = Instant.parse("2027-01-15T00:00:00Z");
 
     private static PlatformCertificate platform;
     private static X509CertificateHolder issuer;
     private static PrivateKey issuerKey;
-    private final RevocationChecker checker = new RevocationChecker();
+    private final RevocationChecker checker = new RevocationChecker(Clock.fixed(NOW, ZoneOffset.UTC));
 
     @BeforeAll
     static void load() throws Exception {
@@ -103,7 +107,7 @@ public class RevocationCheckerTest {
 
     @Test
     void expiredCrl_isIgnored() throws Exception {
-        Date now = new Date();
+        Date now = Date.from(NOW);
         X509v2CRLBuilder builder = new X509v2CRLBuilder(issuer.getSubject(), new Date(now.getTime() - 3 * DAY));
         builder.setNextUpdate(new Date(now.getTime() - DAY));
 
@@ -115,8 +119,35 @@ public class RevocationCheckerTest {
         Assertions.assertFalse(checker.validate(platform, issuer, List.of()));
     }
 
+    @Test
+    void futureCrlIsIgnoredButUsableAlternativePasses() throws Exception {
+        X509v2CRLBuilder builder = new X509v2CRLBuilder(issuer.getSubject(), Date.from(NOW.plusSeconds(60)));
+        builder.setNextUpdate(Date.from(NOW.plusSeconds(120)));
+        X509CRLHolder future = sign(builder);
+        Assertions.assertFalse(checker.validate(platform, issuer, List.of(future)));
+        Assertions.assertTrue(checker.validate(platform, issuer, List.of(future, crl(b -> {}))));
+    }
+
+    @Test
+    void sameCrlIsEvaluatedAtTime() throws Exception {
+        X509v2CRLBuilder builder = new X509v2CRLBuilder(issuer.getSubject(), Date.from(NOW));
+        builder.setNextUpdate(Date.from(NOW.plusSeconds(60)));
+        X509CRLHolder crl = sign(builder);
+        Assertions.assertTrue(checker.validate(platform, issuer, List.of(crl)));
+        Assertions.assertTrue(new RevocationChecker(Clock.fixed(NOW.plusSeconds(60), ZoneOffset.UTC))
+                .validate(platform, issuer, List.of(crl)));
+        Assertions.assertFalse(new RevocationChecker(Clock.fixed(NOW.minusSeconds(1), ZoneOffset.UTC))
+                .validate(platform, issuer, List.of(crl)));
+        Assertions.assertFalse(new RevocationChecker(Clock.fixed(NOW.plusSeconds(61), ZoneOffset.UTC))
+                .validate(platform, issuer, List.of(crl)));
+        Assertions.assertFalse(new RevocationChecker(Clock.fixed(NOW.plusSeconds(60).plusNanos(1), ZoneOffset.UTC))
+                .validate(platform, issuer, List.of(crl)));
+        Assertions.assertTrue(new RevocationChecker(Clock.fixed(NOW.plusSeconds(61), ZoneOffset.UTC))
+                .validate(platform, issuer, List.of(crl, crl(b -> {}))));
+    }
+
     private void revokePlatform(X509v2CRLBuilder builder) {
-        builder.addCRLEntry(platform.serialNumber(), new Date(System.currentTimeMillis() - DAY), CRLReason.keyCompromise);
+        builder.addCRLEntry(platform.serialNumber(), new Date(NOW.toEpochMilli() - DAY), CRLReason.keyCompromise);
     }
 
     private static void addExtension(X509v2CRLBuilder builder, ASN1ObjectIdentifier oid, boolean critical,
@@ -129,7 +160,7 @@ public class RevocationCheckerTest {
     }
 
     private static X509CRLHolder crl(Consumer<X509v2CRLBuilder> customize) throws Exception {
-        Date now = new Date();
+        Date now = Date.from(NOW);
         X509v2CRLBuilder builder = new X509v2CRLBuilder(issuer.getSubject(), new Date(now.getTime() - DAY));
         builder.setNextUpdate(new Date(now.getTime() + DAY));
         customize.accept(builder);

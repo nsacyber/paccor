@@ -1,12 +1,14 @@
 package paccor.crypto;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.logging.Level;
-import java.util.logging.Logger;
+import lombok.extern.java.Log;
 import org.bouncycastle.cert.CertException;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.path.CertPath;
@@ -21,18 +23,28 @@ import org.bouncycastle.operator.DefaultDigestAlgorithmIdentifierFinder;
 import paccor.cert.PlatformCertificate;
 
 /** Validates platform-certificate signatures and issuer certificate paths. */
+@Log
 public final class IssuerCertificateChecker {
-    private static final Logger LOGGER = Logger.getLogger(IssuerCertificateChecker.class.getName());
+    private final Clock clock;
+
+    public IssuerCertificateChecker() {
+        this(Clock.systemUTC());
+    }
+
+    /** Uses the supplied clock for issuer, intermediate, and trust-anchor validity windows. */
+    public IssuerCertificateChecker(Clock clock) {
+        this.clock = Objects.requireNonNull(clock, "clock");
+    }
 
     public boolean validateSignature(PlatformCertificate platform, X509CertificateHolder issuer) {
         try {
             if (platform != null && AlgorithmSupport.isSha1Signature(platform.extractSignatureAlgorithm())) {
-                LOGGER.warning("WARNING: Validating a certificate that uses SHA-1; SHA-1 is deprecated and should only be used for legacy compatibility.");
+                log.warning("WARNING: Validating a certificate that uses SHA-1; SHA-1 is deprecated and should only be used for legacy compatibility.");
             }
             ContentVerifierProvider verifier = SignatureService.buildWithDefault(issuer);
             return platform != null && platform.isSignatureValid(verifier);
         } catch (OperatorCreationException | CertException e) {
-            LOGGER.log(Level.FINE, "Issuer Certificate Checker validate signature check threw", e);
+            log.log(Level.FINE, "Issuer Certificate Checker validate signature check threw", e);
             return false;
         }
     }
@@ -45,7 +57,7 @@ public final class IssuerCertificateChecker {
             if (anchors.isEmpty()) return false;
 
             List<X509CertificateHolder> path = findPath(
-                    issuer, trustStoreCertificates, anchors, new ArrayList<>(), new HashSet<>());
+                    issuer, trustStoreCertificates, anchors, new ArrayList<>(), new HashSet<>(), clock.instant());
             if (path == null) return false;
 
             CertPathValidation[] validations = {
@@ -70,8 +82,11 @@ public final class IssuerCertificateChecker {
             List<X509CertificateHolder> certificates,
             List<X509CertificateHolder> anchors,
             List<X509CertificateHolder> path,
-            Set<X509CertificateHolder> seen) throws Exception {
-        if (!isCurrentlyValid(current) || !seen.add(current)) return null;
+            Set<X509CertificateHolder> seen,
+            Instant instant) throws Exception {
+        if (CertificateValidity.at(current, instant) != CertificateValidity.OK || !seen.add(current)) {
+            return null;
+        }
 
         path.add(current);
         if (anchors.stream().anyMatch(anchor -> sameCertificate(anchor, current))) {
@@ -80,12 +95,12 @@ public final class IssuerCertificateChecker {
 
         for (X509CertificateHolder parent : certificates) {
             if (!parent.getSubject().equals(current.getIssuer())
-                    || !isCurrentlyValid(parent)
+                    || CertificateValidity.at(parent, instant) != CertificateValidity.OK
                     || seen.contains(parent)
                     || !current.isSignatureValid(PQC_VERIFIER_BUILDER.build(parent))) {
                 continue;
             }
-            List<X509CertificateHolder> result = findPath(parent, certificates, anchors, path, seen);
+            List<X509CertificateHolder> result = findPath(parent, certificates, anchors, path, seen, instant);
             if (result != null) return result;
         }
         path.removeLast();
@@ -102,13 +117,8 @@ public final class IssuerCertificateChecker {
             return certificate.getSubject().equals(certificate.getIssuer())
                     && certificate.isSignatureValid(PQC_VERIFIER_BUILDER.build(certificate));
         } catch (Exception ignored) {
-            LOGGER.log(Level.FINE, "isSelfSigned check failed, but allowing to continue.");
+            log.log(Level.FINE, "isSelfSigned check failed, but allowing to continue.");
             return false;
         }
-    }
-
-    private static boolean isCurrentlyValid(X509CertificateHolder certificate) {
-        Date now = new Date();
-        return !now.before(certificate.getNotBefore()) && !now.after(certificate.getNotAfter());
     }
 }

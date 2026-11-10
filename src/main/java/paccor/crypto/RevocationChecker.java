@@ -1,9 +1,11 @@
 package paccor.crypto;
 
 import java.math.BigInteger;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Level;
@@ -24,6 +26,15 @@ import paccor.cert.PlatformCertificate;
  */
 public final class RevocationChecker {
     private static final Logger LOGGER = Logger.getLogger(RevocationChecker.class.getName());
+    private final Clock clock;
+
+    public RevocationChecker() {
+        this(Clock.systemUTC());
+    }
+
+    public RevocationChecker(Clock clock) {
+        this.clock = Objects.requireNonNull(clock, "clock");
+    }
 
     private static final Set<ASN1ObjectIdentifier> RECOGNIZED_CRITICAL_EXTENSIONS = Set.of(
             Extension.deltaCRLIndicator,
@@ -41,7 +52,7 @@ public final class RevocationChecker {
         try {
             BigInteger serial = platform.serialNumber();
             X500Name issuerName = issuer.getSubject();
-            Date now = new Date();
+            Instant now = clock.instant();
             ContentVerifierProvider verifier = SignatureService.buildWithDefault(issuer);
             List<X509CRLHolder> usableCrls = crls.stream()
                     .filter(crl -> isUsable(crl, issuerName, now, verifier))
@@ -60,12 +71,12 @@ public final class RevocationChecker {
     private static boolean isUsable(
             X509CRLHolder crl,
             X500Name issuerName,
-            Date now,
+            Instant now,
             ContentVerifierProvider verifier) {
         if (!crl.getIssuer().equals(issuerName)
                 || crl.getThisUpdate() == null
-                || crl.getThisUpdate().after(now)
-                || Optional.ofNullable(crl.getNextUpdate()).filter(date -> date.before(now)).isPresent()) {
+                || crl.getThisUpdate().toInstant().isAfter(now)
+                || Optional.ofNullable(crl.getNextUpdate()).filter(date -> date.toInstant().isBefore(now)).isPresent()) {
             return false;
         }
         if (!RECOGNIZED_CRITICAL_EXTENSIONS.containsAll(criticalExtensions(crl))) {
